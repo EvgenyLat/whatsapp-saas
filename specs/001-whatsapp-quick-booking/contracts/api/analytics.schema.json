@@ -1,0 +1,314 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Zero-Typing Booking Analytics API",
+    "version": "1.0.0",
+    "description": "API for fetching zero-typing booking metrics and success criteria"
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com/api/v1",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/analytics/zero-typing-metrics": {
+      "get": {
+        "summary": "Get zero-typing booking metrics",
+        "description": "Fetch metrics for SC-001 through UX-009 success criteria",
+        "parameters": [
+          {
+            "name": "salonId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Salon ID to filter metrics"
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Start date for metrics (default: 30 days ago)"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "End date for metrics (default: today)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metrics retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZeroTypingMetrics"
+                },
+                "example": {
+                  "salonId": "123e4567-e89b-12d3-a456-426614174000",
+                  "dateRange": {
+                    "start": "2024-09-25",
+                    "end": "2024-10-25"
+                  },
+                  "successCriteria": {
+                    "SC_001_zero_typing": {
+                      "value": 96.5,
+                      "target": 95,
+                      "status": "pass",
+                      "description": "Bookings with 0 typing after initial message"
+                    },
+                    "SC_002_tap_efficiency": {
+                      "value": 2.3,
+                      "target": 3,
+                      "status": "pass",
+                      "description": "Average taps per booking"
+                    },
+                    "SC_003_booking_speed": {
+                      "value": 24,
+                      "target": 30,
+                      "status": "pass",
+                      "description": "Seconds from first message to confirmation"
+                    }
+                  },
+                  "totalBookings": 1250,
+                  "conversationCompletionRate": 100
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Salon not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/analytics/waitlist-metrics": {
+      "get": {
+        "summary": "Get waitlist conversion metrics",
+        "description": "Fetch waitlist notification performance and conversion rates",
+        "parameters": [
+          {
+            "name": "salonId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Waitlist metrics retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistMetrics"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/analytics/popular-times-accuracy": {
+      "get": {
+        "summary": "Get popular times suggestion accuracy",
+        "description": "Measure how often customers select from popular time suggestions",
+        "parameters": [
+          {
+            "name": "salonId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Popular times accuracy metrics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accuracyRate": {
+                      "type": "number",
+                      "description": "% customers selecting from suggestions",
+                      "example": 72.5
+                    },
+                    "dataSource": {
+                      "type": "string",
+                      "enum": ["historical", "industry-default"],
+                      "example": "historical"
+                    },
+                    "totalSuggestions": {
+                      "type": "integer",
+                      "example": 245
+                    },
+                    "selectedFromSuggestions": {
+                      "type": "integer",
+                      "example": 178
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ZeroTypingMetrics": {
+        "type": "object",
+        "properties": {
+          "salonId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dateRange": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "format": "date"
+              },
+              "end": {
+                "type": "string",
+                "format": "date"
+              }
+            }
+          },
+          "successCriteria": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MetricValue"
+            }
+          },
+          "totalBookings": {
+            "type": "integer",
+            "description": "Total bookings in period"
+          },
+          "conversationCompletionRate": {
+            "type": "number",
+            "description": "% conversations ending with action (booking/waitlist/call)"
+          }
+        }
+      },
+      "MetricValue": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "description": "Actual measured value"
+          },
+          "target": {
+            "type": "number",
+            "description": "Target value from spec"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "warning"],
+            "description": "Pass/fail status vs target"
+          },
+          "description": {
+            "type": "string",
+            "description": "Metric description"
+          },
+          "trend": {
+            "type": "string",
+            "enum": ["improving", "declining", "stable"],
+            "description": "Trend vs previous period (optional)"
+          }
+        }
+      },
+      "WaitlistMetrics": {
+        "type": "object",
+        "properties": {
+          "conversionRate": {
+            "type": "number",
+            "description": "% waitlist customers who booked when notified",
+            "example": 65.2
+          },
+          "notificationSpeed": {
+            "type": "number",
+            "description": "Average seconds from slot opening to notification sent",
+            "example": 98
+          },
+          "expiryRate": {
+            "type": "number",
+            "description": "% notifications that expired (no response)",
+            "example": 15.3
+          },
+          "totalNotifications": {
+            "type": "integer"
+          },
+          "successfulBookings": {
+            "type": "integer"
+          },
+          "averageQueuePosition": {
+            "type": "number",
+            "description": "Average position in queue before notification"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

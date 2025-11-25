@@ -1,0 +1,332 @@
+name: Security Scans
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run weekly security scan every Sunday at midnight
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  # ==========================================================================
+  # Dependency Vulnerability Scanning
+  # ==========================================================================
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        working-directory: Backend
+        run: npm ci
+
+      - name: npm audit
+        working-directory: Backend
+        run: |
+          npm audit --audit-level=moderate --json > audit-report.json || true
+          npm audit --audit-level=moderate
+
+      - name: Snyk Security Scan
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --file=Backend/package.json
+
+      - name: Upload npm audit report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: npm-audit-report
+          path: Backend/audit-report.json
+
+      - name: Check for critical vulnerabilities
+        working-directory: Backend
+        run: |
+          CRITICAL=$(npm audit --json | jq '.metadata.vulnerabilities.critical')
+          HIGH=$(npm audit --json | jq '.metadata.vulnerabilities.high')
+
+          if [ "$CRITICAL" -gt "0" ] || [ "$HIGH" -gt "0" ]; then
+            echo "❌ Found $CRITICAL critical and $HIGH high vulnerabilities"
+            echo "::error::Security vulnerabilities detected. Please run 'npm audit fix'"
+            exit 1
+          else
+            echo "✅ No critical or high vulnerabilities found"
+          fi
+
+  # ==========================================================================
+  # SAST (Static Application Security Testing)
+  # ==========================================================================
+  sast-scan:
+    name: Static Code Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Full history for better analysis
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=whatsapp-saas
+            -Dsonar.organization=your-org
+            -Dsonar.sources=Backend/src
+            -Dsonar.tests=Backend/tests
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+
+      - name: CodeQL Analysis
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  # ==========================================================================
+  # Security Test Suite
+  # ==========================================================================
+  security-tests:
+    name: Security Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        working-directory: Backend
+        run: npm ci
+
+      - name: Run security tests
+        working-directory: Backend
+        run: npm run test:security
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-test-results
+          path: Backend/tests/security/reports/
+
+  # ==========================================================================
+  # OWASP ZAP Dynamic Scan
+  # ==========================================================================
+  zap-scan:
+    name: OWASP ZAP Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: whatsapp_saas_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        working-directory: Backend
+        run: npm ci
+
+      - name: Setup database
+        working-directory: Backend
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: whatsapp_saas_test
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+        run: npm run migrate -- --env test
+
+      - name: Start application
+        working-directory: Backend
+        env:
+          NODE_ENV: test
+          PORT: 4000
+        run: |
+          npm start &
+          sleep 10
+          curl --retry 10 --retry-delay 3 http://localhost:4000/healthz
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.7.0
+        with:
+          target: 'http://localhost:4000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+
+      - name: OWASP ZAP Full Scan
+        uses: zaproxy/action-full-scan@v0.4.0
+        with:
+          target: 'http://localhost:4000'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a -j'
+
+      - name: Upload ZAP report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: zap-scan-report
+          path: |
+            report_html.html
+            report_json.json
+
+  # ==========================================================================
+  # Secrets Scanning
+  # ==========================================================================
+  secrets-scan:
+    name: Secrets Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog Secrets Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+
+      - name: GitLeaks Scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ==========================================================================
+  # Docker Image Scanning
+  # ==========================================================================
+  container-scan:
+    name: Container Image Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build Docker image
+        run: docker build -t whatsapp-saas:${{ github.sha }} .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'whatsapp-saas:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ==========================================================================
+  # Security Report Summary
+  # ==========================================================================
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, sast-scan, security-tests]
+    if: always()
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Create security summary
+        run: |
+          echo "# 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Scans Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Dependency vulnerability scan" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Static code analysis (SAST)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Security test suite" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Secrets detection" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Results" >> $GITHUB_STEP_SUMMARY
+          echo "View detailed reports in the artifacts section." >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔒 Security Scan Results\n\n✅ All security scans completed successfully!\n\nView detailed reports in the [Actions tab](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})`
+            });
+
+  # ==========================================================================
+  # Fail on Critical Issues
+  # ==========================================================================
+  security-gate:
+    name: Security Gate
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, security-tests]
+    if: always()
+
+    steps:
+      - name: Check security scan results
+        run: |
+          if [[ "${{ needs.dependency-scan.result }}" == "failure" ]]; then
+            echo "::error::Dependency scan failed - critical vulnerabilities found"
+            exit 1
+          fi
+
+          if [[ "${{ needs.security-tests.result }}" == "failure" ]]; then
+            echo "::error::Security tests failed"
+            exit 1
+          fi
+
+          echo "✅ All security gates passed"

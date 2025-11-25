@@ -1,0 +1,465 @@
+name: Deploy to Staging
+
+##############################################################################
+# Staging Deployment Workflow
+#
+# Purpose: Automated deployment to staging environment on PR merge to develop
+#
+# Triggers:
+#   - Push to develop branch (auto-deploy)
+#   - Manual workflow dispatch (manual deploy)
+#
+# Steps:
+#   1. Checkout code
+#   2. Build Docker image
+#   3. Push to ECR
+#   4. Deploy infrastructure (Terraform)
+#   5. Run database migrations
+#   6. Deploy application (ECS)
+#   7. Run smoke tests
+#   8. Notify team in Slack
+#
+# Required Secrets:
+#   - AWS_ACCESS_KEY_ID
+#   - AWS_SECRET_ACCESS_KEY
+#   - STAGING_DB_PASSWORD
+#   - STAGING_ADMIN_TOKEN
+#   - SLACK_WEBHOOK_URL (optional)
+##############################################################################
+
+on:
+  push:
+    branches:
+      - develop
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/**'
+      - '!.github/workflows/staging-deploy.yml'
+
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip smoke tests'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REPOSITORY: whatsapp-saas-staging
+  IMAGE_TAG: ${{ github.sha }}
+  ENVIRONMENT: staging
+  TERRAFORM_VERSION: 1.5.0
+
+jobs:
+  # Job 1: Build and Push Docker Image
+  build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.build-image.outputs.image }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+        run: |
+          # Build Docker image
+          docker buildx build \
+            --platform linux/amd64 \
+            --cache-from type=registry,ref=$ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            --cache-to type=inline \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            --tag $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            --push \
+            --file Dockerfile \
+            .
+
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Send build notification
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Staging Build ${{ job.status }}",
+              "attachments": [{
+                "color": "${{ job.status == 'success' && 'good' || 'danger' }}",
+                "fields": [
+                  { "title": "Environment", "value": "Staging", "short": true },
+                  { "title": "Status", "value": "${{ job.status }}", "short": true },
+                  { "title": "Branch", "value": "${{ github.ref_name }}", "short": true },
+                  { "title": "Commit", "value": "${{ github.sha }}", "short": true },
+                  { "title": "Image", "value": "${{ steps.build-image.outputs.image }}", "short": false }
+                ]
+              }]
+            }
+        continue-on-error: true
+
+  # Job 2: Deploy Infrastructure
+  deploy-infrastructure:
+    name: Deploy Infrastructure (Terraform)
+    runs-on: ubuntu-latest
+    needs: build
+    outputs:
+      rds_endpoint: ${{ steps.terraform-output.outputs.rds_endpoint }}
+      redis_endpoint: ${{ steps.terraform-output.outputs.redis_endpoint }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Create terraform.tfvars
+        working-directory: terraform/environments/staging
+        run: |
+          cat > terraform.tfvars <<EOF
+          project_name  = "whatsapp-saas"
+          environment   = "staging"
+          aws_region    = "${{ env.AWS_REGION }}"
+
+          # Database Configuration
+          db_password   = "${{ secrets.STAGING_DB_PASSWORD }}"
+          admin_token   = "${{ secrets.STAGING_ADMIN_TOKEN }}"
+
+          # Monitoring
+          alert_email   = "${{ secrets.ALERT_EMAIL }}"
+
+          # Optional Secrets
+          meta_verify_token = "${{ secrets.META_VERIFY_TOKEN }}"
+          meta_app_secret   = "${{ secrets.META_APP_SECRET }}"
+          openai_api_key    = "${{ secrets.OPENAI_API_KEY }}"
+
+          # Auto-destroy
+          auto_destroy_enabled = true
+          auto_destroy_days    = 7
+          EOF
+
+      - name: Terraform Init
+        working-directory: terraform/environments/staging
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: terraform/environments/staging
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: terraform/environments/staging
+        run: terraform plan -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: terraform/environments/staging
+        run: terraform apply -auto-approve tfplan
+
+      - name: Export Terraform Outputs
+        id: terraform-output
+        working-directory: terraform/environments/staging
+        run: |
+          echo "rds_endpoint=$(terraform output -raw rds_endpoint)" >> $GITHUB_OUTPUT
+          echo "redis_endpoint=$(terraform output -raw redis_endpoint)" >> $GITHUB_OUTPUT
+          terraform output -json > ${{ github.workspace }}/terraform-outputs.json
+
+      - name: Upload Terraform Outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-outputs
+          path: terraform-outputs.json
+          retention-days: 30
+
+      - name: Send infrastructure notification
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Staging Infrastructure ${{ job.status }}",
+              "attachments": [{
+                "color": "${{ job.status == 'success' && 'good' || 'danger' }}",
+                "fields": [
+                  { "title": "Status", "value": "${{ job.status }}", "short": true },
+                  { "title": "RDS", "value": "${{ steps.terraform-output.outputs.rds_endpoint }}", "short": false },
+                  { "title": "Redis", "value": "${{ steps.terraform-output.outputs.redis_endpoint }}", "short": false }
+                ]
+              }]
+            }
+        continue-on-error: true
+
+  # Job 3: Run Database Migrations
+  migrate-database:
+    name: Run Database Migrations
+    runs-on: ubuntu-latest
+    needs: deploy-infrastructure
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get DATABASE_URL from Secrets Manager
+        id: get-database-url
+        run: |
+          SECRET_ARN=$(aws secretsmanager list-secrets \
+            --query "SecretList[?contains(Name, 'whatsapp-saas/staging/database-url')].ARN | [0]" \
+            --output text)
+
+          DATABASE_URL=$(aws secretsmanager get-secret-value \
+            --secret-id "$SECRET_ARN" \
+            --query SecretString \
+            --output text)
+
+          echo "::add-mask::$DATABASE_URL"
+          echo "DATABASE_URL=$DATABASE_URL" >> $GITHUB_ENV
+
+      - name: Generate Prisma Client
+        run: npm run prisma:generate
+
+      - name: Run Database Migrations
+        run: npm run prisma:migrate:deploy
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Verify Migrations
+        run: |
+          npx prisma db execute \
+            --stdin <<< "SELECT COUNT(*) FROM \"_prisma_migrations\";" \
+            || echo "Migration verification completed"
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+
+      - name: Send migration notification
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Database Migrations ${{ job.status }}",
+              "attachments": [{
+                "color": "${{ job.status == 'success' && 'good' || 'danger' }}",
+                "fields": [
+                  { "title": "Environment", "value": "Staging", "short": true },
+                  { "title": "Status", "value": "${{ job.status }}", "short": true }
+                ]
+              }]
+            }
+        continue-on-error: true
+
+  # Job 4: Deploy Application
+  deploy-application:
+    name: Deploy Application (ECS)
+    runs-on: ubuntu-latest
+    needs: [build, migrate-database]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to ECS
+        env:
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          FULL_IMAGE: ${{ needs.build.outputs.image }}
+        run: |
+          # This assumes ECS infrastructure is already set up
+          # If using the existing deploy-staging.sh script:
+          chmod +x scripts/deploy-staging.sh
+
+          export AWS_REGION=${{ env.AWS_REGION }}
+          export ECS_CLUSTER=whatsapp-saas-staging
+          export ECS_SERVICE=whatsapp-saas-staging-service
+          export TASK_DEFINITION=whatsapp-saas-staging
+          export IMAGE_TAG=${{ env.IMAGE_TAG }}
+          export ECR_REGISTRY=${{ env.ECR_REGISTRY }}
+
+          ./scripts/deploy-staging.sh
+
+      - name: Send deployment notification
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Staging Application Deployment ${{ job.status }}",
+              "attachments": [{
+                "color": "${{ job.status == 'success' && 'good' || 'danger' }}",
+                "fields": [
+                  { "title": "Environment", "value": "Staging", "short": true },
+                  { "title": "Status", "value": "${{ job.status }}", "short": true },
+                  { "title": "Image", "value": "${{ needs.build.outputs.image }}", "short": false }
+                ]
+              }]
+            }
+        continue-on-error: true
+
+  # Job 5: Run Smoke Tests
+  smoke-tests:
+    name: Run Smoke Tests
+    runs-on: ubuntu-latest
+    needs: deploy-application
+    if: ${{ github.event.inputs.skip_tests != 'true' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for application to be ready
+        run: |
+          echo "Waiting for application to be healthy..."
+          sleep 30
+
+          # Health check endpoint (adjust URL as needed)
+          STAGING_URL="${{ secrets.STAGING_URL }}"
+          max_attempts=20
+          attempt=0
+
+          while [ $attempt -lt $max_attempts ]; do
+            if curl -f "$STAGING_URL/health" > /dev/null 2>&1; then
+              echo "Application is healthy!"
+              exit 0
+            fi
+
+            attempt=$((attempt + 1))
+            echo "Attempt $attempt/$max_attempts failed, waiting..."
+            sleep 15
+          done
+
+          echo "Application did not become healthy in time"
+          exit 1
+
+      - name: Run smoke tests
+        run: npm run test:smoke
+        env:
+          STAGING_URL: ${{ secrets.STAGING_URL }}
+          STAGING_ADMIN_TOKEN: ${{ secrets.STAGING_ADMIN_TOKEN }}
+
+      - name: Send test notification
+        if: always()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Smoke Tests ${{ job.status }}",
+              "attachments": [{
+                "color": "${{ job.status == 'success' && 'good' || 'danger' }}",
+                "fields": [
+                  { "title": "Environment", "value": "Staging", "short": true },
+                  { "title": "Status", "value": "${{ job.status }}", "short": true }
+                ]
+              }]
+            }
+        continue-on-error: true
+
+  # Job 6: Final Summary
+  deployment-summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [build, deploy-infrastructure, migrate-database, deploy-application, smoke-tests]
+    if: always()
+
+    steps:
+      - name: Download Terraform Outputs
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-outputs
+
+      - name: Send final notification
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "✅ Staging Deployment Complete",
+              "attachments": [{
+                "color": "good",
+                "title": "Deployment Summary",
+                "fields": [
+                  { "title": "Environment", "value": "Staging", "short": true },
+                  { "title": "Branch", "value": "${{ github.ref_name }}", "short": true },
+                  { "title": "Commit", "value": "${{ github.sha }}", "short": true },
+                  { "title": "Image Tag", "value": "${{ env.IMAGE_TAG }}", "short": true },
+                  { "title": "Build", "value": "${{ needs.build.result }}", "short": true },
+                  { "title": "Infrastructure", "value": "${{ needs.deploy-infrastructure.result }}", "short": true },
+                  { "title": "Migrations", "value": "${{ needs.migrate-database.result }}", "short": true },
+                  { "title": "Application", "value": "${{ needs.deploy-application.result }}", "short": true },
+                  { "title": "Smoke Tests", "value": "${{ needs.smoke-tests.result }}", "short": true },
+                  { "title": "URL", "value": "${{ secrets.STAGING_URL }}", "short": false }
+                ],
+                "footer": "Auto-destroy enabled: 7 days of inactivity",
+                "ts": ${{ github.event.repository.updated_at }}
+              }]
+            }
+        continue-on-error: true

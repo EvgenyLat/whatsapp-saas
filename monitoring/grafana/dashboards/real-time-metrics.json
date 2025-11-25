@@ -1,0 +1,570 @@
+{
+  "dashboard": {
+    "title": "Real-Time Metrics & SLA Tracking",
+    "tags": ["real-time", "sla", "kpis", "whatsapp-saas"],
+    "timezone": "browser",
+    "editable": true,
+    "graphTooltip": 1,
+    "time": {
+      "from": "now-15m",
+      "to": "now"
+    },
+    "refresh": "5s",
+    "schemaVersion": 38,
+    "panels": [
+      {
+        "title": "📊 SLA Dashboard - API Response Time",
+        "type": "row",
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+        "collapsed": false
+      },
+      {
+        "title": "API P95 Latency (SLA: <300ms)",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 6, "x": 0, "y": 1},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le)) * 1000",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "min": 0,
+            "max": 1000,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 300, "color": "yellow"},
+                {"value": 500, "color": "red"}
+              ]
+            }
+          }
+        },
+        "options": {
+          "showThresholdLabels": true,
+          "showThresholdMarkers": true
+        }
+      },
+      {
+        "title": "Error Rate (SLA: <1%)",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 6, "x": 6, "y": 1},
+        "targets": [
+          {
+            "expr": "(sum(rate(http_requests_total{status=~\"5..\"}[1m])) / sum(rate(http_requests_total[1m]))) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 5,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 1, "color": "yellow"},
+                {"value": 2, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Request Rate (req/s)",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 1},
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[1m]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "decimals": 2,
+            "color": {"mode": "palette-classic"}
+          }
+        }
+      },
+      {
+        "title": "SLA Compliance",
+        "type": "stat",
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 1},
+        "targets": [
+          {
+            "expr": "(1 - (sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m])))) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "decimals": 3,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 99, "color": "yellow"},
+                {"value": 99.9, "color": "green"}
+              ]
+            },
+            "mappings": [
+              {"type": "special", "value": "null", "text": "100.000%"}
+            ]
+          }
+        },
+        "options": {
+          "textMode": "value_and_name"
+        }
+      },
+      {
+        "title": "⚡ Real-Time Operations",
+        "type": "row",
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9},
+        "collapsed": false
+      },
+      {
+        "title": "Requests Per Second (Live)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 10},
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[30s]))",
+            "legendFormat": "Total RPS",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"2..\"}[30s]))",
+            "legendFormat": "2xx Success",
+            "refId": "B"
+          },
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\"}[30s]))",
+            "legendFormat": "5xx Errors",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps"
+          }
+        }
+      },
+      {
+        "title": "Response Time Distribution (Live)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 10},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[30s])) by (le)) * 1000",
+            "legendFormat": "P50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[30s])) by (le)) * 1000",
+            "legendFormat": "P95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[30s])) by (le)) * 1000",
+            "legendFormat": "P99",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms"
+          }
+        }
+      },
+      {
+        "title": "💰 Business KPIs (Real-Time)",
+        "type": "row",
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 18},
+        "collapsed": false
+      },
+      {
+        "title": "Bookings Created (Last 5 min)",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 4, "x": 0, "y": 19},
+        "targets": [
+          {
+            "expr": "increase(bookings_created_total[5m])",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0,
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 1, "color": "yellow"},
+                {"value": 5, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Messages Sent (Last 5 min)",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 4, "x": 4, "y": 19},
+        "targets": [
+          {
+            "expr": "increase(messages_sent_total[5m])",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0
+          }
+        }
+      },
+      {
+        "title": "AI Conversations (Active)",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 4, "x": 8, "y": 19},
+        "targets": [
+          {
+            "expr": "sum(ai_conversations_active)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0
+          }
+        }
+      },
+      {
+        "title": "OpenAI Cost (Last 5 min)",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 4, "x": 12, "y": 19},
+        "targets": [
+          {
+            "expr": "increase(openai_cost_estimate_usd[5m])",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "currencyUSD",
+            "decimals": 4,
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 0.1, "color": "yellow"},
+                {"value": 0.5, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "Active Bookings",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 4, "x": 16, "y": 19},
+        "targets": [
+          {
+            "expr": "sum(bookings_active)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0
+          }
+        }
+      },
+      {
+        "title": "Queue Backlog",
+        "type": "stat",
+        "gridPos": {"h": 6, "w": 4, "x": 20, "y": 19},
+        "targets": [
+          {
+            "expr": "sum(queue_jobs_waiting)",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "decimals": 0,
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 100, "color": "yellow"},
+                {"value": 500, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "🗄️ Database & Cache Performance",
+        "type": "row",
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 25},
+        "collapsed": false
+      },
+      {
+        "title": "Database Query Latency (P95)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 26},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(db_query_duration_seconds_bucket[1m])) by (le, model, action)) * 1000",
+            "legendFormat": "{{model}}.{{action}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms",
+            "custom": {
+              "lineWidth": 2
+            }
+          }
+        }
+      },
+      {
+        "title": "Redis Cache Hit Rate",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 6, "x": 12, "y": 26},
+        "targets": [
+          {
+            "expr": "redis_cache_hit_rate * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "red"},
+                {"value": 80, "color": "yellow"},
+                {"value": 95, "color": "green"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "DB Connection Pool Usage",
+        "type": "gauge",
+        "gridPos": {"h": 8, "w": 6, "x": 18, "y": 26},
+        "targets": [
+          {
+            "expr": "(db_connection_pool_usage / db_connection_pool_size) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"value": 0, "color": "green"},
+                {"value": 70, "color": "yellow"},
+                {"value": 90, "color": "red"}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "🌐 External API Performance",
+        "type": "row",
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 34},
+        "collapsed": false
+      },
+      {
+        "title": "WhatsApp API Latency",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 35},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(whatsapp_api_latency_seconds_bucket[1m])) by (le, endpoint)) * 1000",
+            "legendFormat": "{{endpoint}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms"
+          }
+        }
+      },
+      {
+        "title": "OpenAI API Latency",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 35},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(openai_api_latency_seconds_bucket[1m])) by (le, model)) * 1000",
+            "legendFormat": "{{model}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "ms"
+          }
+        }
+      },
+      {
+        "title": "OpenAI Token Usage Rate",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 35},
+        "targets": [
+          {
+            "expr": "rate(openai_tokens_prompt_total[1m])",
+            "legendFormat": "Prompt Tokens/s",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(openai_tokens_completion_total[1m])",
+            "legendFormat": "Completion Tokens/s",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "title": "⚠️ Error Tracking",
+        "type": "row",
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 43},
+        "collapsed": false
+      },
+      {
+        "title": "HTTP Error Rate by Status",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 44},
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"4..\"}[1m])) by (status)",
+            "legendFormat": "{{status}} Client Error",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(http_requests_total{status=~\"5..\"}[1m])) by (status)",
+            "legendFormat": "{{status}} Server Error",
+            "refId": "B"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps"
+          }
+        }
+      },
+      {
+        "title": "Top Error Routes",
+        "type": "table",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 44},
+        "targets": [
+          {
+            "expr": "topk(10, sum(rate(http_requests_total{status=~\"5..\"}[5m])) by (route, status))",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {"Time": true},
+              "renameByName": {
+                "route": "Route",
+                "status": "Status",
+                "Value": "Error Rate (req/s)"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "title": "📈 Throughput & Capacity",
+        "type": "row",
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 52},
+        "collapsed": false
+      },
+      {
+        "title": "Request Volume (Stacked)",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 53},
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[1m])) by (route)",
+            "legendFormat": "{{route}}",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "reqps",
+            "custom": {
+              "stacking": {"mode": "normal"}
+            }
+          }
+        }
+      },
+      {
+        "title": "Response Size Distribution",
+        "type": "timeseries",
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 53},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.50, sum(rate(http_response_size_bytes_bucket[1m])) by (le))",
+            "legendFormat": "P50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_response_size_bytes_bucket[1m])) by (le))",
+            "legendFormat": "P95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(http_response_size_bytes_bucket[1m])) by (le))",
+            "legendFormat": "P99",
+            "refId": "C"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes"
+          }
+        }
+      }
+    ]
+  }
+}

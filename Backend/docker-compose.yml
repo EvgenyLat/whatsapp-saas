@@ -1,0 +1,313 @@
+##############################################################################
+# Docker Compose Configuration - Development Environment
+# WhatsApp SaaS Platform
+#
+# Services:
+# - backend: NestJS application (hot-reload enabled)
+# - postgres: PostgreSQL 16 database
+# - redis: Redis 7 cache and queue
+# - adminer: Database management UI (optional)
+#
+# Usage:
+#   Start:    docker-compose up -d
+#   Stop:     docker-compose down
+#   Logs:     docker-compose logs -f
+#   Rebuild:  docker-compose up -d --build
+##############################################################################
+
+version: '3.9'
+
+services:
+  # ===========================================================================
+  # Backend Service - NestJS Application
+  # ===========================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: whatsapp-saas-backend
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      # Application
+      NODE_ENV: development
+      PORT: 3000
+
+      # Database
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/whatsapp_saas?schema=public
+      DB_CONNECTION_LIMIT: 20
+      DB_POOL_TIMEOUT: 20
+      DB_QUERY_TIMEOUT: 10000
+
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: 0
+      REDIS_QUEUE_DB: 1
+
+      # Cache Configuration
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-3600}
+      DASHBOARD_CACHE_TTL_SECONDS: ${DASHBOARD_CACHE_TTL_SECONDS:-300}
+      SALON_CACHE_TTL_SECONDS: ${SALON_CACHE_TTL_SECONDS:-1800}
+      TEMPLATE_CACHE_TTL_SECONDS: ${TEMPLATE_CACHE_TTL_SECONDS:-3600}
+
+      # Queue Configuration
+      QUEUE_RETRY_ATTEMPTS: ${QUEUE_RETRY_ATTEMPTS:-3}
+      WEBHOOK_QUEUE_CONCURRENCY: ${WEBHOOK_QUEUE_CONCURRENCY:-5}
+      MESSAGE_QUEUE_CONCURRENCY: ${MESSAGE_QUEUE_CONCURRENCY:-10}
+      BOOKING_QUEUE_CONCURRENCY: ${BOOKING_QUEUE_CONCURRENCY:-3}
+      EMAIL_QUEUE_CONCURRENCY: ${EMAIL_QUEUE_CONCURRENCY:-5}
+
+      # Bull Board
+      BULL_BOARD_ENABLED: ${BULL_BOARD_ENABLED:-true}
+      BULL_BOARD_PATH: ${BULL_BOARD_PATH:-/admin/queues}
+      BULL_BOARD_PORT: ${BULL_BOARD_PORT:-3001}
+
+      # Security (use .env file for actual values)
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-dev-admin-token-change-in-production}
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-in-production}
+
+      # Meta WhatsApp
+      META_VERIFY_TOKEN: ${META_VERIFY_TOKEN}
+      META_APP_SECRET: ${META_APP_SECRET}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN}
+
+      # OpenAI
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4}
+
+      # CORS
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+
+      # Rate Limiting
+      WEBHOOK_RATE_LIMIT: ${WEBHOOK_RATE_LIMIT:-100}
+      ADMIN_RATE_LIMIT: ${ADMIN_RATE_LIMIT:-20}
+
+    volumes:
+      # Mount source code for hot-reload (development only)
+      - ./src:/app/src:ro
+      - ./prisma:/app/prisma:ro
+
+      # Persistent data
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+
+      # Node modules (named volume for performance)
+      - backend_node_modules:/app/node_modules
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    networks:
+      - whatsapp-network
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ===========================================================================
+  # PostgreSQL Database
+  # ===========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: whatsapp-saas-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: whatsapp_saas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Initialization scripts (optional)
+      # - ./database/init:/docker-entrypoint-initdb.d:ro
+
+    networks:
+      - whatsapp-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d whatsapp_saas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    # Performance tuning for development
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=100"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=512MB"
+      - "-c"
+      - "maintenance_work_mem=64MB"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "wal_buffers=16MB"
+      - "-c"
+      - "default_statistics_target=100"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+      - "-c"
+      - "work_mem=8MB"
+      - "-c"
+      - "min_wal_size=1GB"
+      - "-c"
+      - "max_wal_size=4GB"
+
+  # ===========================================================================
+  # Redis Cache and Queue
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: whatsapp-saas-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 512mb
+      --maxmemory-policy noeviction
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --databases 16
+      --tcp-keepalive 60
+      --timeout 300
+
+    volumes:
+      - redis_data:/data
+
+    networks:
+      - whatsapp-network
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+    # Resource limits for production
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+  # ===========================================================================
+  # Adminer - Database Management UI (Optional)
+  # Access at http://localhost:8080
+  # ===========================================================================
+  adminer:
+    image: adminer:latest
+    container_name: whatsapp-saas-adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: pepa-linha
+
+    depends_on:
+      - postgres
+
+    networks:
+      - whatsapp-network
+
+    profiles:
+      - tools
+
+# =============================================================================
+# Named Volumes for Data Persistence
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+    name: whatsapp_saas_postgres_data
+
+  redis_data:
+    driver: local
+    name: whatsapp_saas_redis_data
+
+  backend_node_modules:
+    driver: local
+    name: whatsapp_saas_node_modules
+
+# =============================================================================
+# Network Configuration
+# =============================================================================
+networks:
+  whatsapp-network:
+    driver: bridge
+    name: whatsapp_saas_network
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+##############################################################################
+# Usage Examples:
+#
+# Start all services:
+#   docker-compose up -d
+#
+# Start with Adminer:
+#   docker-compose --profile tools up -d
+#
+# View logs:
+#   docker-compose logs -f backend
+#   docker-compose logs -f postgres
+#
+# Stop all services:
+#   docker-compose down
+#
+# Stop and remove volumes (WARNING: deletes data):
+#   docker-compose down -v
+#
+# Rebuild and start:
+#   docker-compose up -d --build
+#
+# Run database migrations:
+#   docker-compose exec backend npx prisma migrate deploy
+#
+# Access Prisma Studio:
+#   docker-compose exec backend npx prisma studio
+#
+# Execute commands in backend:
+#   docker-compose exec backend npm run test
+#   docker-compose exec backend sh
+#
+# View database with Adminer:
+#   docker-compose --profile tools up -d
+#   Open http://localhost:8080
+#   Server: postgres, Username: postgres, Password: postgres, Database: whatsapp_saas
+##############################################################################

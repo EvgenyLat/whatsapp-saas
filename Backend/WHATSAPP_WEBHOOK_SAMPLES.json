@@ -1,0 +1,393 @@
+{
+  "webhook_verification": {
+    "description": "GET request to verify webhook",
+    "method": "GET",
+    "url": "/api/v1/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=your-verify-token&hub.challenge=1234567890",
+    "expected_response": "1234567890"
+  },
+  "incoming_text_message": {
+    "description": "Customer sends a text message",
+    "method": "POST",
+    "url": "/api/v1/whatsapp/webhook",
+    "headers": {
+      "X-Hub-Signature-256": "sha256=computed-signature"
+    },
+    "payload": {
+      "object": "whatsapp_business_account",
+      "entry": [
+        {
+          "id": "WHATSAPP_BUSINESS_ACCOUNT_ID",
+          "changes": [
+            {
+              "value": {
+                "messaging_product": "whatsapp",
+                "metadata": {
+                  "display_phone_number": "+1234567890",
+                  "phone_number_id": "PHONE_NUMBER_ID"
+                },
+                "contacts": [
+                  {
+                    "profile": {
+                      "name": "John Doe"
+                    },
+                    "wa_id": "1234567890"
+                  }
+                ],
+                "messages": [
+                  {
+                    "from": "+1234567890",
+                    "id": "wamid.HBgNMTIzNDU2Nzg5MAA=",
+                    "timestamp": "1234567890",
+                    "text": {
+                      "body": "I want to book an appointment"
+                    },
+                    "type": "text"
+                  }
+                ]
+              },
+              "field": "messages"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "incoming_image_message": {
+    "description": "Customer sends an image",
+    "method": "POST",
+    "url": "/api/v1/whatsapp/webhook",
+    "payload": {
+      "object": "whatsapp_business_account",
+      "entry": [
+        {
+          "id": "WHATSAPP_BUSINESS_ACCOUNT_ID",
+          "changes": [
+            {
+              "value": {
+                "messaging_product": "whatsapp",
+                "metadata": {
+                  "display_phone_number": "+1234567890",
+                  "phone_number_id": "PHONE_NUMBER_ID"
+                },
+                "messages": [
+                  {
+                    "from": "+1234567890",
+                    "id": "wamid.IMAGE123",
+                    "timestamp": "1234567890",
+                    "type": "image",
+                    "image": {
+                      "id": "media-id-12345",
+                      "mime_type": "image/jpeg",
+                      "sha256": "abc123def456",
+                      "caption": "Here is my inspiration photo"
+                    }
+                  }
+                ]
+              },
+              "field": "messages"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "incoming_document_message": {
+    "description": "Customer sends a document",
+    "method": "POST",
+    "url": "/api/v1/whatsapp/webhook",
+    "payload": {
+      "object": "whatsapp_business_account",
+      "entry": [
+        {
+          "id": "WHATSAPP_BUSINESS_ACCOUNT_ID",
+          "changes": [
+            {
+              "value": {
+                "messaging_product": "whatsapp",
+                "metadata": {
+                  "display_phone_number": "+1234567890",
+                  "phone_number_id": "PHONE_NUMBER_ID"
+                },
+                "messages": [
+                  {
+                    "from": "+1234567890",
+                    "id": "wamid.DOC123",
+                    "timestamp": "1234567890",
+                    "type": "document",
+                    "document": {
+                      "id": "media-id-67890",
+                      "mime_type": "application/pdf",
+                      "sha256": "xyz789abc123",
+                      "filename": "booking_details.pdf",
+                      "caption": "My booking confirmation"
+                    }
+                  }
+                ]
+              },
+              "field": "messages"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "message_status_sent": {
+    "description": "Message was sent to WhatsApp servers",
+    "method": "POST",
+    "url": "/api/v1/whatsapp/webhook",
+    "payload": {
+      "object": "whatsapp_business_account",
+      "entry": [
+        {
+          "id": "WHATSAPP_BUSINESS_ACCOUNT_ID",
+          "changes": [
+            {
+              "value": {
+                "messaging_product": "whatsapp",
+                "metadata": {
+                  "display_phone_number": "+1234567890",
+                  "phone_number_id": "PHONE_NUMBER_ID"
+                },
+                "statuses": [
+                  {
+                    "id": "wamid.HBgNMTIzNDU2Nzg5MAA=",
+                    "status": "sent",
+                    "timestamp": "1234567890",
+                    "recipient_id": "+9876543210",
+                    "conversation": {
+                      "id": "CONVERSATION_ID",
+                      "origin": {
+                        "type": "business_initiated"
+                      }
+                    },
+                    "pricing": {
+                      "billable": true,
+                      "pricing_model": "CBP",
+                      "category": "business_initiated"
+                    }
+                  }
+                ]
+              },
+              "field": "messages"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "message_status_delivered": {
+    "description": "Message was delivered to customer",
+    "method": "POST",
+    "url": "/api/v1/whatsapp/webhook",
+    "payload": {
+      "object": "whatsapp_business_account",
+      "entry": [
+        {
+          "id": "WHATSAPP_BUSINESS_ACCOUNT_ID",
+          "changes": [
+            {
+              "value": {
+                "messaging_product": "whatsapp",
+                "metadata": {
+                  "display_phone_number": "+1234567890",
+                  "phone_number_id": "PHONE_NUMBER_ID"
+                },
+                "statuses": [
+                  {
+                    "id": "wamid.HBgNMTIzNDU2Nzg5MAA=",
+                    "status": "delivered",
+                    "timestamp": "1234567891",
+                    "recipient_id": "+9876543210"
+                  }
+                ]
+              },
+              "field": "messages"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "message_status_read": {
+    "description": "Message was read by customer",
+    "method": "POST",
+    "url": "/api/v1/whatsapp/webhook",
+    "payload": {
+      "object": "whatsapp_business_account",
+      "entry": [
+        {
+          "id": "WHATSAPP_BUSINESS_ACCOUNT_ID",
+          "changes": [
+            {
+              "value": {
+                "messaging_product": "whatsapp",
+                "metadata": {
+                  "display_phone_number": "+1234567890",
+                  "phone_number_id": "PHONE_NUMBER_ID"
+                },
+                "statuses": [
+                  {
+                    "id": "wamid.HBgNMTIzNDU2Nzg5MAA=",
+                    "status": "read",
+                    "timestamp": "1234567892",
+                    "recipient_id": "+9876543210"
+                  }
+                ]
+              },
+              "field": "messages"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "message_status_failed": {
+    "description": "Message failed to send",
+    "method": "POST",
+    "url": "/api/v1/whatsapp/webhook",
+    "payload": {
+      "object": "whatsapp_business_account",
+      "entry": [
+        {
+          "id": "WHATSAPP_BUSINESS_ACCOUNT_ID",
+          "changes": [
+            {
+              "value": {
+                "messaging_product": "whatsapp",
+                "metadata": {
+                  "display_phone_number": "+1234567890",
+                  "phone_number_id": "PHONE_NUMBER_ID"
+                },
+                "statuses": [
+                  {
+                    "id": "wamid.HBgNMTIzNDU2Nzg5MAA=",
+                    "status": "failed",
+                    "timestamp": "1234567893",
+                    "recipient_id": "+9876543210",
+                    "errors": [
+                      {
+                        "code": 131047,
+                        "title": "Re-engagement message",
+                        "message": "Re-engagement message",
+                        "error_data": {
+                          "details": "Message failed to send because more than 24 hours have passed since the customer last replied to this number"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "field": "messages"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "send_text_message_request": {
+    "description": "Send a text message via API",
+    "method": "POST",
+    "url": "/api/v1/whatsapp/send-text",
+    "headers": {
+      "Authorization": "Bearer YOUR_JWT_TOKEN",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "salon_id": "123e4567-e89b-12d3-a456-426614174000",
+      "to": "+1234567890",
+      "text": "Hello! Your appointment is confirmed for tomorrow at 2 PM.",
+      "conversation_id": "optional-conversation-id"
+    },
+    "expected_response": {
+      "success": true,
+      "whatsapp_id": "wamid.HBgNMTIzNDU2Nzg5MAA=",
+      "message_id": "msg-db-uuid",
+      "status": "SENT"
+    }
+  },
+  "send_template_message_request": {
+    "description": "Send a template message via API",
+    "method": "POST",
+    "url": "/api/v1/whatsapp/send-template",
+    "headers": {
+      "Authorization": "Bearer YOUR_JWT_TOKEN",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "salon_id": "123e4567-e89b-12d3-a456-426614174000",
+      "to": "+1234567890",
+      "template_name": "booking_confirmation",
+      "language_code": "en",
+      "parameters": [
+        {
+          "type": "text",
+          "text": "John Doe"
+        },
+        {
+          "type": "text",
+          "text": "December 25, 2024 at 2:00 PM"
+        },
+        {
+          "type": "text",
+          "text": "Haircut and Styling"
+        }
+      ]
+    },
+    "expected_response": {
+      "success": true,
+      "whatsapp_id": "wamid.TEMPLATE123",
+      "message_id": "msg-db-uuid",
+      "status": "SENT"
+    }
+  },
+  "send_image_message_request": {
+    "description": "Send an image via API",
+    "method": "POST",
+    "url": "/api/v1/whatsapp/send-media",
+    "headers": {
+      "Authorization": "Bearer YOUR_JWT_TOKEN",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "salon_id": "123e4567-e89b-12d3-a456-426614174000",
+      "to": "+1234567890",
+      "media_type": "image",
+      "media_url_or_id": "https://example.com/salon-photo.jpg",
+      "caption": "Here is our salon - we look forward to seeing you!"
+    },
+    "expected_response": {
+      "success": true,
+      "whatsapp_id": "wamid.IMAGE456",
+      "message_id": "msg-db-uuid",
+      "status": "SENT"
+    }
+  },
+  "send_document_message_request": {
+    "description": "Send a document via API",
+    "method": "POST",
+    "url": "/api/v1/whatsapp/send-media",
+    "headers": {
+      "Authorization": "Bearer YOUR_JWT_TOKEN",
+      "Content-Type": "application/json"
+    },
+    "body": {
+      "salon_id": "123e4567-e89b-12d3-a456-426614174000",
+      "to": "+1234567890",
+      "media_type": "document",
+      "media_url_or_id": "https://example.com/booking-confirmation.pdf",
+      "caption": "Your booking confirmation",
+      "filename": "booking-confirmation.pdf"
+    },
+    "expected_response": {
+      "success": true,
+      "whatsapp_id": "wamid.DOC789",
+      "message_id": "msg-db-uuid",
+      "status": "SENT"
+    }
+  },
+  "curl_examples": {
+    "send_text_message": "curl -X POST https://your-api.com/api/v1/whatsapp/send-text \\\n  -H 'Authorization: Bearer YOUR_JWT_TOKEN' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"salon_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"to\": \"+1234567890\",\n    \"text\": \"Hello from WhatsApp!\"\n  }'",
+    "send_template_message": "curl -X POST https://your-api.com/api/v1/whatsapp/send-template \\\n  -H 'Authorization: Bearer YOUR_JWT_TOKEN' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"salon_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"to\": \"+1234567890\",\n    \"template_name\": \"booking_confirmation\",\n    \"language_code\": \"en\",\n    \"parameters\": [\n      {\"type\": \"text\", \"text\": \"John Doe\"},\n      {\"type\": \"text\", \"text\": \"Dec 25, 2024 2:00 PM\"}\n    ]\n  }'",
+    "send_image": "curl -X POST https://your-api.com/api/v1/whatsapp/send-media \\\n  -H 'Authorization: Bearer YOUR_JWT_TOKEN' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"salon_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"to\": \"+1234567890\",\n    \"media_type\": \"image\",\n    \"media_url_or_id\": \"https://example.com/image.jpg\",\n    \"caption\": \"Check this out!\"\n  }'"
+  }
+}

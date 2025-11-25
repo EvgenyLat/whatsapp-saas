@@ -1,0 +1,159 @@
+{
+  "info": {
+    "name": "WhatsApp SaaS MVP - Local Testing",
+    "description": "Коллекция для тестирования WhatsApp SaaS приложения локально",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/v1/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "health"]
+        },
+        "description": "Проверка работоспособности сервера"
+      }
+    },
+    {
+      "name": "1. Webhook - Текстовое сообщение (Стрижка)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"entry\": [{\n    \"changes\": [{\n      \"value\": {\n        \"messages\": [{\n          \"from\": \"+1234567890\",\n          \"type\": \"text\",\n          \"text\": {\n            \"body\": \"Стрижка в пятницу в 15:00\"\n          }\n        }],\n        \"contacts\": [{\n          \"profile\": {\n            \"name\": \"Test Customer\"\n          }\n        }]\n      }\n    }]\n  }]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/whatsapp/webhook",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "whatsapp", "webhook"]
+        },
+        "description": "Симуляция получения текстового сообщения от клиента.\nБот должен отправить интерактивную карточку с доступными слотами."
+      }
+    },
+    {
+      "name": "2. Webhook - Нажатие на слот",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"entry\": [{\n    \"changes\": [{\n      \"value\": {\n        \"messages\": [{\n          \"from\": \"+1234567890\",\n          \"type\": \"interactive\",\n          \"interactive\": {\n            \"type\": \"button_reply\",\n            \"button_reply\": {\n              \"id\": \"slot_2025-10-31_15:00_m123\",\n              \"title\": \"3:00 PM - Sarah\"\n            }\n          }\n        }]\n      }\n    }]\n  }]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/whatsapp/webhook",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "whatsapp", "webhook"]
+        },
+        "description": "Симуляция нажатия на кнопку слота.\nБот должен отправить карточку подтверждения."
+      }
+    },
+    {
+      "name": "3. Webhook - Подтверждение бронирования",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"entry\": [{\n    \"changes\": [{\n      \"value\": {\n        \"messages\": [{\n          \"from\": \"+1234567890\",\n          \"type\": \"interactive\",\n          \"interactive\": {\n            \"type\": \"button_reply\",\n            \"button_reply\": {\n              \"id\": \"confirm_booking_temp-session\",\n              \"title\": \"Подтвердить\"\n            }\n          }\n        }]\n      }\n    }]\n  }]\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/v1/whatsapp/webhook",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "v1", "whatsapp", "webhook"]
+        },
+        "description": "Симуляция подтверждения бронирования.\nБот должен создать запись в БД и отправить подтверждение."
+      }
+    },
+    {
+      "name": "Аналитика - Success Criteria",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/api/ai/analytics/us1/success-criteria",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "ai", "analytics", "us1", "success-criteria"]
+        },
+        "description": "Получить метрики успешности:\n- SC-001: % без набора текста\n- SC-002: Среднее количество тапов\n- SC-003: Среднее время бронирования"
+      }
+    },
+    {
+      "name": "Парсинг Intent (прямой вызов)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Маникюр завтра в 14:00\",\n  \"salonId\": \"test-salon-id\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/ai/parse-intent",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "ai", "parse-intent"]
+        },
+        "description": "Прямой вызов парсера намерений (для тестирования AI)"
+      }
+    },
+    {
+      "name": "Поиск слотов (прямой вызов)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"salonId\": \"test-salon-id\",\n  \"serviceId\": \"test-service-id\",\n  \"preferredDate\": \"2025-10-31\",\n  \"preferredTime\": \"15:00\",\n  \"maxDaysAhead\": 7\n}"
+        },
+        "url": {
+          "raw": "http://localhost:3000/api/ai/find-slots",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["api", "ai", "find-slots"]
+        },
+        "description": "Прямой вызов поиска доступных слотов"
+      }
+    }
+  ]
+}

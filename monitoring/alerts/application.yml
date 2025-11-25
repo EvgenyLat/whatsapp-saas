@@ -1,0 +1,247 @@
+# =============================================================================
+# APPLICATION ALERT RULES
+# =============================================================================
+# Alert conditions for backend API performance and availability
+# =============================================================================
+
+groups:
+  - name: application_alerts
+    interval: 15s
+    rules:
+      # =========================================================================
+      # API PERFORMANCE ALERTS
+      # =========================================================================
+
+      - alert: HighAPILatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, method, route)
+          ) > 0.3
+        for: 2m
+        labels:
+          severity: warning
+          component: api
+          tier: application
+        annotations:
+          summary: "High API latency detected"
+          description: "95th percentile latency is {{ $value | humanizeDuration }} for {{ $labels.method }} {{ $labels.route }}"
+          runbook_url: "https://docs.company.com/runbooks/high-api-latency"
+
+      - alert: CriticalAPILatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, method, route)
+          ) > 1.0
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+          tier: application
+        annotations:
+          summary: "Critical API latency detected"
+          description: "95th percentile latency is {{ $value | humanizeDuration }} for {{ $labels.method }} {{ $labels.route }}"
+          runbook_url: "https://docs.company.com/runbooks/critical-api-latency"
+
+      # =========================================================================
+      # ERROR RATE ALERTS
+      # =========================================================================
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m])) by (service)
+            /
+            sum(rate(http_requests_total[5m])) by (service)
+          ) * 100 > 2
+        for: 2m
+        labels:
+          severity: warning
+          component: api
+          tier: application
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanize }}% for {{ $labels.service }}"
+          runbook_url: "https://docs.company.com/runbooks/high-error-rate"
+
+      - alert: CriticalErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m])) by (service)
+            /
+            sum(rate(http_requests_total[5m])) by (service)
+          ) * 100 > 5
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+          tier: application
+        annotations:
+          summary: "Critical error rate detected"
+          description: "Error rate is {{ $value | humanize }}% for {{ $labels.service }}"
+          runbook_url: "https://docs.company.com/runbooks/critical-error-rate"
+
+      # =========================================================================
+      # WEBHOOK PROCESSING ALERTS
+      # =========================================================================
+
+      - alert: SlowWebhookProcessing
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(webhook_processing_duration_seconds_bucket[5m])) by (le)
+          ) > 2.0
+        for: 3m
+        labels:
+          severity: warning
+          component: webhook
+          tier: application
+        annotations:
+          summary: "Slow webhook processing detected"
+          description: "95th percentile webhook processing time is {{ $value | humanizeDuration }}"
+          runbook_url: "https://docs.company.com/runbooks/slow-webhooks"
+
+      - alert: WebhookFailureRate
+        expr: |
+          (
+            sum(rate(webhook_errors_total[5m]))
+            /
+            sum(rate(webhook_requests_total[5m]))
+          ) * 100 > 5
+        for: 2m
+        labels:
+          severity: warning
+          component: webhook
+          tier: application
+        annotations:
+          summary: "High webhook failure rate"
+          description: "Webhook failure rate is {{ $value | humanize }}%"
+          runbook_url: "https://docs.company.com/runbooks/webhook-failures"
+
+      # =========================================================================
+      # QUEUE PROCESSING ALERTS
+      # =========================================================================
+
+      - alert: HighQueueProcessingTime
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(queue_job_duration_seconds_bucket[5m])) by (le, queue_name)
+          ) > 10.0
+        for: 5m
+        labels:
+          severity: warning
+          component: queue
+          tier: application
+        annotations:
+          summary: "High queue job processing time"
+          description: "95th percentile processing time for {{ $labels.queue_name }} is {{ $value | humanizeDuration }}"
+          runbook_url: "https://docs.company.com/runbooks/slow-queue-jobs"
+
+      - alert: QueueBacklog
+        expr: queue_jobs_waiting > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: queue
+          tier: application
+        annotations:
+          summary: "Queue backlog detected"
+          description: "Queue {{ $labels.queue_name }} has {{ $value }} jobs waiting"
+          runbook_url: "https://docs.company.com/runbooks/queue-backlog"
+
+      # =========================================================================
+      # BUSINESS METRICS ALERTS
+      # =========================================================================
+
+      - alert: NoBookingsCreated
+        expr: |
+          increase(bookings_created_total[30m]) == 0
+        for: 30m
+        labels:
+          severity: warning
+          component: business
+          tier: application
+        annotations:
+          summary: "No bookings created in 30 minutes"
+          description: "No new bookings have been created in the last 30 minutes"
+          runbook_url: "https://docs.company.com/runbooks/no-bookings"
+
+      - alert: HighBookingCancellationRate
+        expr: |
+          (
+            rate(bookings_cancelled_total[1h])
+            /
+            rate(bookings_created_total[1h])
+          ) * 100 > 20
+        for: 15m
+        labels:
+          severity: warning
+          component: business
+          tier: application
+        annotations:
+          summary: "High booking cancellation rate"
+          description: "Cancellation rate is {{ $value | humanize }}%"
+          runbook_url: "https://docs.company.com/runbooks/high-cancellations"
+
+      # =========================================================================
+      # AI API ALERTS
+      # =========================================================================
+
+      - alert: HighAIAPIFailureRate
+        expr: |
+          (
+            sum(rate(ai_api_errors_total[5m]))
+            /
+            sum(rate(ai_api_calls_total[5m]))
+          ) * 100 > 10
+        for: 3m
+        labels:
+          severity: warning
+          component: ai
+          tier: application
+        annotations:
+          summary: "High AI API failure rate"
+          description: "AI API failure rate is {{ $value | humanize }}%"
+          runbook_url: "https://docs.company.com/runbooks/ai-api-failures"
+
+      - alert: SlowAIAPIResponse
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(ai_api_duration_seconds_bucket[5m])) by (le)
+          ) > 5.0
+        for: 3m
+        labels:
+          severity: warning
+          component: ai
+          tier: application
+        annotations:
+          summary: "Slow AI API responses"
+          description: "95th percentile AI API response time is {{ $value | humanizeDuration }}"
+          runbook_url: "https://docs.company.com/runbooks/slow-ai-api"
+
+      # =========================================================================
+      # AVAILABILITY ALERTS
+      # =========================================================================
+
+      - alert: ServiceDown
+        expr: up{job="backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: api
+          tier: application
+        annotations:
+          summary: "Backend service is down"
+          description: "Backend service {{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://docs.company.com/runbooks/service-down"
+
+      - alert: HighRestartRate
+        expr: |
+          rate(process_start_time_seconds[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          component: api
+          tier: application
+        annotations:
+          summary: "High service restart rate"
+          description: "Service {{ $labels.instance }} is restarting frequently"
+          runbook_url: "https://docs.company.com/runbooks/high-restart-rate"

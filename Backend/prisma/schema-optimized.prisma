@@ -1,0 +1,306 @@
+// PRODUCTION-OPTIMIZED Prisma Schema
+// This schema includes all necessary indexes, constraints, and optimizations
+// for production deployment of WhatsApp SaaS Starter
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex", "metrics"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// TENANT MODEL - Core multi-tenant configuration
+// ============================================================================
+model Salon {
+  id              String   @id @default(uuid())
+  name            String
+  phone_number_id String   @unique
+  access_token    String   // Consider encrypting this field
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  bookings        Booking[]
+  messages        Message[]
+  templates       Template[]
+
+  // Performance indexes
+  @@index([is_active, created_at], name: "idx_salon_active_created")
+  @@map("salons")
+}
+
+// ============================================================================
+// BOOKING MODEL - Appointment management
+// ============================================================================
+model Booking {
+  id             String        @id @default(uuid())
+  booking_code   String        // 6-character booking code
+  salon_id       String
+  customer_phone String
+  customer_name  String
+  service        String
+  start_ts       DateTime
+  end_ts         DateTime?     // Add end time for better conflict detection
+  status         BookingStatus @default(CONFIRMED)
+  notes          String?       // Optional booking notes
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
+
+  // Relations
+  salon          Salon @relation(fields: [salon_id], references: [id], onDelete: Cascade)
+
+  // Constraints
+  @@unique([booking_code, salon_id])
+
+  // CRITICAL PERFORMANCE INDEXES
+  @@index([salon_id, start_ts], name: "idx_booking_salon_start")
+  @@index([salon_id, status, start_ts], name: "idx_booking_salon_status_start")
+  @@index([customer_phone, salon_id], name: "idx_booking_customer_salon")
+  @@index([salon_id, created_at], name: "idx_booking_salon_created")
+  @@index([status, start_ts], name: "idx_booking_status_start")
+
+  @@map("bookings")
+}
+
+// ============================================================================
+// MESSAGE MODEL - WhatsApp message tracking
+// ============================================================================
+model Message {
+  id              String           @id @default(uuid())
+  salon_id        String
+  direction       MessageDirection
+  conversation_id String?
+  phone_number    String
+  message_type    MessageType
+  content         String           @db.Text
+  whatsapp_id     String?          @unique
+  status          MessageStatus    @default(SENT)
+  cost            Float?           @default(0)
+  metadata        Json?            // Additional message metadata
+  created_at      DateTime         @default(now())
+
+  // Relations
+  salon           Salon @relation(fields: [salon_id], references: [id], onDelete: Cascade)
+
+  // CRITICAL PERFORMANCE INDEXES
+  @@index([salon_id, created_at(sort: Desc)], name: "idx_message_salon_created")
+  @@index([conversation_id, created_at], name: "idx_message_conversation_created")
+  @@index([phone_number, salon_id, created_at], name: "idx_message_phone_salon_created")
+  @@index([salon_id, direction, created_at], name: "idx_message_salon_direction_created")
+  @@index([status, created_at], name: "idx_message_status_created")
+
+  @@map("messages")
+}
+
+// ============================================================================
+// TEMPLATE MODEL - WhatsApp message templates
+// ============================================================================
+model Template {
+  id          String         @id @default(uuid())
+  salon_id    String
+  name        String
+  language    String         @default("ru")
+  category    String
+  status      TemplateStatus @default(PENDING)
+  content     Json?          // Template structure
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
+
+  // Relations
+  salon       Salon @relation(fields: [salon_id], references: [id], onDelete: Cascade)
+
+  // Constraints
+  @@unique([name, salon_id, language])
+
+  // Performance indexes
+  @@index([salon_id, status], name: "idx_template_salon_status")
+
+  @@map("templates")
+}
+
+// ============================================================================
+// CONVERSATION MODEL - Conversation tracking and analytics
+// ============================================================================
+model Conversation {
+  id              String             @id @default(uuid())
+  salon_id        String
+  phone_number    String
+  status          ConversationStatus @default(ACTIVE)
+  started_at      DateTime           @default(now())
+  last_message_at DateTime           @updatedAt
+  message_count   Int                @default(0)
+  cost            Float              @default(0)
+
+  // Performance optimization
+  @@unique([salon_id, phone_number])
+
+  // CRITICAL PERFORMANCE INDEXES
+  @@index([salon_id, status, last_message_at(sort: Desc)], name: "idx_conversation_salon_status_last")
+  @@index([salon_id, last_message_at(sort: Desc)], name: "idx_conversation_salon_last")
+  @@index([phone_number], name: "idx_conversation_phone")
+
+  @@map("conversations")
+}
+
+// ============================================================================
+// WEBHOOK LOG MODEL - Audit trail for webhook events
+// ============================================================================
+model WebhookLog {
+  id          String   @id @default(uuid())
+  salon_id    String?
+  event_type  String
+  payload     Json
+  status      String
+  error       String?  @db.Text
+  processing_time_ms Int?
+  created_at  DateTime @default(now())
+
+  // CRITICAL PERFORMANCE INDEXES
+  @@index([salon_id, created_at(sort: Desc)], name: "idx_webhook_salon_created")
+  @@index([status, created_at(sort: Desc)], name: "idx_webhook_status_created")
+  @@index([event_type, created_at], name: "idx_webhook_type_created")
+
+  // Consider partitioning this table by created_at in PostgreSQL
+  @@map("webhook_logs")
+}
+
+// ============================================================================
+// AI CONVERSATION MODEL - AI conversation metadata
+// ============================================================================
+model AIConversation {
+  id              String   @id @default(uuid())
+  salon_id        String
+  phone_number    String
+  conversation_id String   @unique
+  ai_model        String   @default("gpt-4")
+  total_tokens    Int      @default(0)
+  total_cost      Float    @default(0)
+  message_count   Int      @default(0)
+  last_activity   DateTime @default(now())
+  created_at      DateTime @default(now())
+
+  @@unique([salon_id, phone_number])
+
+  // CRITICAL PERFORMANCE INDEXES
+  @@index([salon_id, last_activity(sort: Desc)], name: "idx_ai_conv_salon_activity")
+  @@index([salon_id, created_at], name: "idx_ai_conv_salon_created")
+  @@index([ai_model, created_at], name: "idx_ai_conv_model_created")
+
+  @@map("ai_conversations")
+}
+
+// ============================================================================
+// AI MESSAGE MODEL - AI conversation message history
+// ============================================================================
+model AIMessage {
+  id                String           @id @default(uuid())
+  conversation_id   String
+  salon_id          String
+  phone_number      String
+  direction         MessageDirection
+  content           String           @db.Text
+  ai_model          String?
+  tokens_used       Int?
+  cost              Float?
+  response_time_ms  Int?
+  intent            String?          // Extracted intent for analytics
+  created_at        DateTime         @default(now())
+
+  // CRITICAL PERFORMANCE INDEXES
+  @@index([conversation_id, created_at], name: "idx_ai_msg_conv_created")
+  @@index([salon_id, created_at(sort: Desc)], name: "idx_ai_msg_salon_created")
+  @@index([salon_id, direction, created_at], name: "idx_ai_msg_salon_dir_created")
+  @@index([intent, salon_id], name: "idx_ai_msg_intent_salon")
+
+  // Consider partitioning this table by created_at
+  @@map("ai_messages")
+}
+
+// ============================================================================
+// INTENT ANALYTICS MODEL - Materialized view for popular intents
+// This should be populated by a background job, not by grouping on content
+// ============================================================================
+model IntentAnalytics {
+  id          String   @id @default(uuid())
+  salon_id    String
+  intent      String
+  count       Int      @default(1)
+  date        DateTime @db.Date
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@unique([salon_id, intent, date])
+  @@index([salon_id, date(sort: Desc)], name: "idx_intent_salon_date")
+  @@index([intent], name: "idx_intent")
+
+  @@map("intent_analytics")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+  RESCHEDULED
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageType {
+  TEXT
+  TEMPLATE
+  IMAGE
+  DOCUMENT
+  AUDIO
+  VIDEO
+  INTERACTIVE
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum TemplateStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ConversationStatus {
+  ACTIVE
+  EXPIRED
+  BLOCKED
+  ARCHIVED
+}
+
+// ============================================================================
+// MIGRATION NOTES
+// ============================================================================
+//
+// To apply this schema:
+// 1. Backup current database
+// 2. Run: npx prisma migrate dev --name production_optimizations
+// 3. Monitor query performance after deployment
+// 4. Consider adding these PostgreSQL-specific optimizations:
+//    - Enable pg_stat_statements extension
+//    - Configure shared_buffers = 25% of RAM
+//    - Set effective_cache_size = 75% of RAM
+//    - Enable auto_vacuum
+//    - Set work_mem appropriately (start with 16MB)
+//
+// ============================================================================

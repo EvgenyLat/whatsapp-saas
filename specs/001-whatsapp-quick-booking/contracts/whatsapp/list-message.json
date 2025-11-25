@@ -1,0 +1,198 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WhatsApp List Message (Send)",
+  "description": "Message format for sending List Message to customer (4-10 items)",
+  "type": "object",
+  "required": ["messaging_product", "to", "type", "interactive"],
+  "properties": {
+    "messaging_product": {
+      "type": "string",
+      "enum": ["whatsapp"]
+    },
+    "to": {
+      "type": "string",
+      "pattern": "^\\+[1-9]\\d{1,14}$",
+      "example": "+1234567890"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["interactive"]
+    },
+    "interactive": {
+      "$ref": "#/definitions/InteractiveList"
+    }
+  },
+  "definitions": {
+    "InteractiveList": {
+      "type": "object",
+      "required": ["type", "body", "action"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["list"]
+        },
+        "header": {
+          "type": "object",
+          "required": ["type", "text"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["text"]
+            },
+            "text": {
+              "type": "string",
+              "maxLength": 60,
+              "example": "Next Available Times"
+            }
+          }
+        },
+        "body": {
+          "type": "object",
+          "required": ["text"],
+          "properties": {
+            "text": {
+              "type": "string",
+              "maxLength": 1024,
+              "example": "Friday is fully booked. Here are alternatives:"
+            }
+          }
+        },
+        "footer": {
+          "type": "object",
+          "required": ["text"],
+          "properties": {
+            "text": {
+              "type": "string",
+              "maxLength": 60,
+              "example": "Tap to select your time"
+            }
+          }
+        },
+        "action": {
+          "$ref": "#/definitions/ListAction"
+        }
+      }
+    },
+    "ListAction": {
+      "type": "object",
+      "required": ["button", "sections"],
+      "properties": {
+        "button": {
+          "type": "string",
+          "maxLength": 20,
+          "description": "Button text to open list",
+          "example": "Select Time"
+        },
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "description": "List sections (group by day)",
+          "items": {
+            "$ref": "#/definitions/Section"
+          }
+        }
+      }
+    },
+    "Section": {
+      "type": "object",
+      "required": ["title", "rows"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 24,
+          "description": "Section title (e.g., date)",
+          "example": "Saturday, Oct 26"
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10,
+          "description": "Max 10 rows per section",
+          "items": {
+            "$ref": "#/definitions/Row"
+          }
+        }
+      }
+    },
+    "Row": {
+      "type": "object",
+      "required": ["id", "title"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 200,
+          "pattern": "^(slot|confirm|waitlist|action|nav)_[a-zA-Z0-9_:-]+$",
+          "description": "Row ID (parsed by webhook)",
+          "example": "slot_2024-10-26_10:00_m123"
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 24,
+          "description": "Row title (time + master)",
+          "example": "10:00 AM - Sarah"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 72,
+          "description": "Row description (optional)",
+          "example": "60 min • $50"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "messaging_product": "whatsapp",
+      "to": "+1234567890",
+      "type": "interactive",
+      "interactive": {
+        "type": "list",
+        "header": {
+          "type": "text",
+          "text": "Next Available Times"
+        },
+        "body": {
+          "text": "Friday is fully booked. Here are alternatives:"
+        },
+        "footer": {
+          "text": "Tap to select your time"
+        },
+        "action": {
+          "button": "Select Time",
+          "sections": [
+            {
+              "title": "Saturday, Oct 26",
+              "rows": [
+                {
+                  "id": "slot_2024-10-26_10:00_m123",
+                  "title": "10:00 AM - Sarah",
+                  "description": "60 min • $50"
+                },
+                {
+                  "id": "slot_2024-10-26_14:00_m123",
+                  "title": "2:00 PM - Sarah ⭐",
+                  "description": "60 min • $50"
+                }
+              ]
+            },
+            {
+              "title": "Sunday, Oct 27",
+              "rows": [
+                {
+                  "id": "slot_2024-10-27_11:00_m456",
+                  "title": "11:00 AM - Alex",
+                  "description": "60 min • $50"
+                },
+                {
+                  "id": "slot_2024-10-27_15:00_m123",
+                  "title": "3:00 PM - Sarah",
+                  "description": "60 min • $50"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,356 @@
+# Prometheus Alert Rules for PostgreSQL
+# WhatsApp SaaS Starter - Database Alerting
+
+groups:
+  # ============================================================================
+  # DATABASE AVAILABILITY ALERTS
+  # ============================================================================
+  - name: database_availability
+    interval: 30s
+    rules:
+      - alert: PostgreSQLDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "PostgreSQL instance is down"
+          description: "PostgreSQL instance {{ $labels.instance }} has been down for more than 1 minute"
+          runbook: "Check database service status, review logs at /var/log/postgresql/"
+
+      - alert: PostgreSQLTooManyConnections
+        expr: sum by (instance) (pg_stat_activity_count) > (pg_settings_max_connections * 0.8)
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "PostgreSQL approaching max connections"
+          description: "{{ $labels.instance }} is using {{ $value }} connections (>80% of max)"
+          runbook: "Review active connections, consider increasing max_connections or implementing connection pooling"
+
+      - alert: PostgreSQLConnectionPoolExhausted
+        expr: sum by (instance) (pg_stat_activity_count{state="idle in transaction"}) > 50
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Too many idle connections in transaction"
+          description: "{{ $labels.instance }} has {{ $value }} idle connections in transaction"
+          runbook: "Check application connection handling, implement proper transaction timeouts"
+
+  # ============================================================================
+  # REPLICATION ALERTS
+  # ============================================================================
+  - name: replication_health
+    interval: 30s
+    rules:
+      - alert: PostgreSQLReplicationLag
+        expr: (pg_replication_lag{application_name!=""} > 60) and (pg_replication_lag{application_name!=""} < 300)
+        for: 5m
+        labels:
+          severity: warning
+          component: replication
+        annotations:
+          summary: "PostgreSQL replication lag is high"
+          description: "Replication lag on {{ $labels.instance }} is {{ $value }} seconds"
+          runbook: "Check network connectivity, disk I/O, and replication slot status"
+
+      - alert: PostgreSQLReplicationLagCritical
+        expr: pg_replication_lag{application_name!=""} > 300
+        for: 2m
+        labels:
+          severity: critical
+          component: replication
+        annotations:
+          summary: "PostgreSQL replication lag is critical"
+          description: "Replication lag on {{ $labels.instance }} is {{ $value }} seconds (>5 minutes)"
+          runbook: "Immediate attention required. Consider failing over to replica if primary is unhealthy"
+
+      - alert: PostgreSQLReplicationSlotInactive
+        expr: pg_replication_slots_active == 0
+        for: 5m
+        labels:
+          severity: warning
+          component: replication
+        annotations:
+          summary: "PostgreSQL replication slot is inactive"
+          description: "Replication slot {{ $labels.slot_name }} on {{ $labels.instance }} is inactive"
+          runbook: "Check replica connectivity and logs"
+
+      - alert: PostgreSQLReplicaBroken
+        expr: pg_stat_replication_numbackends == 0
+        for: 5m
+        labels:
+          severity: critical
+          component: replication
+        annotations:
+          summary: "PostgreSQL replica connection broken"
+          description: "No replica is connected to primary {{ $labels.instance }}"
+          runbook: "Check replica status, network connectivity, and authentication"
+
+  # ============================================================================
+  # PERFORMANCE ALERTS
+  # ============================================================================
+  - name: database_performance
+    interval: 1m
+    rules:
+      - alert: PostgreSQLHighQueryDuration
+        expr: rate(pg_stat_activity_max_tx_duration[5m]) > 300
+        for: 10m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "PostgreSQL queries taking too long"
+          description: "Query duration on {{ $labels.instance }} is {{ $value }}s"
+          runbook: "Check slow query log, analyze query plans, consider adding indexes"
+
+      - alert: PostgreSQLCacheHitRatioLow
+        expr: rate(pg_stat_database_blks_hit[5m]) / (rate(pg_stat_database_blks_hit[5m]) + rate(pg_stat_database_blks_read[5m])) < 0.95
+        for: 15m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "PostgreSQL cache hit ratio is low"
+          description: "Cache hit ratio on {{ $labels.instance }} is {{ $value | humanizePercentage }}"
+          runbook: "Consider increasing shared_buffers, check if queries can be optimized"
+
+      - alert: PostgreSQLDeadlocks
+        expr: rate(pg_stat_database_deadlocks[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: performance
+        annotations:
+          summary: "PostgreSQL deadlocks detected"
+          description: "Deadlocks detected on {{ $labels.instance }}: {{ $value }}/min"
+          runbook: "Review application locking patterns, check pg_stat_activity for blocking queries"
+
+      - alert: PostgreSQLTableBloat
+        expr: (pg_stat_user_tables_n_dead_tup / (pg_stat_user_tables_n_live_tup + pg_stat_user_tables_n_dead_tup)) > 0.2
+        for: 30m
+        labels:
+          severity: warning
+          component: maintenance
+        annotations:
+          summary: "PostgreSQL table bloat detected"
+          description: "Table {{ $labels.table }} has {{ $value | humanizePercentage }} dead tuples"
+          runbook: "Run VACUUM ANALYZE on affected tables"
+
+  # ============================================================================
+  # STORAGE ALERTS
+  # ============================================================================
+  - name: database_storage
+    interval: 1m
+    rules:
+      - alert: PostgreSQLDiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/var/lib/postgresql"} / node_filesystem_size_bytes{mountpoint="/var/lib/postgresql"}) * 100 < 20
+        for: 5m
+        labels:
+          severity: warning
+          component: storage
+        annotations:
+          summary: "PostgreSQL disk space is low"
+          description: "Disk space on {{ $labels.instance }} is {{ $value }}% available"
+          runbook: "Clean up old WAL files, run VACUUM FULL on large tables, add more storage"
+
+      - alert: PostgreSQLDiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{mountpoint="/var/lib/postgresql"} / node_filesystem_size_bytes{mountpoint="/var/lib/postgresql"}) * 100 < 10
+        for: 1m
+        labels:
+          severity: critical
+          component: storage
+        annotations:
+          summary: "PostgreSQL disk space is critically low"
+          description: "Only {{ $value }}% disk space available on {{ $labels.instance }}"
+          runbook: "Immediate action required. Stop writes if necessary, emergency cleanup"
+
+      - alert: PostgreSQLWALFilesAccumulating
+        expr: pg_stat_archiver_failed_count > 10
+        for: 10m
+        labels:
+          severity: warning
+          component: storage
+        annotations:
+          summary: "WAL files are accumulating"
+          description: "{{ $value }} WAL files failed to archive on {{ $labels.instance }}"
+          runbook: "Check archive_command configuration and destination storage"
+
+  # ============================================================================
+  # APPLICATION-SPECIFIC ALERTS
+  # ============================================================================
+  - name: whatsapp_saas_alerts
+    interval: 1m
+    rules:
+      - alert: HighBookingConflictRate
+        expr: sum by (salon_id) (booking_conflicts_conflict_count) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: application
+        annotations:
+          summary: "High booking conflict rate detected"
+          description: "Salon {{ $labels.salon_id }} has {{ $value }} booking conflicts"
+          runbook: "Review booking logic, check for race conditions in booking creation"
+
+      - alert: HighMessageFailureRate
+        expr: sum by (salon_id) (rate(messages_total{status="FAILED"}[5m])) / sum by (salon_id) (rate(messages_total[5m])) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          component: application
+        annotations:
+          summary: "High message failure rate"
+          description: "{{ $value | humanizePercentage }} of messages failing for salon {{ $labels.salon_id }}"
+          runbook: "Check WhatsApp API credentials, review webhook logs, verify network connectivity"
+
+      - alert: AIResponseTimeSlow
+        expr: avg by (salon_id) (ai_response_time_avg_response_time_ms) > 5000
+        for: 10m
+        labels:
+          severity: warning
+          component: ai
+        annotations:
+          summary: "AI response time is slow"
+          description: "AI response time for salon {{ $labels.salon_id }} is {{ $value }}ms"
+          runbook: "Check OpenAI API status, review AI model configuration, consider caching responses"
+
+      - alert: AITokenUsageHigh
+        expr: sum by (salon_id) (rate(ai_conversation_cost_total_tokens[1h])) > 100000
+        for: 30m
+        labels:
+          severity: warning
+          component: ai
+        annotations:
+          summary: "High AI token usage detected"
+          description: "Salon {{ $labels.salon_id }} is using {{ $value }} tokens/hour"
+          runbook: "Review AI conversation patterns, implement token limits, check for abuse"
+
+      - alert: WebhookProcessingErrors
+        expr: sum by (salon_id, event_type) (rate(webhook_events{status="error"}[5m])) > 1
+        for: 10m
+        labels:
+          severity: warning
+          component: webhooks
+        annotations:
+          summary: "Webhook processing errors detected"
+          description: "{{ $value }} errors/min for salon {{ $labels.salon_id }}, event {{ $labels.event_type }}"
+          runbook: "Review webhook logs, check HMAC signature verification, verify payload schema"
+
+      - alert: NoBookingsLast24Hours
+        expr: sum by (salon_id) (bookings_total) == 0
+        for: 24h
+        labels:
+          severity: info
+          component: business
+        annotations:
+          summary: "No bookings in last 24 hours"
+          description: "Salon {{ $labels.salon_id }} has no bookings in 24 hours"
+          runbook: "Check if salon is active, review marketing campaigns"
+
+  # ============================================================================
+  # BACKUP ALERTS
+  # ============================================================================
+  - name: backup_health
+    interval: 1h
+    rules:
+      - alert: PostgreSQLBackupMissing
+        expr: time() - pg_backup_last_success_timestamp_seconds > 86400
+        for: 1h
+        labels:
+          severity: critical
+          component: backup
+        annotations:
+          summary: "PostgreSQL backup is missing"
+          description: "No successful backup in last 24 hours on {{ $labels.instance }}"
+          runbook: "Check backup cron job, review backup logs, verify storage availability"
+
+      - alert: PostgreSQLBackupFailed
+        expr: pg_backup_last_status == 1
+        for: 5m
+        labels:
+          severity: critical
+          component: backup
+        annotations:
+          summary: "PostgreSQL backup failed"
+          description: "Last backup failed on {{ $labels.instance }}"
+          runbook: "Review backup logs at /var/backups/postgresql/backup_errors.log"
+
+      - alert: PostgreSQLBackupSizeIncreasing
+        expr: rate(pg_backup_size_bytes[24h]) > 0.2
+        for: 7d
+        labels:
+          severity: info
+          component: backup
+        annotations:
+          summary: "PostgreSQL backup size increasing rapidly"
+          description: "Backup size growing {{ $value | humanizePercentage }}/day on {{ $labels.instance }}"
+          runbook: "Review data retention policies, check for table bloat, implement partitioning"
+
+  # ============================================================================
+  # SECURITY ALERTS
+  # ============================================================================
+  - name: database_security
+    interval: 5m
+    rules:
+      - alert: PostgreSQLUnauthorizedAccessAttempts
+        expr: rate(pg_stat_database_blk_access_time[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "Potential unauthorized access attempts"
+          description: "High rate of access attempts on {{ $labels.instance }}"
+          runbook: "Review pg_log for authentication failures, check firewall rules"
+
+      - alert: PostgreSQLConfigurationChanged
+        expr: changes(pg_settings_setting[10m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "PostgreSQL configuration changed"
+          description: "Configuration parameter {{ $labels.name }} changed on {{ $labels.instance }}"
+          runbook: "Review configuration change log, verify if change was authorized"
+
+# ============================================================================
+# ALERT ROUTING CONFIGURATION (alertmanager.yml)
+# ============================================================================
+#
+# route:
+#   group_by: ['alertname', 'cluster', 'severity']
+#   group_wait: 10s
+#   group_interval: 10s
+#   repeat_interval: 12h
+#   receiver: 'default'
+#   routes:
+#     - match:
+#         severity: critical
+#       receiver: 'pagerduty'
+#     - match:
+#         severity: warning
+#       receiver: 'slack'
+#
+# receivers:
+#   - name: 'default'
+#     email_configs:
+#       - to: 'ops@yourdomain.com'
+#
+#   - name: 'slack'
+#     slack_configs:
+#       - api_url: 'YOUR_SLACK_WEBHOOK_URL'
+#         channel: '#database-alerts'
+#         title: '{{ .GroupLabels.alertname }}'
+#         text: '{{ range .Alerts }}{{ .Annotations.summary }}\n{{ .Annotations.description }}{{ end }}'
+#
+#   - name: 'pagerduty'
+#     pagerduty_configs:
+#       - service_key: 'YOUR_PAGERDUTY_KEY'
+#
+# ============================================================================

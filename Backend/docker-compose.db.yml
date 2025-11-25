@@ -1,0 +1,145 @@
+version: '3.8'
+
+# Standalone Database Services for Development
+# This file contains only PostgreSQL and Redis for local development
+# Use this when you want to run the backend application outside Docker
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: whatsapp-saas-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: whatsapp_saas
+      POSTGRES_INITDB_ARGS: '-E UTF8 --locale=en_US.UTF-8'
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      # Uncomment to persist logs
+      # - ./database/logs:/var/log/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d whatsapp_saas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - whatsapp-dev-network
+    # Resource limits for development
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: whatsapp-saas-redis-dev
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - whatsapp-dev-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  # Adminer - PostgreSQL Web UI (Optional)
+  # Access at http://localhost:8080
+  adminer:
+    image: adminer:latest
+    container_name: whatsapp-saas-adminer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: pepa-linha
+    ports:
+      - "8080:8080"
+    networks:
+      - whatsapp-dev-network
+    profiles:
+      - tools  # Start with: docker-compose --profile tools up
+
+  # pgAdmin - Advanced PostgreSQL Management (Alternative to Adminer)
+  # Access at http://localhost:5050
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: whatsapp-saas-pgadmin
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@whatsapp-saas.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - whatsapp-dev-network
+    profiles:
+      - tools  # Start with: docker-compose --profile tools up
+
+  # Redis Commander - Redis Web UI (Optional)
+  # Access at http://localhost:8081
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: whatsapp-saas-redis-commander
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    networks:
+      - whatsapp-dev-network
+    profiles:
+      - tools  # Start with: docker-compose --profile tools up
+
+volumes:
+  postgres_dev_data:
+    driver: local
+    name: whatsapp_saas_postgres_dev
+  redis_dev_data:
+    driver: local
+    name: whatsapp_saas_redis_dev
+  pgadmin_data:
+    driver: local
+    name: whatsapp_saas_pgadmin_dev
+
+networks:
+  whatsapp-dev-network:
+    driver: bridge
+    name: whatsapp-saas-dev-network

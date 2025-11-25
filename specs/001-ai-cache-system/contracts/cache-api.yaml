@@ -1,0 +1,474 @@
+openapi: 3.0.0
+info:
+  title: AI Cache System API
+  description: API for managing and monitoring the AI response cache system
+  version: 1.0.0
+  contact:
+    name: WhatsApp SaaS Team
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Development server
+  - url: https://api.whatsapp-saas.com/api/v1
+    description: Production server
+
+paths:
+  /cache/query:
+    post:
+      summary: Query the cache or get AI response
+      description: Attempts to retrieve a cached response or falls back to AI service
+      operationId: queryCacheOrAI
+      tags:
+        - Cache Operations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+                - language
+              properties:
+                query:
+                  type: string
+                  description: Customer query text
+                  example: "What are your business hours?"
+                language:
+                  type: string
+                  enum: [ru, en, es, pt, he]
+                  description: Language code
+                  example: "en"
+                customerId:
+                  type: string
+                  description: Optional customer identifier for analytics
+                  example: "customer-123"
+                skipCache:
+                  type: boolean
+                  description: Force fresh AI response (bypass cache)
+                  default: false
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: string
+                    description: The response text
+                    example: "We are open Monday-Friday 9AM-6PM, Saturday 10AM-4PM"
+                  cached:
+                    type: boolean
+                    description: Whether response was from cache
+                    example: true
+                  responseTime:
+                    type: number
+                    description: Response time in milliseconds
+                    example: 45
+                  cacheKey:
+                    type: string
+                    description: Cache key used (for debugging)
+                    example: "en:3f2504e0-4f89-11d3-9a0c-0305e82c3301"
+                  confidence:
+                    type: number
+                    description: Confidence score of the response
+                    example: 0.95
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /cache/warm:
+    post:
+      summary: Warm the cache with common queries
+      description: Pre-populate cache with frequently asked questions
+      operationId: warmCache
+      tags:
+        - Cache Operations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - queries
+              properties:
+                queries:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - query
+                      - language
+                    properties:
+                      query:
+                        type: string
+                      language:
+                        type: string
+                        enum: [ru, en, es, pt, he]
+                      category:
+                        type: string
+                        enum: [greeting, pricing, availability, services, hours, location, booking, general]
+      responses:
+        '200':
+          description: Cache warming completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  processed:
+                    type: integer
+                    description: Number of queries processed
+                    example: 50
+                  cached:
+                    type: integer
+                    description: Number of responses cached
+                    example: 45
+                  skipped:
+                    type: integer
+                    description: Number skipped (low confidence)
+                    example: 5
+                  duration:
+                    type: number
+                    description: Processing time in seconds
+                    example: 12.5
+
+  /cache/invalidate:
+    delete:
+      summary: Invalidate cache entries
+      description: Remove specific cache entries or clear by category
+      operationId: invalidateCache
+      tags:
+        - Cache Operations
+      parameters:
+        - name: category
+          in: query
+          description: Category to invalidate
+          schema:
+            type: string
+            enum: [greeting, pricing, availability, services, hours, location, booking, general]
+        - name: language
+          in: query
+          description: Language to invalidate
+          schema:
+            type: string
+            enum: [ru, en, es, pt, he]
+        - name: cacheKey
+          in: query
+          description: Specific cache key to invalidate
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cache invalidated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invalidated:
+                    type: integer
+                    description: Number of entries invalidated
+                    example: 15
+
+  /cache/statistics:
+    get:
+      summary: Get cache statistics
+      description: Retrieve performance metrics and analytics
+      operationId: getCacheStatistics
+      tags:
+        - Analytics
+      parameters:
+        - name: period
+          in: query
+          description: Time period for statistics
+          schema:
+            type: string
+            enum: [hourly, daily, weekly, monthly]
+            default: daily
+        - name: startDate
+          in: query
+          description: Start date (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+            example: "2025-11-01T00:00:00Z"
+        - name: endDate
+          in: query
+          description: End date (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+            example: "2025-11-02T00:00:00Z"
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  period:
+                    type: string
+                    example: "daily"
+                  startDate:
+                    type: string
+                    format: date-time
+                  endDate:
+                    type: string
+                    format: date-time
+                  metrics:
+                    type: object
+                    properties:
+                      totalRequests:
+                        type: integer
+                        example: 10000
+                      cacheHits:
+                        type: integer
+                        example: 9000
+                      cacheMisses:
+                        type: integer
+                        example: 1000
+                      hitRate:
+                        type: number
+                        example: 90.0
+                      estimatedCostSavings:
+                        type: number
+                        example: 18.50
+                      avgCacheResponseTime:
+                        type: number
+                        example: 45
+                      avgAiResponseTime:
+                        type: number
+                        example: 1500
+                      p95CacheResponseTime:
+                        type: number
+                        example: 75
+                      p99CacheResponseTime:
+                        type: number
+                        example: 95
+                  languageBreakdown:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        requests:
+                          type: integer
+                        hits:
+                          type: integer
+                        hitRate:
+                          type: number
+                  categoryBreakdown:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      properties:
+                        requests:
+                          type: integer
+                        hits:
+                          type: integer
+                        avgResponseTime:
+                          type: number
+
+  /cache/top-queries:
+    get:
+      summary: Get top cached queries
+      description: Retrieve most frequently accessed cache entries
+      operationId: getTopQueries
+      tags:
+        - Analytics
+      parameters:
+        - name: limit
+          in: query
+          description: Number of top queries to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: language
+          in: query
+          description: Filter by language
+          schema:
+            type: string
+            enum: [ru, en, es, pt, he]
+        - name: category
+          in: query
+          description: Filter by category
+          schema:
+            type: string
+            enum: [greeting, pricing, availability, services, hours, location, booking, general]
+      responses:
+        '200':
+          description: Top queries retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        query:
+                          type: string
+                          example: "What are your hours?"
+                        normalizedQuery:
+                          type: string
+                          example: "hours what your"
+                        language:
+                          type: string
+                          example: "en"
+                        category:
+                          type: string
+                          example: "hours"
+                        hitCount:
+                          type: integer
+                          example: 1250
+                        lastAccessed:
+                          type: string
+                          format: date-time
+                        confidenceScore:
+                          type: number
+                          example: 0.95
+                        costSavings:
+                          type: number
+                          example: 2.50
+
+  /cache/health:
+    get:
+      summary: Check cache system health
+      description: Get health status of cache service and dependencies
+      operationId: getCacheHealth
+      tags:
+        - Monitoring
+      responses:
+        '200':
+          description: Cache system is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded, unhealthy]
+                    example: "healthy"
+                  redis:
+                    type: object
+                    properties:
+                      connected:
+                        type: boolean
+                        example: true
+                      latency:
+                        type: number
+                        example: 1.2
+                  database:
+                    type: object
+                    properties:
+                      connected:
+                        type: boolean
+                        example: true
+                      latency:
+                        type: number
+                        example: 5.3
+                  cacheMetrics:
+                    type: object
+                    properties:
+                      totalEntries:
+                        type: integer
+                        example: 5432
+                      totalSize:
+                        type: integer
+                        example: 52428800
+                      oldestEntry:
+                        type: string
+                        format: date-time
+                      newestEntry:
+                        type: string
+                        format: date-time
+
+  /cache/maintenance:
+    post:
+      summary: Trigger cache maintenance
+      description: Manually trigger cache cleanup and optimization
+      operationId: runCacheMaintenance
+      tags:
+        - Maintenance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pruneExpired:
+                  type: boolean
+                  description: Remove expired entries
+                  default: true
+                pruneLowValue:
+                  type: boolean
+                  description: Remove low-value entries
+                  default: true
+                pruneLowQuality:
+                  type: boolean
+                  description: Remove low-quality entries
+                  default: true
+                compactMemory:
+                  type: boolean
+                  description: Optimize Redis memory usage
+                  default: false
+      responses:
+        '200':
+          description: Maintenance completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  expiredRemoved:
+                    type: integer
+                    example: 120
+                  lowValueRemoved:
+                    type: integer
+                    example: 45
+                  lowQualityRemoved:
+                    type: integer
+                    example: 8
+                  memorySaved:
+                    type: integer
+                    example: 5242880
+                  duration:
+                    type: number
+                    example: 2.5
+
+components:
+  responses:
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Internal server error"
+              message:
+                type: string
+                example: "An unexpected error occurred"
+              timestamp:
+                type: string
+                format: date-time
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - BearerAuth: []

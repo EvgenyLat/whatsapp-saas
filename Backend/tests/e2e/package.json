@@ -1,0 +1,39 @@
+{
+  "name": "whatsapp-saas-e2e-tests",
+  "version": "1.0.0",
+  "description": "End-to-end tests for WhatsApp SaaS platform using Playwright",
+  "scripts": {
+    "test": "playwright test",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:booking": "playwright test specs/booking.spec.js",
+    "test:admin": "playwright test specs/admin.spec.js",
+    "test:webhook": "playwright test specs/webhook.spec.js",
+    "test:conversation": "playwright test specs/conversation.spec.js",
+    "test:errors": "playwright test specs/errors.spec.js",
+    "test:performance": "playwright test specs/performance.spec.js",
+    "report": "playwright show-report test-results/e2e-html-report",
+    "install-browsers": "playwright install chromium firefox webkit",
+    "clean": "rm -rf test-results"
+  },
+  "keywords": [
+    "e2e",
+    "playwright",
+    "whatsapp",
+    "testing"
+  ],
+  "author": "WhatsApp SaaS Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "pg": "^8.11.0",
+    "ioredis": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

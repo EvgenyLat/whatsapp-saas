@@ -1,0 +1,180 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WhatsApp Reply Buttons Message (Send)",
+  "description": "Message format for sending Reply Buttons to customer (max 3 buttons)",
+  "type": "object",
+  "required": ["messaging_product", "to", "type", "interactive"],
+  "properties": {
+    "messaging_product": {
+      "type": "string",
+      "enum": ["whatsapp"],
+      "description": "Always 'whatsapp'"
+    },
+    "to": {
+      "type": "string",
+      "description": "Customer phone number (E.164 format)",
+      "pattern": "^\\+[1-9]\\d{1,14}$",
+      "example": "+1234567890"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["interactive"],
+      "description": "Always 'interactive' for button messages"
+    },
+    "interactive": {
+      "$ref": "#/definitions/InteractiveButtons"
+    }
+  },
+  "definitions": {
+    "InteractiveButtons": {
+      "type": "object",
+      "required": ["type", "body", "action"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["button"],
+          "description": "Always 'button' for Reply Buttons"
+        },
+        "header": {
+          "$ref": "#/definitions/Header"
+        },
+        "body": {
+          "$ref": "#/definitions/Body"
+        },
+        "footer": {
+          "$ref": "#/definitions/Footer"
+        },
+        "action": {
+          "$ref": "#/definitions/Action"
+        }
+      }
+    },
+    "Header": {
+      "type": "object",
+      "required": ["type", "text"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["text"],
+          "description": "Always 'text' for text headers"
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "Header text (optional)",
+          "example": "Available Times"
+        }
+      }
+    },
+    "Body": {
+      "type": "object",
+      "required": ["text"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "maxLength": 1024,
+          "description": "Main message body",
+          "example": "Available times on Friday:\n\n💇 Women's Haircut\n⏱️  60 min\n💰 $50"
+        }
+      }
+    },
+    "Footer": {
+      "type": "object",
+      "required": ["text"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "maxLength": 60,
+          "description": "Footer text (optional)",
+          "example": "⭐ Your preferred time | Tap to select"
+        }
+      }
+    },
+    "Action": {
+      "type": "object",
+      "required": ["buttons"],
+      "properties": {
+        "buttons": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "description": "Max 3 Reply Buttons",
+          "items": {
+            "$ref": "#/definitions/Button"
+          }
+        }
+      }
+    },
+    "Button": {
+      "type": "object",
+      "required": ["type", "reply"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["reply"],
+          "description": "Always 'reply' for Reply Buttons"
+        },
+        "reply": {
+          "type": "object",
+          "required": ["id", "title"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "maxLength": 256,
+              "pattern": "^(slot|confirm|waitlist|action|nav)_[a-zA-Z0-9_:-]+$",
+              "description": "Button ID (parsed by webhook handler)",
+              "example": "slot_2024-10-25_15:00_m123"
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 20,
+              "description": "Button display text",
+              "example": "3:00 PM - Sarah"
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "messaging_product": "whatsapp",
+      "to": "+1234567890",
+      "type": "interactive",
+      "interactive": {
+        "type": "button",
+        "body": {
+          "text": "Available times on Friday:\n\n💇 Women's Haircut\n⏱️  60 min\n💰 $50"
+        },
+        "action": {
+          "buttons": [
+            {
+              "type": "reply",
+              "reply": {
+                "id": "slot_2024-10-25_14:00_m123",
+                "title": "2:00 PM - Sarah"
+              }
+            },
+            {
+              "type": "reply",
+              "reply": {
+                "id": "slot_2024-10-25_15:00_m123",
+                "title": "3:00 PM - Sarah ⭐"
+              }
+            },
+            {
+              "type": "reply",
+              "reply": {
+                "id": "slot_2024-10-25_16:00_m123",
+                "title": "4:00 PM - Sarah"
+              }
+            }
+          ]
+        },
+        "footer": {
+          "text": "⭐ Your preferred time | Tap to select"
+        }
+      }
+    }
+  ]
+}

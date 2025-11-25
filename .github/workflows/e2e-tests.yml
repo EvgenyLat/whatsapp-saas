@@ -1,0 +1,279 @@
+name: E2E Tests
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'Backend/**'
+      - 'Frontend/**'
+      - '.github/workflows/e2e-tests.yml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  e2e-tests:
+    name: Run E2E Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: whatsapp_saas_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: Backend/package-lock.json
+
+      - name: Install Backend dependencies
+        working-directory: Backend
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        working-directory: Backend/tests/e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Setup Database
+        working-directory: Backend
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: whatsapp_saas_test
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+        run: |
+          npm run migrate
+          npm run seed:test
+
+      - name: Start Backend Server
+        working-directory: Backend
+        env:
+          NODE_ENV: test
+          PORT: 4000
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: whatsapp_saas_test
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          ADMIN_TOKEN: ${{ secrets.TEST_ADMIN_TOKEN || 'test-admin-token' }}
+          WHATSAPP_WEBHOOK_SECRET: ${{ secrets.TEST_WEBHOOK_SECRET || 'test-webhook-secret' }}
+          WHATSAPP_VERIFY_TOKEN: ${{ secrets.TEST_VERIFY_TOKEN || 'test-verify-token' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          npm start &
+          sleep 10
+          curl --retry 10 --retry-delay 3 --retry-connrefused http://localhost:4000/healthz
+
+      - name: Run E2E Tests
+        working-directory: Backend/tests/e2e
+        env:
+          BASE_URL: http://localhost:4000
+          ADMIN_TOKEN: ${{ secrets.TEST_ADMIN_TOKEN || 'test-admin-token' }}
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: whatsapp_saas_test
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          CI: true
+        run: npx playwright test --project=chromium
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-test-results
+          path: |
+            test-results/
+            Backend/tests/e2e/test-results/
+          retention-days: 7
+
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: playwright-report
+          path: test-results/e2e-html-report/
+          retention-days: 7
+
+      - name: Comment PR with Results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const resultsPath = 'test-results/e2e-results.json';
+
+            if (!fs.existsSync(resultsPath)) {
+              console.log('No test results found');
+              return;
+            }
+
+            const results = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+            const { stats } = results;
+
+            const body = `## 🎭 E2E Test Results
+
+            | Metric | Count |
+            |--------|-------|
+            | ✅ Passed | ${stats.expected || 0} |
+            | ❌ Failed | ${stats.unexpected || 0} |
+            | ⏭️ Skipped | ${stats.skipped || 0} |
+            | ⏱️ Duration | ${(stats.duration / 1000).toFixed(2)}s |
+
+            [View full report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: Fail if tests failed
+        if: failure()
+        run: exit 1
+
+  e2e-tests-full:
+    name: Full E2E Tests (All Browsers)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: whatsapp_saas_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: Backend/package-lock.json
+
+      - name: Install Backend dependencies
+        working-directory: Backend
+        run: npm ci
+
+      - name: Install Playwright Browsers
+        working-directory: Backend/tests/e2e
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Setup Database
+        working-directory: Backend
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: whatsapp_saas_test
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+        run: |
+          npm run migrate
+          npm run seed:test
+
+      - name: Start Backend Server
+        working-directory: Backend
+        env:
+          NODE_ENV: test
+          PORT: 4000
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: whatsapp_saas_test
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          ADMIN_TOKEN: test-admin-token
+          WHATSAPP_WEBHOOK_SECRET: test-webhook-secret
+          WHATSAPP_VERIFY_TOKEN: test-verify-token
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          npm start &
+          sleep 10
+          curl --retry 10 --retry-delay 3 --retry-connrefused http://localhost:4000/healthz
+
+      - name: Run E2E Tests - ${{ matrix.browser }}
+        working-directory: Backend/tests/e2e
+        env:
+          BASE_URL: http://localhost:4000
+          ADMIN_TOKEN: test-admin-token
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: whatsapp_saas_test
+          DB_USER: postgres
+          DB_PASSWORD: postgres
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          CI: true
+        run: npx playwright test --project=${{ matrix.browser }}
+
+      - name: Upload Test Results - ${{ matrix.browser }}
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: e2e-results-${{ matrix.browser }}
+          path: test-results/
+          retention-days: 7

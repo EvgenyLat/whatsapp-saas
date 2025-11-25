@@ -1,0 +1,413 @@
+// =============================================================================
+// LOAD TEST HELPERS
+// =============================================================================
+// Utility functions for k6 load tests
+// =============================================================================
+
+import { check } from 'k6';
+import { Rate, Trend, Counter } from 'k6/metrics';
+
+// =============================================================================
+// CUSTOM METRICS
+// =============================================================================
+
+export const errorRate = new Rate('errors');
+export const successRate = new Rate('success');
+export const requestDuration = new Trend('request_duration');
+export const requestsPerSecond = new Rate('requests_per_second');
+export const failedRequests = new Counter('failed_requests');
+export const successfulRequests = new Counter('successful_requests');
+
+// =============================================================================
+// HTTP HELPERS
+// =============================================================================
+
+/**
+ * Make HTTP request and track metrics
+ */
+export function makeRequest(name, response, checks = {}) {
+  // Track timing
+  requestDuration.add(response.timings.duration);
+
+  // Default checks
+  const defaultChecks = {
+    'status is 200': (r) => r.status === 200,
+    'response time < 3000ms': (r) => r.timings.duration < 3000,
+  };
+
+  // Merge with custom checks
+  const allChecks = { ...defaultChecks, ...checks };
+
+  // Run checks
+  const checkResult = check(response, allChecks);
+
+  // Track success/error rates
+  if (checkResult) {
+    successRate.add(1);
+    successfulRequests.add(1);
+  } else {
+    errorRate.add(1);
+    failedRequests.add(1);
+    console.error(`❌ ${name} failed: ${response.status} - ${response.body}`);
+  }
+
+  return checkResult;
+}
+
+/**
+ * Check response status
+ */
+export function checkStatus(response, expectedStatus = 200) {
+  return check(response, {
+    [`status is ${expectedStatus}`]: (r) => r.status === expectedStatus,
+  });
+}
+
+/**
+ * Check response has required fields
+ */
+export function checkFields(response, fields) {
+  const checks = {};
+  fields.forEach((field) => {
+    checks[`has field: ${field}`] = (r) => {
+      try {
+        const body = JSON.parse(r.body);
+        return body.hasOwnProperty(field);
+      } catch (e) {
+        return false;
+      }
+    };
+  });
+  return check(response, checks);
+}
+
+/**
+ * Check response time threshold
+ */
+export function checkResponseTime(response, maxMs) {
+  return check(response, {
+    [`response time < ${maxMs}ms`]: (r) => r.timings.duration < maxMs,
+  });
+}
+
+// =============================================================================
+// DATA GENERATORS
+// =============================================================================
+
+/**
+ * Generate random phone number
+ */
+export function randomPhoneNumber() {
+  const areaCode = Math.floor(Math.random() * 900) + 100;
+  const prefix = Math.floor(Math.random() * 900) + 100;
+  const lineNumber = Math.floor(Math.random() * 9000) + 1000;
+  return `+1${areaCode}${prefix}${lineNumber}`;
+}
+
+/**
+ * Generate random email
+ */
+export function randomEmail() {
+  const username = `user${Math.random().toString(36).substring(7)}`;
+  const domain = ['gmail.com', 'yahoo.com', 'outlook.com', 'test.com'][
+    Math.floor(Math.random() * 4)
+  ];
+  return `${username}@${domain}`;
+}
+
+/**
+ * Generate random name
+ */
+export function randomName() {
+  const firstNames = [
+    'John', 'Jane', 'Michael', 'Sarah', 'David', 'Emma',
+    'James', 'Olivia', 'Robert', 'Sophia', 'William', 'Ava',
+  ];
+  const lastNames = [
+    'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia',
+    'Miller', 'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez',
+  ];
+
+  const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+  const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+
+  return `${firstName} ${lastName}`;
+}
+
+/**
+ * Generate random date in future
+ */
+export function randomFutureDate(daysAhead = 30) {
+  const now = new Date();
+  const future = new Date(now.getTime() + Math.random() * daysAhead * 24 * 60 * 60 * 1000);
+  return future.toISOString();
+}
+
+/**
+ * Random element from array
+ */
+export function randomElement(array) {
+  return array[Math.floor(Math.random() * array.length)];
+}
+
+/**
+ * Random integer between min and max
+ */
+export function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * Generate random booking data
+ */
+export function generateBookingData(salonId, serviceType) {
+  return {
+    salon_id: salonId,
+    service_type: serviceType || randomElement(['haircut', 'coloring', 'styling', 'treatment']),
+    customer_name: randomName(),
+    customer_phone: randomPhoneNumber(),
+    customer_email: randomEmail(),
+    appointment_date: randomFutureDate(14),
+    notes: 'Generated by load test',
+  };
+}
+
+/**
+ * Generate random WhatsApp message
+ */
+export function generateWhatsAppMessage(phoneNumber, messageType = 'text') {
+  const messages = {
+    text: {
+      messaging_product: 'whatsapp',
+      to: phoneNumber,
+      type: 'text',
+      text: {
+        body: `Test message at ${new Date().toISOString()}`,
+      },
+    },
+    button: {
+      messaging_product: 'whatsapp',
+      to: phoneNumber,
+      type: 'interactive',
+      interactive: {
+        type: 'button',
+        body: {
+          text: 'Would you like to book an appointment?',
+        },
+        action: {
+          buttons: [
+            { type: 'reply', reply: { id: 'yes', title: 'Yes' } },
+            { type: 'reply', reply: { id: 'no', title: 'No' } },
+          ],
+        },
+      },
+    },
+  };
+
+  return messages[messageType] || messages.text;
+}
+
+/**
+ * Generate WhatsApp webhook event
+ */
+export function generateWebhookEvent(phoneNumber, messageText, messageId = null) {
+  return {
+    object: 'whatsapp_business_account',
+    entry: [
+      {
+        id: 'test-entry-id',
+        changes: [
+          {
+            value: {
+              messaging_product: 'whatsapp',
+              metadata: {
+                display_phone_number: '1234567890',
+                phone_number_id: 'test-phone-id',
+              },
+              contacts: [
+                {
+                  profile: {
+                    name: randomName(),
+                  },
+                  wa_id: phoneNumber,
+                },
+              ],
+              messages: [
+                {
+                  from: phoneNumber,
+                  id: messageId || `msg-${Date.now()}-${randomInt(1000, 9999)}`,
+                  timestamp: Math.floor(Date.now() / 1000).toString(),
+                  text: {
+                    body: messageText,
+                  },
+                  type: 'text',
+                },
+              ],
+            },
+            field: 'messages',
+          },
+        ],
+      },
+    ],
+  };
+}
+
+// =============================================================================
+// SLEEP HELPERS
+// =============================================================================
+
+/**
+ * Sleep with random jitter
+ */
+export function sleepBetween(min, max) {
+  const duration = min + Math.random() * (max - min);
+  return duration;
+}
+
+/**
+ * Think time (simulate user reading/thinking)
+ */
+export function thinkTime(minSeconds = 1, maxSeconds = 3) {
+  return sleepBetween(minSeconds, maxSeconds);
+}
+
+// =============================================================================
+// LOGGING HELPERS
+// =============================================================================
+
+/**
+ * Log test start
+ */
+export function logTestStart(testName) {
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`🚀 Starting: ${testName}`);
+  console.log(`${'='.repeat(60)}\n`);
+}
+
+/**
+ * Log test end
+ */
+export function logTestEnd(testName) {
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`✅ Completed: ${testName}`);
+  console.log(`${'='.repeat(60)}\n`);
+}
+
+/**
+ * Log stage change
+ */
+export function logStage(stageName, vus) {
+  console.log(`\n📊 Stage: ${stageName} | VUs: ${vus}`);
+}
+
+/**
+ * Log error
+ */
+export function logError(context, error) {
+  console.error(`❌ Error in ${context}:`, error);
+}
+
+// =============================================================================
+// VALIDATION HELPERS
+// =============================================================================
+
+/**
+ * Validate response is valid JSON
+ */
+export function isValidJSON(response) {
+  try {
+    JSON.parse(response.body);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Get JSON body or null
+ */
+export function getJSONBody(response) {
+  try {
+    return JSON.parse(response.body);
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Validate booking response
+ */
+export function validateBookingResponse(response) {
+  const body = getJSONBody(response);
+  if (!body) return false;
+
+  return (
+    body.hasOwnProperty('id') &&
+    body.hasOwnProperty('salon_id') &&
+    body.hasOwnProperty('customer_name') &&
+    body.hasOwnProperty('status')
+  );
+}
+
+// =============================================================================
+// SUMMARY HELPERS
+// =============================================================================
+
+/**
+ * Print summary statistics
+ */
+export function printSummary(data) {
+  console.log('\n📈 Test Summary:');
+  console.log('─'.repeat(60));
+
+  if (data.http_reqs) {
+    console.log(`Total Requests: ${data.http_reqs.count}`);
+    console.log(`Requests/sec: ${data.http_reqs.rate.toFixed(2)}`);
+  }
+
+  if (data.http_req_duration) {
+    console.log(`\nResponse Times:`);
+    console.log(`  P50: ${data.http_req_duration.p50.toFixed(2)}ms`);
+    console.log(`  P95: ${data.http_req_duration.p95.toFixed(2)}ms`);
+    console.log(`  P99: ${data.http_req_duration.p99.toFixed(2)}ms`);
+    console.log(`  Max: ${data.http_req_duration.max.toFixed(2)}ms`);
+  }
+
+  if (data.http_req_failed) {
+    const failRate = (data.http_req_failed.rate * 100).toFixed(2);
+    console.log(`\nError Rate: ${failRate}%`);
+  }
+
+  console.log('─'.repeat(60));
+}
+
+export default {
+  // Metrics
+  errorRate,
+  successRate,
+  requestDuration,
+
+  // HTTP helpers
+  makeRequest,
+  checkStatus,
+  checkFields,
+  checkResponseTime,
+
+  // Data generators
+  randomPhoneNumber,
+  randomEmail,
+  randomName,
+  randomElement,
+  generateBookingData,
+  generateWhatsAppMessage,
+  generateWebhookEvent,
+
+  // Utilities
+  sleepBetween,
+  thinkTime,
+  logTestStart,
+  logTestEnd,
+  isValidJSON,
+  getJSONBody,
+  printSummary,
+};

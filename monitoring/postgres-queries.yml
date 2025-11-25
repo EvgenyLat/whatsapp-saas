@@ -1,0 +1,400 @@
+# =============================================================================
+# POSTGRES EXPORTER CUSTOM QUERIES
+# =============================================================================
+# Extended metrics for WhatsApp SaaS database monitoring
+# =============================================================================
+
+# ===========================================================================
+# DATABASE SIZE METRICS
+# ===========================================================================
+pg_database_size:
+  query: |
+    SELECT
+      datname,
+      pg_database_size(datname) as bytes
+    FROM pg_database
+    WHERE datname NOT IN ('template0', 'template1', 'postgres')
+  metrics:
+    - datname:
+        usage: "LABEL"
+        description: "Name of the database"
+    - bytes:
+        usage: "GAUGE"
+        description: "Size of the database in bytes"
+
+# ===========================================================================
+# TABLE SIZE METRICS
+# ===========================================================================
+pg_table_size:
+  query: |
+    SELECT
+      schemaname,
+      tablename,
+      pg_total_relation_size(schemaname||'.'||tablename) as bytes,
+      pg_relation_size(schemaname||'.'||tablename) as table_bytes,
+      pg_total_relation_size(schemaname||'.'||tablename) - pg_relation_size(schemaname||'.'||tablename) as index_bytes
+    FROM pg_tables
+    WHERE schemaname = 'public'
+    ORDER BY bytes DESC
+    LIMIT 20
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - tablename:
+        usage: "LABEL"
+        description: "Table name"
+    - bytes:
+        usage: "GAUGE"
+        description: "Total size of table including indexes"
+    - table_bytes:
+        usage: "GAUGE"
+        description: "Size of table data"
+    - index_bytes:
+        usage: "GAUGE"
+        description: "Size of indexes"
+
+# ===========================================================================
+# CONNECTION POOL METRICS
+# ===========================================================================
+pg_connection_states:
+  query: |
+    SELECT
+      state,
+      COUNT(*) as connections
+    FROM pg_stat_activity
+    WHERE datname = current_database()
+    GROUP BY state
+  metrics:
+    - state:
+        usage: "LABEL"
+        description: "Connection state"
+    - connections:
+        usage: "GAUGE"
+        description: "Number of connections in this state"
+
+# ===========================================================================
+# QUERY PERFORMANCE METRICS
+# ===========================================================================
+pg_slow_queries:
+  query: |
+    SELECT
+      query,
+      calls,
+      total_exec_time,
+      mean_exec_time,
+      max_exec_time,
+      rows
+    FROM pg_stat_statements
+    WHERE query NOT LIKE '%pg_stat_statements%'
+    ORDER BY mean_exec_time DESC
+    LIMIT 10
+  metrics:
+    - query:
+        usage: "LABEL"
+        description: "Query text (truncated)"
+    - calls:
+        usage: "COUNTER"
+        description: "Number of times executed"
+    - total_exec_time:
+        usage: "COUNTER"
+        description: "Total time spent executing"
+    - mean_exec_time:
+        usage: "GAUGE"
+        description: "Mean execution time"
+    - max_exec_time:
+        usage: "GAUGE"
+        description: "Maximum execution time"
+    - rows:
+        usage: "COUNTER"
+        description: "Total rows returned"
+
+# ===========================================================================
+# INDEX USAGE METRICS
+# ===========================================================================
+pg_index_usage:
+  query: |
+    SELECT
+      schemaname,
+      tablename,
+      indexname,
+      idx_scan,
+      idx_tup_read,
+      idx_tup_fetch
+    FROM pg_stat_user_indexes
+    WHERE schemaname = 'public'
+    ORDER BY idx_scan DESC
+    LIMIT 20
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - tablename:
+        usage: "LABEL"
+        description: "Table name"
+    - indexname:
+        usage: "LABEL"
+        description: "Index name"
+    - idx_scan:
+        usage: "COUNTER"
+        description: "Number of index scans"
+    - idx_tup_read:
+        usage: "COUNTER"
+        description: "Number of index entries returned"
+    - idx_tup_fetch:
+        usage: "COUNTER"
+        description: "Number of live table rows fetched"
+
+# ===========================================================================
+# UNUSED INDEXES
+# ===========================================================================
+pg_unused_indexes:
+  query: |
+    SELECT
+      schemaname,
+      tablename,
+      indexname,
+      pg_size_pretty(pg_relation_size(indexrelid)) as size
+    FROM pg_stat_user_indexes
+    WHERE schemaname = 'public'
+      AND idx_scan = 0
+      AND indexrelname NOT LIKE '%pkey'
+    ORDER BY pg_relation_size(indexrelid) DESC
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - tablename:
+        usage: "LABEL"
+        description: "Table name"
+    - indexname:
+        usage: "LABEL"
+        description: "Index name"
+    - size:
+        usage: "LABEL"
+        description: "Size of unused index"
+
+# ===========================================================================
+# TABLE BLOAT METRICS
+# ===========================================================================
+pg_table_bloat:
+  query: |
+    SELECT
+      schemaname,
+      tablename,
+      n_dead_tup,
+      n_live_tup,
+      CASE
+        WHEN n_live_tup > 0
+        THEN (n_dead_tup::float / n_live_tup::float) * 100
+        ELSE 0
+      END as bloat_ratio
+    FROM pg_stat_user_tables
+    WHERE schemaname = 'public'
+      AND n_live_tup > 0
+    ORDER BY n_dead_tup DESC
+    LIMIT 20
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - tablename:
+        usage: "LABEL"
+        description: "Table name"
+    - n_dead_tup:
+        usage: "GAUGE"
+        description: "Number of dead tuples"
+    - n_live_tup:
+        usage: "GAUGE"
+        description: "Number of live tuples"
+    - bloat_ratio:
+        usage: "GAUGE"
+        description: "Ratio of dead to live tuples (percentage)"
+
+# ===========================================================================
+# VACUUM AND ANALYZE METRICS
+# ===========================================================================
+pg_vacuum_stats:
+  query: |
+    SELECT
+      schemaname,
+      tablename,
+      last_vacuum,
+      last_autovacuum,
+      last_analyze,
+      last_autoanalyze,
+      vacuum_count,
+      autovacuum_count,
+      analyze_count,
+      autoanalyze_count
+    FROM pg_stat_user_tables
+    WHERE schemaname = 'public'
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - tablename:
+        usage: "LABEL"
+        description: "Table name"
+    - vacuum_count:
+        usage: "COUNTER"
+        description: "Number of manual vacuums"
+    - autovacuum_count:
+        usage: "COUNTER"
+        description: "Number of autovacuums"
+    - analyze_count:
+        usage: "COUNTER"
+        description: "Number of manual analyzes"
+    - autoanalyze_count:
+        usage: "COUNTER"
+        description: "Number of autoanalyzes"
+
+# ===========================================================================
+# CACHE HIT RATIO
+# ===========================================================================
+pg_cache_hit_ratio:
+  query: |
+    SELECT
+      'cache_hit_ratio' as metric,
+      sum(heap_blks_hit) / NULLIF(sum(heap_blks_hit) + sum(heap_blks_read), 0) as ratio
+    FROM pg_statio_user_tables
+  metrics:
+    - metric:
+        usage: "LABEL"
+        description: "Metric name"
+    - ratio:
+        usage: "GAUGE"
+        description: "Cache hit ratio (0-1)"
+
+# ===========================================================================
+# TRANSACTION WRAPAROUND MONITORING
+# ===========================================================================
+pg_transaction_wraparound:
+  query: |
+    SELECT
+      datname,
+      age(datfrozenxid) as xid_age,
+      2147483648 - age(datfrozenxid) as xids_remaining
+    FROM pg_database
+    WHERE datname = current_database()
+  metrics:
+    - datname:
+        usage: "LABEL"
+        description: "Database name"
+    - xid_age:
+        usage: "GAUGE"
+        description: "Age of oldest transaction ID"
+    - xids_remaining:
+        usage: "GAUGE"
+        description: "Transaction IDs remaining before wraparound"
+
+# ===========================================================================
+# LOCK MONITORING
+# ===========================================================================
+pg_locks:
+  query: |
+    SELECT
+      mode,
+      locktype,
+      COUNT(*) as lock_count
+    FROM pg_locks
+    GROUP BY mode, locktype
+  metrics:
+    - mode:
+        usage: "LABEL"
+        description: "Lock mode"
+    - locktype:
+        usage: "LABEL"
+        description: "Lock type"
+    - lock_count:
+        usage: "GAUGE"
+        description: "Number of locks"
+
+# ===========================================================================
+# REPLICATION LAG (for replicas)
+# ===========================================================================
+pg_replication_lag:
+  query: |
+    SELECT
+      client_addr,
+      application_name,
+      state,
+      COALESCE(EXTRACT(EPOCH FROM (now() - pg_last_xact_replay_timestamp())), 0) as lag_seconds
+    FROM pg_stat_replication
+  metrics:
+    - client_addr:
+        usage: "LABEL"
+        description: "Replica IP address"
+    - application_name:
+        usage: "LABEL"
+        description: "Application name"
+    - state:
+        usage: "LABEL"
+        description: "Replication state"
+    - lag_seconds:
+        usage: "GAUGE"
+        description: "Replication lag in seconds"
+
+# ===========================================================================
+# BUSINESS METRICS - WhatsApp SaaS Specific
+# ===========================================================================
+whatsapp_bookings_stats:
+  query: |
+    SELECT
+      status,
+      COUNT(*) as count,
+      COUNT(*) FILTER (WHERE created_at > now() - interval '1 hour') as last_hour,
+      COUNT(*) FILTER (WHERE created_at > now() - interval '24 hours') as last_24h
+    FROM bookings
+    GROUP BY status
+  metrics:
+    - status:
+        usage: "LABEL"
+        description: "Booking status"
+    - count:
+        usage: "GAUGE"
+        description: "Total bookings with this status"
+    - last_hour:
+        usage: "GAUGE"
+        description: "Bookings created in last hour"
+    - last_24h:
+        usage: "GAUGE"
+        description: "Bookings created in last 24 hours"
+
+whatsapp_messages_stats:
+  query: |
+    SELECT
+      direction,
+      status,
+      COUNT(*) as count,
+      COUNT(*) FILTER (WHERE created_at > now() - interval '1 hour') as last_hour
+    FROM messages
+    GROUP BY direction, status
+  metrics:
+    - direction:
+        usage: "LABEL"
+        description: "Message direction (inbound/outbound)"
+    - status:
+        usage: "LABEL"
+        description: "Message status"
+    - count:
+        usage: "GAUGE"
+        description: "Total messages"
+    - last_hour:
+        usage: "GAUGE"
+        description: "Messages in last hour"
+
+whatsapp_active_users:
+  query: |
+    SELECT
+      'active_users' as metric,
+      COUNT(DISTINCT user_id) as count
+    FROM bookings
+    WHERE created_at > now() - interval '24 hours'
+  metrics:
+    - metric:
+        usage: "LABEL"
+        description: "Metric name"
+    - count:
+        usage: "GAUGE"
+        description: "Active users in last 24 hours"

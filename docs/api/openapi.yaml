@@ -1,0 +1,1118 @@
+openapi: 3.0.3
+info:
+  title: WhatsApp SaaS Platform API
+  description: |
+    REST API for the WhatsApp SaaS Platform - A multi-tenant WhatsApp Business API platform
+    for managing conversations, bookings, and AI-powered customer interactions.
+
+    ## Features
+    - Multi-tenant salon management
+    - WhatsApp message webhooks
+    - AI-powered conversation management
+    - Booking system integration
+    - Real-time analytics and metrics
+    - Rate limiting and caching
+
+    ## Authentication
+    Admin endpoints require an `x-admin-token` header with your admin API token.
+
+    ## Rate Limiting
+    - Webhook endpoints: 100 requests/minute per IP
+    - Admin endpoints: 30 requests/minute per IP
+    - Rate limits are enforced per endpoint category
+
+    ## Caching
+    - Health checks: 30 seconds
+    - Bookings: 1 minute
+    - Messages: 1 minute
+    - Stats: 2 minutes
+    - AI Analytics: 15 minutes
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+    url: https://example.com/support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.example.com
+    description: Production server
+  - url: https://staging-api.example.com
+    description: Staging server
+  - url: http://localhost:3000
+    description: Local development server
+
+tags:
+  - name: Health & Metrics
+    description: Health checks and monitoring endpoints
+  - name: Webhooks
+    description: WhatsApp webhook endpoints (Meta Platform integration)
+  - name: Admin - Salons
+    description: Salon management endpoints (admin only)
+  - name: Admin - Bookings
+    description: Booking management endpoints (admin only)
+  - name: Admin - Messages
+    description: Message history endpoints (admin only)
+  - name: Admin - Analytics
+    description: Statistics and analytics endpoints (admin only)
+  - name: Admin - AI
+    description: AI conversation analytics endpoints (admin only)
+  - name: Admin - System
+    description: System administration endpoints (admin only)
+
+security:
+  - AdminToken: []
+
+paths:
+  /:
+    get:
+      summary: Root endpoint
+      description: Returns basic API information and status
+      tags:
+        - Health & Metrics
+      responses:
+        '200':
+          description: API is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: WhatsApp SaaS Starter is running
+                  version:
+                    type: string
+                    example: 1.0.0
+                  environment:
+                    type: string
+                    enum: [development, staging, production]
+                    example: production
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: 2025-01-18T10:00:00.000Z
+
+  /healthz:
+    get:
+      summary: Health check endpoint
+      description: |
+        Comprehensive health check for all services including database, Redis, and message queues.
+        This endpoint is cached for 30 seconds and is used by load balancers and monitoring systems.
+      tags:
+        - Health & Metrics
+      responses:
+        '200':
+          description: All services are healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+              example:
+                status: ok
+                timestamp: '2025-01-18T10:00:00.000Z'
+                uptime: 123456
+                memory:
+                  rss: 123456789
+                  heapTotal: 98765432
+                  heapUsed: 87654321
+                  external: 1234567
+                  arrayBuffers: 123456
+                version: 1.0.0
+                services:
+                  database:
+                    status: healthy
+                    latency: 5
+                    connections: 10
+                    maxConnections: 100
+                  redis:
+                    status: healthy
+                    connected: true
+                    latency: 2
+                  queues:
+                    status: healthy
+                    counts:
+                      completed: 1000
+                      failed: 5
+                      delayed: 0
+                      active: 3
+                      waiting: 10
+        '503':
+          description: One or more services are unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+
+  /metrics:
+    get:
+      summary: Prometheus metrics endpoint
+      description: |
+        Exposes Prometheus-formatted metrics for scraping. Includes HTTP request metrics,
+        response times, error rates, and custom application metrics.
+      tags:
+        - Health & Metrics
+      responses:
+        '200':
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: |
+                # HELP http_requests_total Total number of HTTP requests
+                # TYPE http_requests_total counter
+                http_requests_total{method="GET",path="/healthz",status="200"} 1000
+
+                # HELP http_request_duration_seconds HTTP request duration in seconds
+                # TYPE http_request_duration_seconds histogram
+                http_request_duration_seconds_bucket{le="0.005"} 500
+
+  /metrics/database:
+    get:
+      summary: Database metrics endpoint
+      description: Detailed PostgreSQL database metrics including connection pool status and query performance
+      tags:
+        - Health & Metrics
+      responses:
+        '200':
+          description: Database metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseMetrics'
+        '500':
+          description: Failed to retrieve database metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /webhook:
+    get:
+      summary: Webhook verification endpoint
+      description: |
+        WhatsApp webhook verification endpoint. Meta Platform calls this endpoint during
+        webhook setup to verify ownership. Responds with the challenge parameter if the
+        verify token matches.
+      tags:
+        - Webhooks
+      parameters:
+        - name: hub.mode
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [subscribe]
+          description: Must be 'subscribe'
+        - name: hub.verify_token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Verification token configured in Meta Developer Portal
+        - name: hub.challenge
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Challenge string to echo back
+      responses:
+        '200':
+          description: Webhook verified successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: The challenge parameter
+        '403':
+          description: Verification failed - invalid token or parameters
+
+    post:
+      summary: Webhook receiver endpoint
+      description: |
+        Receives WhatsApp webhook events from Meta Platform. Handles incoming messages,
+        status updates, and other WhatsApp Business API events.
+
+        **Security:**
+        - HMAC signature verification (x-hub-signature-256 header)
+        - Rate limited to 100 requests/minute per IP
+        - Returns 200 ACK immediately, processes events asynchronously
+      tags:
+        - Webhooks
+      parameters:
+        - name: x-hub-signature-256
+          in: header
+          required: true
+          schema:
+            type: string
+          description: HMAC SHA-256 signature of request body
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookEvent'
+            example:
+              object: whatsapp_business_account
+              entry:
+                - id: '123456789'
+                  changes:
+                    - value:
+                        messaging_product: whatsapp
+                        metadata:
+                          display_phone_number: '+1234567890'
+                          phone_number_id: '987654321'
+                        messages:
+                          - from: '1234567890'
+                            id: msg_123abc
+                            timestamp: '1642512000'
+                            type: text
+                            text:
+                              body: 'I would like to book an appointment tomorrow at 2pm'
+      responses:
+        '200':
+          description: Event received and queued for processing
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: EVENT_RECEIVED
+        '401':
+          description: Invalid HMAC signature
+
+  /admin/salons:
+    get:
+      summary: Get all salons
+      description: Retrieve a list of all registered salons (admin only)
+      tags:
+        - Admin - Salons
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: List of salons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Salon'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      summary: Create or update salon
+      description: |
+        Create a new salon or update an existing one. If `id` is provided, updates the salon.
+        Otherwise, creates a new salon with a generated UUID.
+      tags:
+        - Admin - Salons
+      security:
+        - AdminToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalonInput'
+            examples:
+              create:
+                summary: Create new salon
+                value:
+                  name: Hair Studio Downtown
+                  phone_number_id: '987654321'
+                  access_token: EAAG...xyz
+              update:
+                summary: Update existing salon
+                value:
+                  id: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+                  name: Hair Studio Downtown (Updated)
+                  phone_number_id: '987654321'
+                  access_token: EAAG...xyz
+      responses:
+        '200':
+          description: Salon created or updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Salon'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /admin/bookings/{salonId}:
+    get:
+      summary: Get bookings for a salon
+      description: |
+        Retrieve paginated bookings for a specific salon. Supports filtering by status
+        and pagination parameters. Results are cached for 1 minute.
+      tags:
+        - Admin - Bookings
+      security:
+        - AdminToken: []
+      parameters:
+        - $ref: '#/components/parameters/SalonId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [confirmed, cancelled, completed]
+          description: Filter by booking status
+      responses:
+        '200':
+          description: Paginated list of bookings
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Booking'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /admin/messages/{salonId}:
+    get:
+      summary: Get messages for a salon
+      description: |
+        Retrieve paginated message history for a specific salon. Supports filtering
+        by direction (inbound/outbound) and pagination. Results are cached for 1 minute.
+      tags:
+        - Admin - Messages
+      security:
+        - AdminToken: []
+      parameters:
+        - $ref: '#/components/parameters/SalonId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: direction
+          in: query
+          schema:
+            type: string
+            enum: [inbound, outbound]
+          description: Filter by message direction
+      responses:
+        '200':
+          description: Paginated list of messages
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Message'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /admin/stats/{salonId}:
+    get:
+      summary: Get salon statistics
+      description: |
+        Retrieve aggregated statistics for a salon including message counts, booking counts,
+        and conversation metrics. Results are cached for 2 minutes.
+      tags:
+        - Admin - Analytics
+      security:
+        - AdminToken: []
+      parameters:
+        - $ref: '#/components/parameters/SalonId'
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: Salon statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalonStats'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /admin/ai/analytics/{salonId}:
+    get:
+      summary: Get AI analytics for a salon
+      description: |
+        Retrieve comprehensive AI conversation analytics including intent classification,
+        sentiment analysis, response quality metrics, and conversation outcomes.
+        Results are cached for 15 minutes.
+      tags:
+        - Admin - AI
+      security:
+        - AdminToken: []
+      parameters:
+        - $ref: '#/components/parameters/SalonId'
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: AI analytics data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIAnalytics'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /admin/ai/conversations/{salonId}:
+    get:
+      summary: Get AI conversation statistics
+      description: |
+        Retrieve conversation-level statistics including duration, message counts,
+        resolution rates, and customer satisfaction scores. Results are cached for 15 minutes.
+      tags:
+        - Admin - AI
+      security:
+        - AdminToken: []
+      parameters:
+        - $ref: '#/components/parameters/SalonId'
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: Conversation statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationStats'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /admin/refresh-secrets:
+    post:
+      summary: Refresh secrets from AWS Secrets Manager
+      description: |
+        Manually refresh secrets from AWS Secrets Manager and reinitialize services.
+        Emergency use only - secrets are automatically rotated.
+      tags:
+        - Admin - System
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: Secrets refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Secrets refreshed successfully
+                  timestamp:
+                    type: string
+                    format: date-time
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /admin/secrets/health:
+    get:
+      summary: Secrets health check
+      description: Check the status of secrets management system
+      tags:
+        - Admin - System
+      security:
+        - AdminToken: []
+      responses:
+        '200':
+          description: Secrets health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  initialized:
+                    type: boolean
+                    example: true
+                  lastRefresh:
+                    type: string
+                    format: date-time
+                  secretsLoaded:
+                    type: integer
+                    example: 12
+                  autoRotationEnabled:
+                    type: boolean
+                    example: true
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    AdminToken:
+      type: apiKey
+      in: header
+      name: x-admin-token
+      description: Admin API token for authenticating administrative endpoints
+
+  parameters:
+    SalonId:
+      name: salonId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Unique salon identifier (UUID)
+      example: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number for pagination
+      example: 1
+
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Number of items per page
+      example: 20
+
+    StartDate:
+      name: startDate
+      in: query
+      schema:
+        type: string
+        format: date-time
+      description: Start date for filtering (ISO 8601 format)
+      example: '2025-01-01T00:00:00Z'
+
+    EndDate:
+      name: endDate
+      in: query
+      schema:
+        type: string
+        format: date-time
+      description: End date for filtering (ISO 8601 format)
+      example: '2025-01-31T23:59:59Z'
+
+  schemas:
+    Salon:
+      type: object
+      required:
+        - id
+        - name
+        - phone_number_id
+        - access_token
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique salon identifier
+          example: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+        name:
+          type: string
+          description: Salon name
+          example: Hair Studio Downtown
+        phone_number_id:
+          type: string
+          description: WhatsApp Business phone number ID
+          example: '987654321'
+        access_token:
+          type: string
+          description: WhatsApp Business access token (encrypted)
+          example: EAAG...xyz
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    SalonInput:
+      type: object
+      required:
+        - phone_number_id
+        - access_token
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Salon ID (for updates only)
+        name:
+          type: string
+          description: Salon name
+          example: Hair Studio Downtown
+        phone_number_id:
+          type: string
+          description: WhatsApp Business phone number ID
+          example: '987654321'
+        access_token:
+          type: string
+          description: WhatsApp Business access token
+          example: EAAG...xyz
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        booking_code:
+          type: string
+          description: Human-readable booking code
+          example: ABC123
+        salon_id:
+          type: string
+          format: uuid
+        customer_phone:
+          type: string
+          description: Customer phone number (encrypted)
+          example: '+1234567890'
+        customer_name:
+          type: string
+          example: John Doe
+        service:
+          type: string
+          example: Haircut
+        start_ts:
+          type: string
+          format: date-time
+          description: Appointment start time
+        status:
+          type: string
+          enum: [confirmed, cancelled, completed]
+          example: confirmed
+        created_at:
+          type: string
+          format: date-time
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        salon_id:
+          type: string
+          format: uuid
+        customer_phone:
+          type: string
+          description: Customer phone number (encrypted)
+          example: '+1234567890'
+        direction:
+          type: string
+          enum: [inbound, outbound]
+          example: inbound
+        message_type:
+          type: string
+          enum: [text, template, media]
+          example: text
+        content:
+          type: string
+          description: Message content
+          example: I would like to book an appointment
+        metadata:
+          type: object
+          description: Additional message metadata
+        timestamp:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    SalonStats:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        messages:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 1500
+            inbound:
+              type: integer
+              example: 800
+            outbound:
+              type: integer
+              example: 700
+        bookings:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 250
+            confirmed:
+              type: integer
+              example: 200
+            cancelled:
+              type: integer
+              example: 30
+            completed:
+              type: integer
+              example: 180
+        conversations:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 500
+            active:
+              type: integer
+              example: 50
+            resolved:
+              type: integer
+              example: 450
+
+    AIAnalytics:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        intents:
+          type: object
+          description: Intent classification distribution
+          example:
+            booking: 450
+            cancel: 30
+            faq: 200
+            other: 120
+        sentiment:
+          type: object
+          properties:
+            positive:
+              type: integer
+              example: 600
+            neutral:
+              type: integer
+              example: 150
+            negative:
+              type: integer
+              example: 50
+        responseQuality:
+          type: object
+          properties:
+            avgConfidence:
+              type: number
+              format: float
+              example: 0.92
+            successRate:
+              type: number
+              format: float
+              example: 0.95
+        topTopics:
+          type: array
+          items:
+            type: object
+            properties:
+              topic:
+                type: string
+                example: pricing
+              count:
+                type: integer
+                example: 120
+
+    ConversationStats:
+      type: object
+      properties:
+        period:
+          type: object
+          properties:
+            start:
+              type: string
+              format: date-time
+            end:
+              type: string
+              format: date-time
+        total:
+          type: integer
+          example: 500
+        avgDuration:
+          type: integer
+          description: Average conversation duration in seconds
+          example: 180
+        avgMessages:
+          type: number
+          format: float
+          description: Average messages per conversation
+          example: 5.2
+        resolutionRate:
+          type: number
+          format: float
+          example: 0.89
+        satisfactionScore:
+          type: number
+          format: float
+          description: Customer satisfaction score (0-1)
+          example: 0.92
+
+    HealthCheck:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded, error]
+          example: ok
+        timestamp:
+          type: string
+          format: date-time
+        uptime:
+          type: number
+          description: Server uptime in seconds
+          example: 123456
+        memory:
+          type: object
+          properties:
+            rss:
+              type: integer
+            heapTotal:
+              type: integer
+            heapUsed:
+              type: integer
+            external:
+              type: integer
+            arrayBuffers:
+              type: integer
+        version:
+          type: string
+          example: 1.0.0
+        services:
+          type: object
+          properties:
+            database:
+              $ref: '#/components/schemas/ServiceHealth'
+            redis:
+              $ref: '#/components/schemas/ServiceHealth'
+            queues:
+              $ref: '#/components/schemas/ServiceHealth'
+
+    ServiceHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, error]
+          example: healthy
+        latency:
+          type: number
+          description: Response time in milliseconds
+          example: 5
+        error:
+          type: string
+          description: Error message (if unhealthy)
+
+    DatabaseMetrics:
+      type: object
+      properties:
+        pool:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 10
+            idle:
+              type: integer
+              example: 7
+            active:
+              type: integer
+              example: 3
+            waiting:
+              type: integer
+              example: 0
+        queries:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 15000
+            slow:
+              type: integer
+              description: Queries > 100ms
+              example: 45
+            avgDuration:
+              type: number
+              format: float
+              example: 12.5
+
+    WebhookEvent:
+      type: object
+      required:
+        - object
+        - entry
+      properties:
+        object:
+          type: string
+          example: whatsapp_business_account
+        entry:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              changes:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    value:
+                      type: object
+                      properties:
+                        messaging_product:
+                          type: string
+                          example: whatsapp
+                        metadata:
+                          type: object
+                          properties:
+                            display_phone_number:
+                              type: string
+                            phone_number_id:
+                              type: string
+                        messages:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              from:
+                                type: string
+                              id:
+                                type: string
+                              timestamp:
+                                type: string
+                              type:
+                                type: string
+                                enum: [text, image, video, audio, document, location, contacts]
+                              text:
+                                type: object
+                                properties:
+                                  body:
+                                    type: string
+
+    PaginatedResponse:
+      type: object
+      required:
+        - data
+        - pagination
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+        pagination:
+          type: object
+          required:
+            - page
+            - limit
+            - total
+            - pages
+          properties:
+            page:
+              type: integer
+              example: 1
+            limit:
+              type: integer
+              example: 20
+            total:
+              type: integer
+              example: 150
+            pages:
+              type: integer
+              example: 8
+
+    Error:
+      type: object
+      required:
+        - error
+        - timestamp
+      properties:
+        error:
+          type: string
+          example: Validation failed
+        message:
+          type: string
+          example: phone_number_id is required
+        timestamp:
+          type: string
+          format: date-time
+        details:
+          type: object
+          description: Additional error details
+
+  responses:
+    Unauthorized:
+      description: Unauthorized - missing or invalid admin token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Unauthorized
+            message: Invalid or missing admin token
+            timestamp: '2025-01-18T10:00:00.000Z'
+
+    ValidationError:
+      description: Validation error - invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Validation failed
+            message: phone_number_id is required and must be a string
+            timestamp: '2025-01-18T10:00:00.000Z'
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Internal Server Error
+            message: An unexpected error occurred
+            timestamp: '2025-01-18T10:00:00.000Z'

@@ -1,0 +1,275 @@
+# =============================================================================
+# INFRASTRUCTURE ALERT RULES
+# =============================================================================
+# Alert conditions for system resources, database, and cache
+# =============================================================================
+
+groups:
+  - name: infrastructure_alerts
+    interval: 15s
+    rules:
+      # =========================================================================
+      # CPU ALERTS
+      # =========================================================================
+
+      - alert: HighCPUUsage
+        expr: |
+          (
+            100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+          ) > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+          tier: infrastructure
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value | humanize }}% on {{ $labels.instance }}"
+          runbook_url: "https://docs.company.com/runbooks/high-cpu"
+
+      - alert: CriticalCPUUsage
+        expr: |
+          (
+            100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+          ) > 95
+        for: 2m
+        labels:
+          severity: critical
+          component: system
+          tier: infrastructure
+        annotations:
+          summary: "Critical CPU usage detected"
+          description: "CPU usage is {{ $value | humanize }}% on {{ $labels.instance }}"
+          runbook_url: "https://docs.company.com/runbooks/critical-cpu"
+
+      # =========================================================================
+      # MEMORY ALERTS
+      # =========================================================================
+
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
+            /
+            node_memory_MemTotal_bytes
+          ) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+          tier: infrastructure
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanize }}% on {{ $labels.instance }}"
+          runbook_url: "https://docs.company.com/runbooks/high-memory"
+
+      - alert: CriticalMemoryUsage
+        expr: |
+          (
+            (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
+            /
+            node_memory_MemTotal_bytes
+          ) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          component: system
+          tier: infrastructure
+        annotations:
+          summary: "Critical memory usage detected"
+          description: "Memory usage is {{ $value | humanize }}% on {{ $labels.instance }}"
+          runbook_url: "https://docs.company.com/runbooks/critical-memory"
+
+      # =========================================================================
+      # DISK ALERTS
+      # =========================================================================
+
+      - alert: HighDiskUsage
+        expr: |
+          (
+            (node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs"} - node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"})
+            /
+            node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs"}
+          ) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          component: system
+          tier: infrastructure
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is {{ $value | humanize }}% on {{ $labels.instance }} ({{ $labels.mountpoint }})"
+          runbook_url: "https://docs.company.com/runbooks/high-disk"
+
+      - alert: DiskWillFillIn4Hours
+        expr: |
+          predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"}[1h], 4*3600) < 0
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+          tier: infrastructure
+        annotations:
+          summary: "Disk will fill in 4 hours"
+          description: "Disk {{ $labels.mountpoint }} on {{ $labels.instance }} is predicted to fill in 4 hours"
+          runbook_url: "https://docs.company.com/runbooks/disk-filling"
+
+      # =========================================================================
+      # DATABASE ALERTS
+      # =========================================================================
+
+      - alert: PostgresDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+          tier: infrastructure
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL instance {{ $labels.instance }} is down"
+          runbook_url: "https://docs.company.com/runbooks/postgres-down"
+
+      - alert: HighDatabaseConnections
+        expr: |
+          (
+            sum by (instance) (pg_stat_database_numbackends)
+            /
+            pg_settings_max_connections
+          ) * 100 > 80
+        for: 3m
+        labels:
+          severity: warning
+          component: database
+          tier: infrastructure
+        annotations:
+          summary: "High database connection usage"
+          description: "Database connections are at {{ $value | humanize }}% of max on {{ $labels.instance }}"
+          runbook_url: "https://docs.company.com/runbooks/high-db-connections"
+
+      - alert: SlowDatabaseQueries
+        expr: |
+          rate(pg_stat_database_blks_read[5m]) / rate(pg_stat_database_blks_hit[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+          tier: infrastructure
+        annotations:
+          summary: "High database cache miss rate"
+          description: "Database cache miss rate is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+          runbook_url: "https://docs.company.com/runbooks/db-cache-miss"
+
+      - alert: DatabaseDeadlocks
+        expr: |
+          rate(pg_stat_database_deadlocks[5m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          component: database
+          tier: infrastructure
+        annotations:
+          summary: "Database deadlocks detected"
+          description: "Database {{ $labels.datname }} is experiencing deadlocks"
+          runbook_url: "https://docs.company.com/runbooks/db-deadlocks"
+
+      - alert: HighDatabaseReplicationLag
+        expr: |
+          pg_replication_lag_seconds > 30
+        for: 3m
+        labels:
+          severity: warning
+          component: database
+          tier: infrastructure
+        annotations:
+          summary: "High database replication lag"
+          description: "Replication lag is {{ $value | humanizeDuration }} on {{ $labels.instance }}"
+          runbook_url: "https://docs.company.com/runbooks/replication-lag"
+
+      # =========================================================================
+      # REDIS ALERTS
+      # =========================================================================
+
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cache
+          tier: infrastructure
+        annotations:
+          summary: "Redis is down"
+          description: "Redis instance {{ $labels.instance }} is down"
+          runbook_url: "https://docs.company.com/runbooks/redis-down"
+
+      - alert: HighRedisMemoryUsage
+        expr: |
+          (
+            redis_memory_used_bytes / redis_memory_max_bytes
+          ) * 100 > 90
+        for: 3m
+        labels:
+          severity: warning
+          component: cache
+          tier: infrastructure
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is {{ $value | humanize }}% on {{ $labels.instance }}"
+          runbook_url: "https://docs.company.com/runbooks/high-redis-memory"
+
+      - alert: RedisEvictingKeys
+        expr: |
+          rate(redis_evicted_keys_total[5m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+          component: cache
+          tier: infrastructure
+        annotations:
+          summary: "Redis is evicting keys"
+          description: "Redis is evicting {{ $value | humanize }} keys per second on {{ $labels.instance }}"
+          runbook_url: "https://docs.company.com/runbooks/redis-eviction"
+
+      - alert: RedisRejectedConnections
+        expr: |
+          rate(redis_rejected_connections_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          component: cache
+          tier: infrastructure
+        annotations:
+          summary: "Redis is rejecting connections"
+          description: "Redis rejected {{ $value | humanize }} connections in the last 5 minutes"
+          runbook_url: "https://docs.company.com/runbooks/redis-rejected-connections"
+
+      # =========================================================================
+      # NETWORK ALERTS
+      # =========================================================================
+
+      - alert: HighNetworkErrors
+        expr: |
+          rate(node_network_receive_errs_total[5m]) + rate(node_network_transmit_errs_total[5m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+          component: network
+          tier: infrastructure
+        annotations:
+          summary: "High network error rate"
+          description: "Network interface {{ $labels.device }} on {{ $labels.instance }} is experiencing errors"
+          runbook_url: "https://docs.company.com/runbooks/network-errors"
+
+      - alert: HighNetworkBandwidth
+        expr: |
+          rate(node_network_receive_bytes_total{device!~"lo"}[5m]) > 100000000 or
+          rate(node_network_transmit_bytes_total{device!~"lo"}[5m]) > 100000000
+        for: 5m
+        labels:
+          severity: info
+          component: network
+          tier: infrastructure
+        annotations:
+          summary: "High network bandwidth usage"
+          description: "Network interface {{ $labels.device }} on {{ $labels.instance }} is using high bandwidth"
+          runbook_url: "https://docs.company.com/runbooks/high-bandwidth"

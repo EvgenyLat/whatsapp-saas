@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Components</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status.confirmed { background: #dcfce7; color: #166534; }
+        .status.pending { background: #fef3c7; color: #92400e; }
+        .status.cancelled { background: #fecaca; color: #991b1b; }
+        .status.completed { background: #e0e7ff; color: #3730a3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Тест компонентов BookingTable</h1>
+        
+        <h2>Статусы записей:</h2>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <span class="status confirmed">Подтверждено</span>
+            <span class="status pending">Ожидает</span>
+            <span class="status cancelled">Отменено</span>
+            <span class="status completed">Завершено</span>
+        </div>
+
+        <h2>Форматирование телефонов:</h2>
+        <div style="margin-bottom: 20px;">
+            <p>0501234567 → +972 50-123-4567</p>
+            <p>972501234567 → +972 50-123-4567</p>
+            <p>501234567 → +972 50-123-4567</p>
+        </div>
+
+        <h2>Фильтры:</h2>
+        <div style="margin-bottom: 20px;">
+            <p>✅ Поиск по имени клиента</p>
+            <p>✅ Поиск по телефону</p>
+            <p>✅ Фильтр по статусу (все, ожидает, подтверждено, завершено, отменено)</p>
+        </div>
+
+        <h2>Сортировка:</h2>
+        <div style="margin-bottom: 20px;">
+            <p>✅ По имени клиента</p>
+            <p>✅ По телефону</p>
+            <p>✅ По услуге</p>
+            <p>✅ По дате и времени</p>
+            <p>✅ По статусу</p>
+        </div>
+
+        <h2>Пагинация:</h2>
+        <div style="margin-bottom: 20px;">
+            <p>✅ 10 записей на страницу</p>
+            <p>✅ Навигация по страницам</p>
+            <p>✅ Показ текущей страницы</p>
+        </div>
+
+        <h2>Действия:</h2>
+        <div style="margin-bottom: 20px;">
+            <p>✅ Кнопка отмены записи</p>
+            <p>✅ Подтверждение отмены</p>
+            <p>✅ Блокировка для отмененных записей</p>
+        </div>
+
+        <h2>Исправления:</h2>
+        <div style="background: #dcfce7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <p><strong>✅ Исправлена ошибка Select.Item:</strong></p>
+            <p>• Изменено значение "Все статусы" с "" на "all"</p>
+            <p>• Обновлена логика фильтрации для обработки "all"</p>
+            <p>• Установлено начальное значение фильтра "all"</p>
+        </div>
+
+        <h2>Запуск приложения:</h2>
+        <div style="background: #f0f9ff; padding: 15px; border-radius: 8px;">
+            <p><strong>Для запуска приложения:</strong></p>
+            <p>1. Дважды кликните на <code>start-app.cmd</code></p>
+            <p>2. Или выполните в командной строке: <code>npm run dev</code></p>
+            <p>3. Откройте браузер по адресу: <code>http://localhost:3000</code></p>
+        </div>
+    </div>
+</body>
+</html>
+

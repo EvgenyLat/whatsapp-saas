@@ -1,0 +1,189 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: whatsapp-saas-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # REQUIRED: Set in .env file
+      POSTGRES_DB: ${POSTGRES_DB:-whatsapp_saas}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./Backend/prisma/schema.prisma:/docker-entrypoint-initdb.d/schema.prisma:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - whatsapp-saas-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: whatsapp-saas-redis
+    restart: always
+    command: redis-server --appendonly yes --tcp-keepalive 60 --timeout 0
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - whatsapp-saas-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: whatsapp-saas-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Server Configuration
+      NODE_ENV: development
+      PORT: 3000
+
+      # Use environment variables for local development (not AWS Secrets)
+      USE_AWS_SECRETS: ${USE_AWS_SECRETS:-false}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+
+      # Admin Security
+      # WARNING: Default value is INSECURE - Set ADMIN_TOKEN in .env file for production
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-dev-admin-token-change-in-production}
+
+      # Meta WhatsApp Configuration
+      # WARNING: Default values are INSECURE - Set in .env file for production
+      META_VERIFY_TOKEN: ${META_VERIFY_TOKEN:-dev-verify-token}
+      META_APP_SECRET: ${META_APP_SECRET:-dev-app-secret}
+
+      # Default WhatsApp Credentials
+      # WARNING: Default values are INSECURE - Set in .env file for production
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-123456789012345}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-dev-access-token}
+
+      # Database Configuration (Docker network)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-whatsapp_saas}?schema=public
+
+      # Connection Pool Configuration
+      DB_CONNECTION_LIMIT: ${DB_CONNECTION_LIMIT:-20}
+      DB_POOL_TIMEOUT: ${DB_POOL_TIMEOUT:-20}
+      DB_STATEMENT_CACHE_SIZE: ${DB_STATEMENT_CACHE_SIZE:-100}
+
+      # Query Configuration
+      DB_QUERY_TIMEOUT: ${DB_QUERY_TIMEOUT:-10000}
+      DB_SLOW_QUERY_THRESHOLD: ${DB_SLOW_QUERY_THRESHOLD:-1000}
+
+      # Redis Configuration (Docker network)
+      REDIS_URL: redis://redis:6379
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      # CORS Configuration
+      ALLOWED_ORIGINS: http://localhost:3000,http://localhost:3001
+
+      # Logging Configuration
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+
+      # Rate Limiting
+      WEBHOOK_RATE_LIMIT: ${WEBHOOK_RATE_LIMIT:-100}
+      ADMIN_RATE_LIMIT: ${ADMIN_RATE_LIMIT:-20}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+
+      # Message Queue Configuration
+      QUEUE_CONCURRENCY: ${QUEUE_CONCURRENCY:-5}
+      QUEUE_RETRY_ATTEMPTS: ${QUEUE_RETRY_ATTEMPTS:-3}
+
+      # Cache Configuration
+      CACHE_TTL_SECONDS: ${CACHE_TTL_SECONDS:-3600}
+      SALON_CACHE_TTL_SECONDS: ${SALON_CACHE_TTL_SECONDS:-1800}
+
+      # Monitoring
+      ENABLE_METRICS: ${ENABLE_METRICS:-true}
+      METRICS_PORT: ${METRICS_PORT:-9090}
+
+      # OpenAI Configuration
+      # WARNING: Default value is PLACEHOLDER - Set OPENAI_API_KEY in .env file
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-your-openai-api-key}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4}
+      OPENAI_MAX_TOKENS: ${OPENAI_MAX_TOKENS:-1000}
+      OPENAI_TEMPERATURE: ${OPENAI_TEMPERATURE:-0.7}
+
+    ports:
+      - "3000:3000"
+      - "9090:9090"  # Metrics port
+    volumes:
+      - ./Backend:/app
+      - /app/node_modules  # Prevent overwriting node_modules
+      - ./Backend/logs:/app/logs
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 5 &&
+        echo 'Running database migrations...' &&
+        npx prisma migrate deploy || echo 'Migrations already applied or schema exists, continuing...' &&
+        echo 'Starting application...' &&
+        npm run start:prod
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - whatsapp-saas-network
+    restart: unless-stopped
+
+  # Adminer (Database Management UI)
+  adminer:
+    image: adminer:latest
+    container_name: whatsapp-saas-adminer
+    depends_on:
+      - postgres
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - "8080:8080"
+    networks:
+      - whatsapp-saas-network
+    profiles:
+      - tools  # Only start with --profile tools
+
+  # Redis Commander (Redis Management UI)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: whatsapp-saas-redis-commander
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    networks:
+      - whatsapp-saas-network
+    profiles:
+      - tools  # Only start with --profile tools
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  whatsapp-saas-network:
+    driver: bridge

@@ -1,0 +1,340 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "WhatsApp Interactive Booking Webhook API",
+    "version": "1.0.0",
+    "description": "Extended webhook endpoint for WhatsApp interactive message handling"
+  },
+  "servers": [
+    {
+      "url": "https://api.example.com/api/v1",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/whatsapp/webhook": {
+      "get": {
+        "summary": "Webhook verification",
+        "description": "WhatsApp Cloud API webhook verification endpoint",
+        "parameters": [
+          {
+            "name": "hub.mode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["subscribe"]
+            }
+          },
+          {
+            "name": "hub.verify_token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Verification token (must match WHATSAPP_WEBHOOK_VERIFY_TOKEN)"
+          },
+          {
+            "name": "hub.challenge",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Challenge string to return"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Verification successful",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "description": "Echo back hub.challenge value"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Verification token mismatch"
+          }
+        }
+      },
+      "post": {
+        "summary": "Receive WhatsApp messages",
+        "description": "Webhook endpoint for incoming WhatsApp messages (text and interactive)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookPayload"
+              },
+              "examples": {
+                "text_message": {
+                  "summary": "Customer sends text message",
+                  "value": {
+                    "object": "whatsapp_business_account",
+                    "entry": [
+                      {
+                        "id": "123456789",
+                        "changes": [
+                          {
+                            "value": {
+                              "messaging_product": "whatsapp",
+                              "metadata": {
+                                "display_phone_number": "+1 555-123-4567",
+                                "phone_number_id": "987654321"
+                              },
+                              "messages": [
+                                {
+                                  "from": "1234567890",
+                                  "id": "wamid.XXX",
+                                  "timestamp": "1234567890",
+                                  "type": "text",
+                                  "text": {
+                                    "body": "Haircut Friday 3pm"
+                                  }
+                                }
+                              ]
+                            },
+                            "field": "messages"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "button_click": {
+                  "summary": "Customer clicks button",
+                  "value": {
+                    "object": "whatsapp_business_account",
+                    "entry": [
+                      {
+                        "id": "123456789",
+                        "changes": [
+                          {
+                            "value": {
+                              "messaging_product": "whatsapp",
+                              "metadata": {
+                                "display_phone_number": "+1 555-123-4567",
+                                "phone_number_id": "987654321"
+                              },
+                              "messages": [
+                                {
+                                  "from": "1234567890",
+                                  "id": "wamid.XXX",
+                                  "timestamp": "1234567890",
+                                  "type": "interactive",
+                                  "interactive": {
+                                    "type": "button_reply",
+                                    "button_reply": {
+                                      "id": "slot_2024-10-25_15:00_m123",
+                                      "title": "3:00 PM - Sarah"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            "field": "messages"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message received successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Message processed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid payload"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        },
+        "security": [
+          {
+            "whatsappSignature": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "WebhookPayload": {
+        "type": "object",
+        "required": ["object", "entry"],
+        "properties": {
+          "object": {
+            "type": "string",
+            "enum": ["whatsapp_business_account"]
+          },
+          "entry": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Entry"
+            }
+          }
+        }
+      },
+      "Entry": {
+        "type": "object",
+        "required": ["id", "changes"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "WhatsApp Business Account ID"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Change"
+            }
+          }
+        }
+      },
+      "Change": {
+        "type": "object",
+        "required": ["value", "field"],
+        "properties": {
+          "value": {
+            "$ref": "#/components/schemas/ChangeValue"
+          },
+          "field": {
+            "type": "string",
+            "enum": ["messages"]
+          }
+        }
+      },
+      "ChangeValue": {
+        "type": "object",
+        "required": ["messaging_product", "metadata"],
+        "properties": {
+          "messaging_product": {
+            "type": "string",
+            "enum": ["whatsapp"]
+          },
+          "metadata": {
+            "type": "object",
+            "properties": {
+              "display_phone_number": {
+                "type": "string"
+              },
+              "phone_number_id": {
+                "type": "string"
+              }
+            }
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            }
+          }
+        }
+      },
+      "Message": {
+        "type": "object",
+        "required": ["from", "id", "timestamp", "type"],
+        "properties": {
+          "from": {
+            "type": "string",
+            "pattern": "^[1-9]\\d{1,14}$"
+          },
+          "id": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["text", "interactive", "button", "image"]
+          },
+          "text": {
+            "type": "object",
+            "properties": {
+              "body": {
+                "type": "string"
+              }
+            }
+          },
+          "interactive": {
+            "$ref": "#/components/schemas/Interactive"
+          }
+        }
+      },
+      "Interactive": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["button_reply", "list_reply"]
+          },
+          "button_reply": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^(slot|confirm|waitlist|action|nav)_[a-zA-Z0-9_:-]+$"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          },
+          "list_reply": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^(slot|confirm|waitlist|action|nav)_[a-zA-Z0-9_:-]+$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "whatsappSignature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Hub-Signature-256",
+        "description": "WhatsApp webhook signature for verification"
+      }
+    }
+  }
+}

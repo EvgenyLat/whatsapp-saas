@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Salon Data - WhatsApp SaaS</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+        }
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .btn:hover {
+            background: #45a049;
+        }
+        .btn-danger {
+            background: #f44336;
+        }
+        .btn-danger:hover {
+            background: #da190b;
+        }
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 6px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        .current-data {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔧 Clear Salon Data</h1>
+        <p>This tool will help you reset salon data after deleting a salon.</p>
+
+        <div id="status" class="status"></div>
+
+        <div class="current-data">
+            <strong>Current Data:</strong><br>
+            <span id="currentData">Loading...</span>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ Warning:</strong> This will clear your salon ID. You'll need to create a new salon after clearing.
+        </div>
+
+        <button class="btn btn-danger" onclick="clearSalonData()">Clear Salon ID</button>
+        <button class="btn" onclick="clearAll()">Clear All Auth Data (Logout)</button>
+        <button class="btn" onclick="showCurrentData()">Refresh Data</button>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'success') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+
+        function showCurrentData() {
+            try {
+                const authStorage = localStorage.getItem('auth-storage');
+                if (!authStorage) {
+                    document.getElementById('currentData').innerHTML =
+                        '<span style="color: #6c757d;">No auth data found</span>';
+                    return;
+                }
+
+                const parsed = JSON.parse(authStorage);
+                const user = parsed.state?.user;
+                const salon = parsed.state?.salon;
+
+                let html = '';
+                if (user) {
+                    html += `<strong>User:</strong> ${user.email}<br>`;
+                    html += `<strong>User Salon ID:</strong> ${user.salon_id || '<i>null</i>'}<br><br>`;
+                }
+                if (salon) {
+                    html += `<strong>Salon Object:</strong><br>`;
+                    html += `  ID: ${salon.id}<br>`;
+                    html += `  Name: ${salon.name}<br>`;
+                } else {
+                    html += `<strong>Salon Object:</strong> <i>null</i>`;
+                }
+
+                document.getElementById('currentData').innerHTML = html;
+            } catch (error) {
+                document.getElementById('currentData').innerHTML =
+                    `<span style="color: #dc3545;">Error reading data: ${error.message}</span>`;
+            }
+        }
+
+        function clearSalonData() {
+            if (!confirm('Are you sure you want to clear salon data? You will need to create a new salon.')) {
+                return;
+            }
+
+            try {
+                const authStorage = localStorage.getItem('auth-storage');
+                if (!authStorage) {
+                    showStatus('No auth data found', 'info');
+                    return;
+                }
+
+                const parsed = JSON.parse(authStorage);
+
+                // Clear salon_id from user
+                if (parsed.state?.user) {
+                    parsed.state.user.salon_id = null;
+                }
+
+                // Clear salon object
+                parsed.state.salon = null;
+
+                // Save back to localStorage
+                localStorage.setItem('auth-storage', JSON.stringify(parsed));
+
+                showStatus('✅ Salon data cleared successfully! Please reload the page (F5).', 'success');
+                showCurrentData();
+            } catch (error) {
+                showStatus(`❌ Error clearing salon data: ${error.message}`, 'info');
+            }
+        }
+
+        function clearAll() {
+            if (!confirm('This will log you out completely. Are you sure?')) {
+                return;
+            }
+
+            try {
+                localStorage.removeItem('auth-storage');
+                showStatus('✅ All auth data cleared! Redirecting to login...', 'success');
+
+                setTimeout(() => {
+                    window.location.href = 'http://localhost:3001/login';
+                }, 2000);
+            } catch (error) {
+                showStatus(`❌ Error: ${error.message}`, 'info');
+            }
+        }
+
+        // Show current data on load
+        showCurrentData();
+    </script>
+</body>
+</html>

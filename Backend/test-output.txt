@@ -1,0 +1,22 @@
+
+> whatsapp-saas-starter@0.1.0 test:integration
+> jest --config jest.integration.config.js --testPathPattern=module-wiring.spec.ts
+
+  console.log
+    Running Prisma migrations for test database...
+
+      at initializeTestDatabase (tests/setup.ts:177:13)
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "whatsapp_saas_1", schema "public" at "localhost:5432"
+
+8 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+  console.log
+    Test database initialized successfully
+
+      at initializeTestDatabase (tests/setup.ts:187:13)
+

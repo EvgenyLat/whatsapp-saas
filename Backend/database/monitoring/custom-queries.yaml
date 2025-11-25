@@ -1,0 +1,458 @@
+# Custom PostgreSQL Metrics for WhatsApp SaaS Starter
+# These queries provide application-specific database metrics
+# Used by prometheus postgres_exporter
+
+# ============================================================================
+# BOOKING METRICS
+# ============================================================================
+
+bookings_total:
+  query: |
+    SELECT
+      salon_id,
+      status,
+      COUNT(*) as count
+    FROM bookings
+    WHERE created_at > NOW() - INTERVAL '24 hours'
+    GROUP BY salon_id, status
+  metrics:
+    - salon_id:
+        usage: "LABEL"
+        description: "Salon identifier"
+    - status:
+        usage: "LABEL"
+        description: "Booking status"
+    - count:
+        usage: "GAUGE"
+        description: "Number of bookings in last 24 hours"
+
+bookings_by_date:
+  query: |
+    SELECT
+      salon_id,
+      DATE(start_ts) as booking_date,
+      COUNT(*) as count
+    FROM bookings
+    WHERE start_ts >= CURRENT_DATE
+      AND start_ts < CURRENT_DATE + INTERVAL '7 days'
+    GROUP BY salon_id, DATE(start_ts)
+  metrics:
+    - salon_id:
+        usage: "LABEL"
+        description: "Salon identifier"
+    - booking_date:
+        usage: "LABEL"
+        description: "Booking date"
+    - count:
+        usage: "GAUGE"
+        description: "Number of bookings for date"
+
+booking_conflicts:
+  query: |
+    SELECT
+      salon_id,
+      COUNT(*) as conflict_count
+    FROM (
+      SELECT
+        b1.salon_id,
+        b1.start_ts
+      FROM bookings b1
+      INNER JOIN bookings b2 ON
+        b1.salon_id = b2.salon_id
+        AND b1.id != b2.id
+        AND b1.start_ts = b2.start_ts
+        AND b1.status = 'CONFIRMED'
+        AND b2.status = 'CONFIRMED'
+      WHERE b1.created_at > NOW() - INTERVAL '1 hour'
+    ) conflicts
+    GROUP BY salon_id
+  metrics:
+    - salon_id:
+        usage: "LABEL"
+        description: "Salon with booking conflicts"
+    - conflict_count:
+        usage: "GAUGE"
+        description: "Number of booking conflicts detected"
+
+# ============================================================================
+# MESSAGE METRICS
+# ============================================================================
+
+messages_total:
+  query: |
+    SELECT
+      salon_id,
+      direction,
+      message_type,
+      status,
+      COUNT(*) as count
+    FROM messages
+    WHERE created_at > NOW() - INTERVAL '1 hour'
+    GROUP BY salon_id, direction, message_type, status
+  metrics:
+    - salon_id:
+        usage: "LABEL"
+        description: "Salon identifier"
+    - direction:
+        usage: "LABEL"
+        description: "Message direction (INBOUND/OUTBOUND)"
+    - message_type:
+        usage: "LABEL"
+        description: "Message type"
+    - status:
+        usage: "LABEL"
+        description: "Message status"
+    - count:
+        usage: "GAUGE"
+        description: "Number of messages in last hour"
+
+message_cost:
+  query: |
+    SELECT
+      salon_id,
+      SUM(COALESCE(cost, 0)) as total_cost,
+      COUNT(*) as message_count
+    FROM messages
+    WHERE created_at > NOW() - INTERVAL '24 hours'
+    GROUP BY salon_id
+  metrics:
+    - salon_id:
+        usage: "LABEL"
+        description: "Salon identifier"
+    - total_cost:
+        usage: "GAUGE"
+        description: "Total message cost in last 24 hours"
+    - message_count:
+        usage: "GAUGE"
+        description: "Total messages in last 24 hours"
+
+failed_messages:
+  query: |
+    SELECT
+      salon_id,
+      COUNT(*) as failed_count
+    FROM messages
+    WHERE status = 'FAILED'
+      AND created_at > NOW() - INTERVAL '1 hour'
+    GROUP BY salon_id
+  metrics:
+    - salon_id:
+        usage: "LABEL"
+        description: "Salon with failed messages"
+    - failed_count:
+        usage: "GAUGE"
+        description: "Number of failed messages in last hour"
+
+# ============================================================================
+# CONVERSATION METRICS
+# ============================================================================
+
+active_conversations:
+  query: |
+    SELECT
+      salon_id,
+      status,
+      COUNT(*) as count
+    FROM conversations
+    WHERE last_message_at > NOW() - INTERVAL '24 hours'
+    GROUP BY salon_id, status
+  metrics:
+    - salon_id:
+        usage: "LABEL"
+        description: "Salon identifier"
+    - status:
+        usage: "LABEL"
+        description: "Conversation status"
+    - count:
+        usage: "GAUGE"
+        description: "Number of active conversations"
+
+conversation_duration:
+  query: |
+    SELECT
+      salon_id,
+      AVG(EXTRACT(EPOCH FROM (last_message_at - started_at))) as avg_duration_seconds,
+      MAX(EXTRACT(EPOCH FROM (last_message_at - started_at))) as max_duration_seconds
+    FROM conversations
+    WHERE last_message_at > NOW() - INTERVAL '24 hours'
+    GROUP BY salon_id
+  metrics:
+    - salon_id:
+        usage: "LABEL"
+        description: "Salon identifier"
+    - avg_duration_seconds:
+        usage: "GAUGE"
+        description: "Average conversation duration in seconds"
+    - max_duration_seconds:
+        usage: "GAUGE"
+        description: "Maximum conversation duration in seconds"
+
+# ============================================================================
+# AI METRICS
+# ============================================================================
+
+ai_conversation_cost:
+  query: |
+    SELECT
+      salon_id,
+      ai_model,
+      SUM(total_cost) as total_cost,
+      SUM(total_tokens) as total_tokens,
+      COUNT(*) as conversation_count
+    FROM ai_conversations
+    WHERE created_at > NOW() - INTERVAL '24 hours'
+    GROUP BY salon_id, ai_model
+  metrics:
+    - salon_id:
+        usage: "LABEL"
+        description: "Salon identifier"
+    - ai_model:
+        usage: "LABEL"
+        description: "AI model used"
+    - total_cost:
+        usage: "GAUGE"
+        description: "Total AI cost in last 24 hours"
+    - total_tokens:
+        usage: "GAUGE"
+        description: "Total tokens used in last 24 hours"
+    - conversation_count:
+        usage: "GAUGE"
+        description: "Number of AI conversations in last 24 hours"
+
+ai_response_time:
+  query: |
+    SELECT
+      salon_id,
+      ai_model,
+      AVG(response_time_ms) as avg_response_time_ms,
+      MAX(response_time_ms) as max_response_time_ms,
+      MIN(response_time_ms) as min_response_time_ms
+    FROM ai_messages
+    WHERE direction = 'OUTBOUND'
+      AND response_time_ms IS NOT NULL
+      AND created_at > NOW() - INTERVAL '1 hour'
+    GROUP BY salon_id, ai_model
+  metrics:
+    - salon_id:
+        usage: "LABEL"
+        description: "Salon identifier"
+    - ai_model:
+        usage: "LABEL"
+        description: "AI model used"
+    - avg_response_time_ms:
+        usage: "GAUGE"
+        description: "Average AI response time in milliseconds"
+    - max_response_time_ms:
+        usage: "GAUGE"
+        description: "Maximum AI response time in milliseconds"
+    - min_response_time_ms:
+        usage: "GAUGE"
+        description: "Minimum AI response time in milliseconds"
+
+# ============================================================================
+# WEBHOOK METRICS
+# ============================================================================
+
+webhook_events:
+  query: |
+    SELECT
+      salon_id,
+      event_type,
+      status,
+      COUNT(*) as count
+    FROM webhook_logs
+    WHERE created_at > NOW() - INTERVAL '1 hour'
+    GROUP BY salon_id, event_type, status
+  metrics:
+    - salon_id:
+        usage: "LABEL"
+        description: "Salon identifier"
+    - event_type:
+        usage: "LABEL"
+        description: "Webhook event type"
+    - status:
+        usage: "LABEL"
+        description: "Webhook processing status"
+    - count:
+        usage: "GAUGE"
+        description: "Number of webhook events in last hour"
+
+webhook_errors:
+  query: |
+    SELECT
+      salon_id,
+      event_type,
+      COUNT(*) as error_count
+    FROM webhook_logs
+    WHERE status = 'error'
+      AND created_at > NOW() - INTERVAL '1 hour'
+    GROUP BY salon_id, event_type
+  metrics:
+    - salon_id:
+        usage: "LABEL"
+        description: "Salon with webhook errors"
+    - event_type:
+        usage: "LABEL"
+        description: "Webhook event type with errors"
+    - error_count:
+        usage: "GAUGE"
+        description: "Number of webhook errors in last hour"
+
+webhook_processing_time:
+  query: |
+    SELECT
+      salon_id,
+      event_type,
+      AVG(processing_time_ms) as avg_processing_time_ms,
+      MAX(processing_time_ms) as max_processing_time_ms
+    FROM webhook_logs
+    WHERE processing_time_ms IS NOT NULL
+      AND created_at > NOW() - INTERVAL '1 hour'
+    GROUP BY salon_id, event_type
+  metrics:
+    - salon_id:
+        usage: "LABEL"
+        description: "Salon identifier"
+    - event_type:
+        usage: "LABEL"
+        description: "Webhook event type"
+    - avg_processing_time_ms:
+        usage: "GAUGE"
+        description: "Average webhook processing time in milliseconds"
+    - max_processing_time_ms:
+        usage: "GAUGE"
+        description: "Maximum webhook processing time in milliseconds"
+
+# ============================================================================
+# DATABASE HEALTH METRICS
+# ============================================================================
+
+table_bloat:
+  query: |
+    SELECT
+      schemaname,
+      tablename,
+      pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size,
+      pg_total_relation_size(schemaname||'.'||tablename) AS size_bytes
+    FROM pg_tables
+    WHERE schemaname = 'public'
+    ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - tablename:
+        usage: "LABEL"
+        description: "Table name"
+    - size:
+        usage: "LABEL"
+        description: "Human readable table size"
+    - size_bytes:
+        usage: "GAUGE"
+        description: "Table size in bytes"
+
+index_usage:
+  query: |
+    SELECT
+      schemaname,
+      tablename,
+      indexname,
+      idx_scan,
+      idx_tup_read,
+      idx_tup_fetch
+    FROM pg_stat_user_indexes
+    WHERE schemaname = 'public'
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - tablename:
+        usage: "LABEL"
+        description: "Table name"
+    - indexname:
+        usage: "LABEL"
+        description: "Index name"
+    - idx_scan:
+        usage: "GAUGE"
+        description: "Number of index scans"
+    - idx_tup_read:
+        usage: "GAUGE"
+        description: "Number of tuples read from index"
+    - idx_tup_fetch:
+        usage: "GAUGE"
+        description: "Number of tuples fetched from table"
+
+unused_indexes:
+  query: |
+    SELECT
+      schemaname,
+      tablename,
+      indexname,
+      pg_size_pretty(pg_relation_size(indexrelid)) AS index_size
+    FROM pg_stat_user_indexes
+    WHERE idx_scan = 0
+      AND indexname NOT LIKE '%_pkey'
+      AND schemaname = 'public'
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - tablename:
+        usage: "LABEL"
+        description: "Table name"
+    - indexname:
+        usage: "LABEL"
+        description: "Unused index name"
+    - index_size:
+        usage: "LABEL"
+        description: "Index size (unused)"
+
+# ============================================================================
+# REPLICATION METRICS (for replicas)
+# ============================================================================
+
+replication_lag:
+  query: |
+    SELECT
+      CASE WHEN pg_is_in_recovery() THEN
+        EXTRACT(EPOCH FROM (now() - pg_last_xact_replay_timestamp()))::INTEGER
+      ELSE
+        0
+      END as lag_seconds
+  metrics:
+    - lag_seconds:
+        usage: "GAUGE"
+        description: "Replication lag in seconds (0 if primary)"
+
+# ============================================================================
+# SLOW QUERIES (requires pg_stat_statements extension)
+# ============================================================================
+
+slow_queries:
+  query: |
+    SELECT
+      query,
+      calls,
+      mean_exec_time,
+      max_exec_time,
+      total_exec_time
+    FROM pg_stat_statements
+    WHERE mean_exec_time > 1000  -- queries slower than 1 second
+    ORDER BY mean_exec_time DESC
+    LIMIT 10
+  metrics:
+    - query:
+        usage: "LABEL"
+        description: "SQL query text (truncated)"
+    - calls:
+        usage: "GAUGE"
+        description: "Number of times executed"
+    - mean_exec_time:
+        usage: "GAUGE"
+        description: "Mean execution time in ms"
+    - max_exec_time:
+        usage: "GAUGE"
+        description: "Maximum execution time in ms"
+    - total_exec_time:
+        usage: "GAUGE"
+        description: "Total execution time in ms"

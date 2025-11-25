@@ -1,0 +1,28 @@
+  // Catch-all wildcard handlers for any unmatched routes (place at the END)
+  http.get(`${API_URL}/api/*`, () => {
+    return HttpResponse.json({
+      data: [],
+      pagination: { page: 1, limit: 10, total: 0, totalPages: 0 },
+    });
+  }),
+
+  http.post(`${API_URL}/api/*`, async ({ request }) => {
+    const body = await request.json() as any;
+    return HttpResponse.json({
+      id: 'new-id',
+      ...body,
+      created_at: new Date().toISOString(),
+    }, { status: 201 });
+  }),
+
+  http.put(`${API_URL}/api/*`, async ({ request }) => {
+    const body = await request.json() as any;
+    return HttpResponse.json({
+      ...body,
+      updated_at: new Date().toISOString(),
+    });
+  }),
+
+  http.delete(`${API_URL}/api/*`, () => {
+    return HttpResponse.json({ message: 'Deleted successfully' });
+  }),

@@ -1,0 +1,448 @@
+##############################################################################
+# Docker Compose Configuration - Production Environment
+# WhatsApp SaaS Platform
+#
+# Features:
+# - Nginx reverse proxy with SSL/TLS support
+# - Resource limits and reservations
+# - Auto-restart policies
+# - Security hardening
+# - Logging configuration
+# - Health checks
+# - Production-optimized database settings
+#
+# Usage:
+#   Start:    docker-compose -f docker-compose.prod.yml up -d
+#   Stop:     docker-compose -f docker-compose.prod.yml down
+#   Logs:     docker-compose -f docker-compose.prod.yml logs -f
+##############################################################################
+
+version: '3.9'
+
+services:
+  # ===========================================================================
+  # Nginx Reverse Proxy
+  # ===========================================================================
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: whatsapp-saas-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - nginx_cache:/var/cache/nginx
+      - nginx_logs:/var/log/nginx
+
+    depends_on:
+      backend:
+        condition: service_healthy
+
+    networks:
+      - whatsapp-network
+
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=nginx"
+
+  # ===========================================================================
+  # Backend Service - NestJS Application
+  # ===========================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+      args:
+        BUILD_DATE: ${BUILD_DATE}
+        VCS_REF: ${VCS_REF}
+        VERSION: ${VERSION:-1.0.0}
+    image: whatsapp-saas-backend:${VERSION:-latest}
+    container_name: whatsapp-saas-backend
+    restart: always
+    expose:
+      - "3000"
+    environment:
+      # Application
+      NODE_ENV: production
+      PORT: 3000
+
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public&sslmode=prefer&connect_timeout=10
+      DB_CONNECTION_LIMIT: ${DB_CONNECTION_LIMIT:-50}
+      DB_POOL_TIMEOUT: ${DB_POOL_TIMEOUT:-30}
+      DB_QUERY_TIMEOUT: ${DB_QUERY_TIMEOUT:-10000}
+
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379
+
+      # Security - MUST be set via .env file
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+
+      # Meta WhatsApp
+      META_VERIFY_TOKEN: ${META_VERIFY_TOKEN}
+      META_APP_SECRET: ${META_APP_SECRET}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN}
+
+      # OpenAI
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4}
+
+      # CORS - Set to your actual domain
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+
+      # Rate Limiting
+      WEBHOOK_RATE_LIMIT: ${WEBHOOK_RATE_LIMIT:-100}
+      ADMIN_RATE_LIMIT: ${ADMIN_RATE_LIMIT:-20}
+
+      # AWS Secrets Manager (optional)
+      USE_AWS_SECRETS: ${USE_AWS_SECRETS:-false}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+
+    volumes:
+      # Persistent data (use named volumes in production)
+      - backend_logs:/app/logs
+      - backend_data:/app/data
+      - backend_uploads:/app/uploads
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    networks:
+      - whatsapp-network
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+        labels: "service=backend"
+
+    # Security: Read-only root filesystem (except writable mounts)
+    read_only: true
+    tmpfs:
+      - /tmp:size=100M,mode=1777
+
+  # ===========================================================================
+  # PostgreSQL Database
+  # ===========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: whatsapp-saas-postgres
+    restart: always
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-whatsapp_saas}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8 --data-checksums"
+      PGDATA: /var/lib/postgresql/data/pgdata
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Backup location
+      - postgres_backups:/backups
+
+    networks:
+      - whatsapp-network
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-whatsapp_saas}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=postgres"
+
+    # Production-optimized PostgreSQL settings
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "shared_buffers=512MB"
+      - "-c"
+      - "effective_cache_size=1536MB"
+      - "-c"
+      - "maintenance_work_mem=128MB"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "wal_buffers=16MB"
+      - "-c"
+      - "default_statistics_target=100"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+      - "-c"
+      - "work_mem=16MB"
+      - "-c"
+      - "min_wal_size=2GB"
+      - "-c"
+      - "max_wal_size=8GB"
+      - "-c"
+      - "max_worker_processes=4"
+      - "-c"
+      - "max_parallel_workers_per_gather=2"
+      - "-c"
+      - "max_parallel_workers=4"
+      - "-c"
+      - "max_parallel_maintenance_workers=2"
+      - "-c"
+      - "log_min_duration_statement=1000"
+      - "-c"
+      - "log_line_prefix=%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h "
+      - "-c"
+      - "log_checkpoints=on"
+      - "-c"
+      - "log_connections=on"
+      - "-c"
+      - "log_disconnections=on"
+      - "-c"
+      - "log_lock_waits=on"
+      - "-c"
+      - "log_temp_files=0"
+      - "-c"
+      - "log_autovacuum_min_duration=0"
+
+    # Security: Prevent modification of data by container
+    security_opt:
+      - no-new-privileges:true
+
+  # ===========================================================================
+  # Redis Cache and Queue
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: whatsapp-saas-redis
+    restart: always
+    expose:
+      - "6379"
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --tcp-backlog 511
+      --timeout 300
+      --tcp-keepalive 300
+      --loglevel warning
+      --databases 16
+      --slowlog-log-slower-than 10000
+      --slowlog-max-len 128
+
+    volumes:
+      - redis_data:/data
+
+    networks:
+      - whatsapp-network
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=redis"
+
+    security_opt:
+      - no-new-privileges:true
+
+# =============================================================================
+# Named Volumes for Data Persistence
+# =============================================================================
+volumes:
+  postgres_data:
+    driver: local
+    name: whatsapp_saas_postgres_data_prod
+
+  postgres_backups:
+    driver: local
+    name: whatsapp_saas_postgres_backups
+
+  redis_data:
+    driver: local
+    name: whatsapp_saas_redis_data_prod
+
+  backend_logs:
+    driver: local
+    name: whatsapp_saas_backend_logs
+
+  backend_data:
+    driver: local
+    name: whatsapp_saas_backend_data
+
+  backend_uploads:
+    driver: local
+    name: whatsapp_saas_backend_uploads
+
+  nginx_cache:
+    driver: local
+    name: whatsapp_saas_nginx_cache
+
+  nginx_logs:
+    driver: local
+    name: whatsapp_saas_nginx_logs
+
+# =============================================================================
+# Network Configuration
+# =============================================================================
+networks:
+  whatsapp-network:
+    driver: bridge
+    name: whatsapp_saas_network_prod
+    ipam:
+      config:
+        - subnet: 172.26.0.0/16
+
+##############################################################################
+# Production Deployment Guide:
+#
+# Prerequisites:
+#   1. Create .env file with production secrets
+#   2. Generate SSL certificates (place in ./ssl directory)
+#   3. Configure nginx.conf for your domain
+#   4. Set up backup strategy for volumes
+#
+# Initial Setup:
+#   1. Create .env file:
+#      cp .env.production.example .env
+#
+#   2. Edit .env with secure values:
+#      POSTGRES_PASSWORD=<strong-password>
+#      REDIS_PASSWORD=<strong-password>
+#      JWT_SECRET=<random-secret>
+#      etc.
+#
+#   3. Generate SSL certificates (Let's Encrypt recommended):
+#      certbot certonly --standalone -d yourdomain.com
+#      cp /etc/letsencrypt/live/yourdomain.com/fullchain.pem ./ssl/cert.pem
+#      cp /etc/letsencrypt/live/yourdomain.com/privkey.pem ./ssl/key.pem
+#
+#   4. Build and start services:
+#      docker-compose -f docker-compose.prod.yml up -d --build
+#
+#   5. Run database migrations:
+#      docker-compose -f docker-compose.prod.yml exec backend npx prisma migrate deploy
+#
+#   6. Verify health:
+#      curl https://yourdomain.com/api/v1/health
+#
+# Maintenance:
+#   View logs:
+#     docker-compose -f docker-compose.prod.yml logs -f
+#
+#   Backup database:
+#     docker-compose -f docker-compose.prod.yml exec postgres pg_dump -U postgres whatsapp_saas > backup.sql
+#
+#   Restore database:
+#     cat backup.sql | docker-compose -f docker-compose.prod.yml exec -T postgres psql -U postgres whatsapp_saas
+#
+#   Update application:
+#     docker-compose -f docker-compose.prod.yml pull
+#     docker-compose -f docker-compose.prod.yml up -d --build
+#
+#   Scale backend:
+#     docker-compose -f docker-compose.prod.yml up -d --scale backend=3
+#
+# Monitoring:
+#   Container stats:
+#     docker stats
+#
+#   Health checks:
+#     docker-compose -f docker-compose.prod.yml ps
+#
+#   Disk usage:
+#     docker system df -v
+#
+# Security:
+#   - Never commit .env files
+#   - Rotate secrets regularly
+#   - Keep Docker images updated
+#   - Monitor container logs for suspicious activity
+#   - Use firewall rules to restrict access
+#   - Enable Docker audit logging
+##############################################################################

@@ -1,0 +1,425 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../node_modules/.prisma/client"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Salon {
+  id                     String     @id @default(uuid())
+  name                   String
+  phone_number_id        String     @unique
+  access_token           String
+  is_active              Boolean    @default(true)
+  owner_id               String
+  created_at             DateTime   @default(now())
+  updated_at             DateTime   @updatedAt
+  limit_warning_sent     Boolean    @default(false)
+  trial_started_at       DateTime   @default(now())
+  trial_status           String     @default("ACTIVE")
+  usage_current_bookings Int        @default(0)
+  usage_current_messages Int        @default(0)
+  usage_limit_bookings   Int        @default(500)
+  usage_limit_messages   Int        @default(1000)
+  usage_reset_at         DateTime   @default(now())
+  address                String?
+  working_hours_start    String     @default("09:00")
+  working_hours_end      String     @default("20:00")
+  slot_duration_minutes  Int        @default(30)
+  bookings               Booking[]
+  masters                Master[]
+  messages               Message[]
+  reminders              Reminder[]
+  owner                  User       @relation("SalonOwner", fields: [owner_id], references: [id])
+  services               Service[]
+  templates              Template[]
+  waitlistEntries        Waitlist[]
+
+  @@index([owner_id])
+  @@index([trial_status])
+  @@map("salons")
+}
+
+model Booking {
+  id                   String     @id @default(uuid())
+  booking_code         String
+  salon_id             String
+  customer_phone       String
+  customer_name        String
+  service              String
+  start_ts             DateTime
+  status               String     @default("CONFIRMED")
+  created_at           DateTime   @default(now())
+  updated_at           DateTime   @updatedAt
+  metadata             Json?
+  reminder_sent        Boolean    @default(false)
+  reminder_response    String?
+  reminder_response_at DateTime?
+  end_ts               DateTime?
+  master_id            String?
+  service_id           String?
+  master               Master?    @relation(fields: [master_id], references: [id])
+  salon                Salon      @relation(fields: [salon_id], references: [id], onDelete: Cascade)
+  serviceRelation      Service?   @relation(fields: [service_id], references: [id])
+  reminders            Reminder[]
+
+  @@unique([booking_code, salon_id])
+  @@index([salon_id, start_ts], map: "idx_bookings_salon_start")
+  @@index([salon_id, status, start_ts], map: "idx_bookings_salon_status_start")
+  @@index([customer_phone, salon_id], map: "idx_bookings_customer_salon")
+  @@index([created_at], map: "idx_bookings_created")
+  @@index([reminder_sent, reminder_response], map: "idx_bookings_reminder_status")
+  @@index([master_id, start_ts])
+  @@index([service_id, created_at])
+  @@map("bookings")
+}
+
+model Message {
+  id              String   @id @default(uuid())
+  salon_id        String
+  direction       String
+  conversation_id String?
+  phone_number    String
+  message_type    String
+  content         String
+  whatsapp_id     String?  @unique
+  status          String   @default("SENT")
+  cost            Float?
+  created_at      DateTime @default(now())
+  metadata        Json?
+  salon           Salon    @relation(fields: [salon_id], references: [id], onDelete: Cascade)
+
+  @@index([salon_id, created_at], map: "idx_messages_salon_created")
+  @@index([phone_number, salon_id], map: "idx_messages_phone_salon")
+  @@index([conversation_id, created_at], map: "idx_messages_conversation_created")
+  @@index([direction, salon_id], map: "idx_messages_direction_salon")
+  @@map("messages")
+}
+
+model Template {
+  id         String   @id @default(uuid())
+  salon_id   String
+  name       String
+  language   String   @default("ru")
+  category   String
+  status     String   @default("PENDING")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  salon      Salon    @relation(fields: [salon_id], references: [id], onDelete: Cascade)
+
+  @@unique([name, salon_id, language])
+  @@map("templates")
+}
+
+model Conversation {
+  id              String   @id @default(uuid())
+  salon_id        String
+  phone_number    String
+  status          String   @default("ACTIVE")
+  started_at      DateTime @default(now())
+  last_message_at DateTime @updatedAt
+  message_count   Int      @default(0)
+  cost            Float    @default(0)
+
+  @@unique([salon_id, phone_number])
+  @@index([salon_id, status, last_message_at], map: "idx_conversations_salon_status_last")
+  @@index([salon_id, started_at], map: "idx_conversations_salon_started")
+  @@map("conversations")
+}
+
+model WebhookLog {
+  id         String   @id @default(uuid())
+  salon_id   String?
+  event_type String
+  payload    Json
+  status     String
+  error      String?
+  created_at DateTime @default(now())
+
+  @@map("webhook_logs")
+}
+
+model AIConversation {
+  id              String   @id @default(uuid())
+  salon_id        String
+  phone_number    String
+  conversation_id String   @unique
+  ai_model        String   @default("gpt-4")
+  total_tokens    Int      @default(0)
+  total_cost      Float    @default(0)
+  message_count   Int      @default(0)
+  last_activity   DateTime @default(now())
+  created_at      DateTime @default(now())
+
+  @@unique([salon_id, phone_number])
+  @@map("ai_conversations")
+}
+
+model AIMessage {
+  id               String   @id @default(uuid())
+  conversation_id  String
+  salon_id         String
+  phone_number     String
+  direction        String
+  content          String
+  ai_model         String?
+  tokens_used      Int?
+  cost             Float?
+  response_time_ms Int?
+  created_at       DateTime @default(now())
+
+  @@index([conversation_id, created_at], map: "idx_ai_messages_conversation_created")
+  @@index([salon_id, created_at], map: "idx_ai_messages_salon_created")
+  @@map("ai_messages")
+}
+
+model AIResponseCache {
+  id               String    @id @default(uuid())
+  query_hash       String    @unique
+  normalized_query String
+  response         String
+  language         String    @default("auto")
+  salon_id         String?
+  hit_count        Int       @default(0)
+  confidence_score Float     @default(0.9)
+  created_at       DateTime  @default(now())
+  last_used_at     DateTime  @default(now())
+  expires_at       DateTime?
+
+  @@index([query_hash], map: "idx_cache_query_hash")
+  @@index([salon_id, language], map: "idx_cache_salon_language")
+  @@index([hit_count], map: "idx_cache_hit_count")
+  @@index([last_used_at], map: "idx_cache_last_used")
+  @@index([expires_at], map: "idx_cache_expires")
+  @@map("ai_response_cache")
+}
+
+model CacheStatistics {
+  id                       String   @id @default(uuid())
+  period_start             DateTime
+  period_end               DateTime
+  period_type              String
+  total_requests           Int      @default(0)
+  cache_hits               Int      @default(0)
+  cache_misses             Int      @default(0)
+  hit_rate                 Float    @default(0)
+  estimated_cost_savings   Float    @default(0)
+  ai_api_calls_cost        Float    @default(0)
+  total_cost_without_cache Float    @default(0)
+  avg_cache_response_time  Float    @default(0)
+  avg_ai_response_time     Float    @default(0)
+  p95_cache_response_time  Float    @default(0)
+  p99_cache_response_time  Float    @default(0)
+  total_cache_entries      Int      @default(0)
+  total_cache_size         BigInt   @default(0)
+  active_entries           Int      @default(0)
+  language_metrics         Json?
+  category_metrics         Json?
+  created_at               DateTime @default(now())
+
+  @@index([period_type, period_start], map: "idx_cache_stats_period")
+  @@index([created_at], map: "idx_cache_stats_created")
+  @@map("cache_statistics")
+}
+
+model User {
+  id                  String              @id @default(uuid())
+  email               String              @unique
+  password            String
+  first_name          String?
+  last_name           String?
+  phone               String?             @unique
+  role                String              @default("SALON_OWNER")
+  is_email_verified   Boolean             @default(false)
+  email_verified_at   DateTime?
+  is_active           Boolean             @default(true)
+  last_login_at       DateTime?
+  created_at          DateTime            @default(now())
+  updated_at          DateTime            @updatedAt
+  email_verifications EmailVerification[]
+  masters             Master[]
+  password_resets     PasswordReset[]
+  refresh_tokens      RefreshToken[]
+  salons              Salon[]             @relation("SalonOwner")
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid())
+  token      String    @unique
+  user_id    String
+  expires_at DateTime
+  is_used    Boolean   @default(false)
+  used_at    DateTime?
+  created_at DateTime  @default(now())
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([token, is_used])
+  @@map("refresh_tokens")
+}
+
+model EmailVerification {
+  id         String   @id @default(uuid())
+  user_id    String
+  token      String   @unique
+  expires_at DateTime
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("email_verifications")
+}
+
+model PasswordReset {
+  id         String   @id @default(uuid())
+  user_id    String
+  token      String   @unique
+  expires_at DateTime
+  used       Boolean  @default(false)
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@map("password_resets")
+}
+
+model Reminder {
+  id                   String    @id @default(uuid())
+  booking_id           String
+  salon_id             String
+  scheduled_at         DateTime
+  sent_at              DateTime?
+  status               String    @default("PENDING")
+  delivery_status      String?
+  response_received_at DateTime?
+  response_action      String?
+  response_text        String?
+  attempts             Int       @default(0)
+  last_error           String?
+  whatsapp_message_id  String?
+  job_id               String?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+  booking              Booking   @relation(fields: [booking_id], references: [id], onDelete: Cascade)
+  salon                Salon     @relation(fields: [salon_id], references: [id], onDelete: Cascade)
+
+  @@index([booking_id])
+  @@index([salon_id, scheduled_at])
+  @@index([status])
+  @@index([job_id])
+  @@map("reminders")
+}
+
+model Master {
+  id                  String                @id @default(uuid())
+  salon_id            String
+  user_id             String?
+  name                String
+  phone               String?
+  email               String?
+  specialization      String[]
+  working_hours       Json
+  is_active           Boolean               @default(true)
+  created_at          DateTime              @default(now())
+  updated_at          DateTime              @updatedAt
+  bookings            Booking[]
+  customerPreferences CustomerPreferences[] @relation("FavoriteMaster")
+  salon               Salon                 @relation(fields: [salon_id], references: [id], onDelete: Cascade)
+  user                User?                 @relation(fields: [user_id], references: [id])
+  waitlistEntries     Waitlist[]
+
+  @@unique([salon_id, name])
+  @@index([salon_id, is_active])
+  @@index([salon_id, created_at])
+  @@map("masters")
+}
+
+model Service {
+  id                  String                @id @default(uuid())
+  salon_id            String
+  name                String
+  description         String?
+  duration_minutes    Int
+  price               Decimal               @db.Decimal(10, 2)
+  category            ServiceCategory
+  is_active           Boolean               @default(true)
+  created_at          DateTime              @default(now())
+  updated_at          DateTime              @updatedAt
+  bookings            Booking[]
+  customerPreferences CustomerPreferences[] @relation("FavoriteService")
+  salon               Salon                 @relation(fields: [salon_id], references: [id], onDelete: Cascade)
+  waitlistEntries     Waitlist[]
+
+  @@unique([salon_id, name])
+  @@index([salon_id, is_active])
+  @@index([salon_id, category])
+  @@map("services")
+}
+
+model CustomerPreferences {
+  id                          String    @id @default(uuid())
+  customer_id                 String    @unique @map("customer_id")
+  favorite_master_id          String?   @map("favorite_master_id")
+  favorite_service_id         String?   @map("favorite_service_id")
+  preferred_day_of_week       String?   @map("preferred_day_of_week")
+  preferred_time_of_day       String?   @map("preferred_time_of_day")
+  preferred_hour              Int?      @map("preferred_hour")
+  avg_rebooking_days          Int?      @map("avg_rebooking_days")
+  last_booking_date           DateTime? @map("last_booking_date") @db.Date
+  next_suggested_booking_date DateTime? @map("next_suggested_booking_date") @db.Date
+  total_bookings              Int       @default(0) @map("total_bookings")
+  created_at                  DateTime  @default(now()) @map("created_at")
+  updated_at                  DateTime  @updatedAt @map("updated_at")
+  favoriteMaster              Master?   @relation("FavoriteMaster", fields: [favorite_master_id], references: [id])
+  favoriteService             Service?  @relation("FavoriteService", fields: [favorite_service_id], references: [id])
+
+  @@index([customer_id], map: "idx_customer_prefs")
+  @@index([next_suggested_booking_date], map: "idx_customer_prefs_next_booking")
+  @@map("customer_preferences")
+}
+
+model Waitlist {
+  id                      String    @id @default(uuid())
+  salon_id                String    @map("salon_id")
+  customer_id             String    @map("customer_id")
+  service_id              String    @map("service_id")
+  master_id               String?   @map("master_id")
+  preferred_date          DateTime? @map("preferred_date") @db.Date
+  preferred_time          DateTime? @map("preferred_time") @db.Time(6)
+  notify_via              String    @default("whatsapp") @map("notify_via")
+  customer_phone          String?   @map("customer_phone")
+  customer_email          String?   @map("customer_email")
+  status                  String    @default("active")
+  position_in_queue       Int?      @map("position_in_queue")
+  notified_at             DateTime? @map("notified_at")
+  notification_expires_at DateTime? @map("notification_expires_at")
+  booked_at               DateTime? @map("booked_at")
+  slot_offered_id         String?   @map("slot_offered_id")
+  created_at              DateTime  @default(now()) @map("created_at")
+  updated_at              DateTime  @updatedAt @map("updated_at")
+  master                  Master?   @relation(fields: [master_id], references: [id])
+  salon                   Salon     @relation(fields: [salon_id], references: [id], onDelete: Cascade)
+  service                 Service   @relation(fields: [service_id], references: [id], onDelete: Cascade)
+
+  @@index([salon_id, position_in_queue, created_at], map: "idx_waitlist_queue")
+  @@index([notification_expires_at], map: "idx_waitlist_expiry")
+  @@index([salon_id, status, created_at], map: "idx_waitlist_salon")
+  @@map("waitlist")
+}
+
+enum ServiceCategory {
+  HAIRCUT
+  COLORING
+  MANICURE
+  PEDICURE
+  FACIAL
+  MASSAGE
+  WAXING
+  OTHER
+}

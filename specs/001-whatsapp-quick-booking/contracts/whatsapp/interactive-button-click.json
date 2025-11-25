@@ -1,0 +1,253 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WhatsApp Interactive Button Click Webhook Payload",
+  "description": "Payload received when customer clicks an interactive button or list item",
+  "type": "object",
+  "required": ["object", "entry"],
+  "properties": {
+    "object": {
+      "type": "string",
+      "enum": ["whatsapp_business_account"],
+      "description": "Always 'whatsapp_business_account'"
+    },
+    "entry": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/WebhookEntry"
+      }
+    }
+  },
+  "definitions": {
+    "WebhookEntry": {
+      "type": "object",
+      "required": ["id", "changes"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "WhatsApp Business Account ID"
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/WebhookChange"
+          }
+        }
+      }
+    },
+    "WebhookChange": {
+      "type": "object",
+      "required": ["value", "field"],
+      "properties": {
+        "value": {
+          "$ref": "#/definitions/WebhookValue"
+        },
+        "field": {
+          "type": "string",
+          "enum": ["messages"],
+          "description": "Always 'messages' for message events"
+        }
+      }
+    },
+    "WebhookValue": {
+      "type": "object",
+      "required": ["messaging_product", "metadata"],
+      "properties": {
+        "messaging_product": {
+          "type": "string",
+          "enum": ["whatsapp"]
+        },
+        "metadata": {
+          "type": "object",
+          "required": ["display_phone_number", "phone_number_id"],
+          "properties": {
+            "display_phone_number": {
+              "type": "string",
+              "description": "Business phone number (formatted)",
+              "example": "+1 555-123-4567"
+            },
+            "phone_number_id": {
+              "type": "string",
+              "description": "Phone number ID (unique identifier)"
+            }
+          }
+        },
+        "contacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Contact"
+          }
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Message"
+          }
+        }
+      }
+    },
+    "Contact": {
+      "type": "object",
+      "properties": {
+        "profile": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Customer's WhatsApp profile name"
+            }
+          }
+        },
+        "wa_id": {
+          "type": "string",
+          "description": "WhatsApp ID (phone number)",
+          "pattern": "^[1-9]\\d{1,14}$"
+        }
+      }
+    },
+    "Message": {
+      "type": "object",
+      "required": ["from", "id", "timestamp", "type"],
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "Customer phone number (without +)",
+          "pattern": "^[1-9]\\d{1,14}$",
+          "example": "1234567890"
+        },
+        "id": {
+          "type": "string",
+          "description": "Message ID",
+          "example": "wamid.HBgNMTIzNDU2Nzg5MAA="
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Unix timestamp",
+          "example": "1234567890"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["interactive", "text", "button", "image"],
+          "description": "Message type"
+        },
+        "interactive": {
+          "$ref": "#/definitions/Interactive"
+        },
+        "text": {
+          "type": "object",
+          "properties": {
+            "body": {
+              "type": "string",
+              "description": "Text message content"
+            }
+          }
+        }
+      }
+    },
+    "Interactive": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["button_reply", "list_reply"],
+          "description": "Type of interactive response"
+        },
+        "button_reply": {
+          "$ref": "#/definitions/ButtonReply"
+        },
+        "list_reply": {
+          "$ref": "#/definitions/ListReply"
+        }
+      }
+    },
+    "ButtonReply": {
+      "type": "object",
+      "required": ["id", "title"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Button ID (set by us when sending)",
+          "pattern": "^(slot|confirm|waitlist|action|nav)_[a-zA-Z0-9_:-]+$",
+          "maxLength": 256,
+          "example": "slot_2024-10-25_15:00_m123"
+        },
+        "title": {
+          "type": "string",
+          "description": "Button title (display text)",
+          "maxLength": 20,
+          "example": "3:00 PM - Sarah"
+        }
+      }
+    },
+    "ListReply": {
+      "type": "object",
+      "required": ["id", "title"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "List row ID (set by us when sending)",
+          "pattern": "^(slot|confirm|waitlist|action|nav)_[a-zA-Z0-9_:-]+$",
+          "maxLength": 200,
+          "example": "slot_2024-10-25_15:00_m123"
+        },
+        "title": {
+          "type": "string",
+          "description": "List row title",
+          "maxLength": 24,
+          "example": "3:00 PM - Sarah"
+        },
+        "description": {
+          "type": "string",
+          "description": "List row description (optional)",
+          "maxLength": 72,
+          "example": "60 min • $50"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "object": "whatsapp_business_account",
+      "entry": [
+        {
+          "id": "123456789",
+          "changes": [
+            {
+              "value": {
+                "messaging_product": "whatsapp",
+                "metadata": {
+                  "display_phone_number": "+1 555-123-4567",
+                  "phone_number_id": "987654321"
+                },
+                "contacts": [
+                  {
+                    "profile": {
+                      "name": "John Doe"
+                    },
+                    "wa_id": "1234567890"
+                  }
+                ],
+                "messages": [
+                  {
+                    "from": "1234567890",
+                    "id": "wamid.HBgNMTIzNDU2Nzg5MAA=",
+                    "timestamp": "1234567890",
+                    "type": "interactive",
+                    "interactive": {
+                      "type": "button_reply",
+                      "button_reply": {
+                        "id": "slot_2024-10-25_15:00_m123",
+                        "title": "3:00 PM - Sarah"
+                      }
+                    }
+                  }
+                ]
+              },
+              "field": "messages"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

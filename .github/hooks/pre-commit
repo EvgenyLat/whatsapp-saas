@@ -1,0 +1,155 @@
+#!/bin/bash
+
+# ============================================================================
+# Git Pre-Commit Hook - Secret Detection
+# ============================================================================
+#
+# This hook prevents commits containing sensitive secrets.
+#
+# Installation:
+#   cp .github/hooks/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+#
+# To bypass this hook (use with caution):
+#   git commit --no-verify
+#
+# ============================================================================
+
+# Colors
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Secret patterns to detect
+SECRET_PATTERNS=(
+    # OpenAI API Keys
+    'sk-[a-zA-Z0-9]{20,}'
+    'sk-proj-[a-zA-Z0-9_-]+'
+
+    # AWS Keys
+    'AKIA[0-9A-Z]{16}'
+    'aws_access_key_id.*=.*[A-Z0-9]{20}'
+    'aws_secret_access_key.*=.*[A-Za-z0-9/+=]{40}'
+
+    # Generic API Keys
+    'api[_-]?key.*=.*["\047][a-zA-Z0-9]{20,}["\047]'
+    'apikey.*=.*["\047][a-zA-Z0-9]{20,}["\047]'
+
+    # Tokens
+    'access[_-]?token.*=.*["\047][a-zA-Z0-9]{20,}["\047]'
+    'auth[_-]?token.*=.*["\047][a-zA-Z0-9]{20,}["\047]'
+
+    # Database URLs with passwords
+    'postgresql://[^:]+:[^@]+@'
+    'mysql://[^:]+:[^@]+@'
+    'mongodb://[^:]+:[^@]+@'
+
+    # Redis URLs with passwords
+    'redis://:[^@]+@'
+
+    # Private Keys
+    '-----BEGIN (RSA |DSA |EC )?PRIVATE KEY-----'
+    '-----BEGIN OPENSSH PRIVATE KEY-----'
+
+    # GitHub/GitLab Tokens
+    'gh[pousr]_[A-Za-z0-9_]{36,}'
+    'glpat-[A-Za-z0-9_-]{20,}'
+
+    # Slack Tokens
+    'xox[baprs]-[A-Za-z0-9-]+'
+
+    # Generic Secrets (base64 encoded)
+    '["\047]?secret["\047]?[ ]*:[ ]*["\047][A-Za-z0-9+/=]{40,}["\047]'
+)
+
+# Files to check (staged files)
+FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -z "$FILES" ]; then
+    # No files to check
+    exit 0
+fi
+
+# Check for secrets
+FOUND_SECRETS=0
+
+echo "🔍 Scanning staged files for secrets..."
+
+for FILE in $FILES; do
+    # Skip binary files
+    if file "$FILE" | grep -q "binary"; then
+        continue
+    fi
+
+    # Skip if file doesn't exist (deleted)
+    if [ ! -f "$FILE" ]; then
+        continue
+    fi
+
+    # Check each pattern
+    for PATTERN in "${SECRET_PATTERNS[@]}"; do
+        if grep -E -q "$PATTERN" "$FILE"; then
+            echo -e "${RED}❌ Potential secret detected in: $FILE${NC}"
+            echo -e "${YELLOW}   Pattern matched: $PATTERN${NC}"
+            echo ""
+
+            # Show matching lines (with some context)
+            grep -E -n -C 2 "$PATTERN" "$FILE" | head -10
+            echo ""
+
+            FOUND_SECRETS=1
+        fi
+    done
+done
+
+# Additional checks for specific files
+if echo "$FILES" | grep -q "env.example"; then
+    echo "🔍 Checking env.example for actual secrets..."
+
+    if grep -E "OPENAI_API_KEY=sk-" Backend/env.example 2>/dev/null; then
+        echo -e "${RED}❌ env.example contains actual OpenAI API key!${NC}"
+        echo ""
+        FOUND_SECRETS=1
+    fi
+
+    if grep -E "postgresql://[^:]+:[^@]+@" Backend/env.example 2>/dev/null | grep -v "password@"; then
+        echo -e "${RED}❌ env.example contains actual database credentials!${NC}"
+        echo ""
+        FOUND_SECRETS=1
+    fi
+fi
+
+# Check if .env files are being committed
+if echo "$FILES" | grep -E "^\.env$|^Backend/\.env$"; then
+    echo -e "${RED}❌ Attempting to commit .env file!${NC}"
+    echo ""
+    echo "The .env file should never be committed to version control."
+    echo "Please remove it from the commit:"
+    echo "  git reset HEAD .env"
+    echo ""
+    FOUND_SECRETS=1
+fi
+
+# Final result
+if [ $FOUND_SECRETS -eq 1 ]; then
+    echo -e "${RED}╔══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${RED}║  COMMIT BLOCKED: Potential secrets detected!                    ║${NC}"
+    echo -e "${RED}╚══════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo "What to do:"
+    echo ""
+    echo "1. Remove the secret from your files"
+    echo "2. Use environment variables or AWS Secrets Manager instead"
+    echo "3. Add placeholders in example files (e.g., 'your-api-key-here')"
+    echo "4. If this is a false positive, review the file carefully"
+    echo ""
+    echo "To bypass this check (NOT RECOMMENDED):"
+    echo "  git commit --no-verify"
+    echo ""
+    echo "For more information, see SECURITY_FIX.md"
+    echo ""
+    exit 1
+fi
+
+echo "✅ No secrets detected. Proceeding with commit."
+exit 0

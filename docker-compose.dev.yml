@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: whatsapp_saas_postgres_dev
+    environment:
+      POSTGRES_DB: whatsapp_saas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - whatsapp_saas_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: whatsapp_saas_redis_dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - whatsapp_saas_network
+
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: whatsapp_saas_backend_dev
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/whatsapp_saas
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-secret-change-in-production
+      WHATSAPP_API_URL: https://graph.facebook.com/v18.0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./Backend:/app
+      - /app/node_modules
+      - backend_logs_dev:/app/logs
+    command: npm run dev
+    networks:
+      - whatsapp_saas_network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: whatsapp_saas_frontend_dev
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://backend:4000
+      NEXT_PUBLIC_APP_NAME: WhatsApp SaaS Platform
+      NEXT_PUBLIC_APP_URL: http://localhost:3001
+    depends_on:
+      - backend
+    volumes:
+      - ./Frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+    networks:
+      - whatsapp_saas_network
+    restart: unless-stopped
+
+  # Optional: pgAdmin for database management
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: whatsapp_saas_pgadmin_dev
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@whatsapp-saas.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin_data_dev:/var/lib/pgadmin
+    networks:
+      - whatsapp_saas_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data_dev:
+    driver: local
+  redis_data_dev:
+    driver: local
+  backend_logs_dev:
+    driver: local
+  pgadmin_data_dev:
+    driver: local
+
+networks:
+  whatsapp_saas_network:
+    driver: bridge
