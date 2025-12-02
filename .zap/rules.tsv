@@ -1,0 +1,85 @@
+# ZAP Rule configuration for WhatsApp SaaS API
+# Format: ruleId	ignore|fail|warn	URL Regex (optional)
+#
+# Common rules to ignore for API testing:
+# 10021 - X-Content-Type-Options Header Missing (handled by Helmet)
+# 10023 - Information Disclosure - Suspicious Comments (false positives in JSON)
+# 10035 - Strict-Transport-Security Header Not Set (handled by load balancer/CDN)
+# 10037 - Server Leaks Information via "X-Powered-By" HTTP Response Header (handled by Helmet)
+# 10038 - Content Security Policy (CSP) Header Not Set (API, not web app)
+# 10040 - Secure Pages Include Mixed Content (API, no HTML content)
+# 10049 - Storable and Cacheable Content (API responses may be intentionally cacheable)
+# 10055 - CSP: Wildcard Directive (API, not web app)
+# 10096 - Timestamp Disclosure (low risk for APIs)
+# 10098 - Cross-Domain Misconfiguration (CORS is intentionally configured)
+# 10109 - Modern Web Application (false positive for REST APIs)
+# 40025 - Proxy Disclosure (N/A for this context)
+
+10021	IGNORE	.*
+10023	IGNORE	.*
+10035	IGNORE	.*
+10037	IGNORE	.*
+10038	IGNORE	.*
+10040	IGNORE	.*
+10049	IGNORE	.*
+10055	IGNORE	.*
+10096	IGNORE	.*
+10098	IGNORE	.*
+10109	IGNORE	.*
+40025	IGNORE	.*
+
+# API-specific rules - keep enabled
+# 10010 - Cookie No HttpOnly Flag (WARN if auth uses cookies)
+# 10011 - Cookie Without Secure Flag
+# 10012 - Password Autocomplete in Browser
+# 10020 - X-Frame-Options Header Not Set
+# 10024 - Information Disclosure - Sensitive Information in URL
+# 10025 - Information Disclosure - Sensitive Information in HTTP Referrer Header
+# 10034 - Heartbleed OpenSSL Vulnerability
+# 10039 - Server Leaks Version Information via "Server" HTTP Response Header
+# 10041 - HTTP to HTTPS Insecure Transition in Form Post
+# 10042 - HTTPS to HTTP Insecure Transition in Form Post
+# 10050 - Retrieved from Cache
+# 10052 - X-ChromeLogger-Data (XCOLD) Header Information Leak
+# 10054 - Cookie Without SameSite Attribute
+# 10057 - Username Hash Found
+# 10062 - PII Disclosure
+# 10063 - Permissions Policy Header Not Set
+# 40003 - CRLF Injection
+# 40009 - Server Side Include
+# 40012 - Cross Site Scripting (Reflected)
+# 40014 - Cross Site Scripting (Persistent)
+# 40016 - Cross Site Scripting (Persistent) - Prime
+# 40017 - Cross Site Scripting (Persistent) - Spider
+# 40018 - SQL Injection
+# 40019 - SQL Injection - MySQL
+# 40020 - SQL Injection - Hypersonic SQL
+# 40021 - SQL Injection - Oracle
+# 40022 - SQL Injection - PostgreSQL
+# 40024 - SQL Injection - SQLite
+# 40026 - Cross Site Scripting (DOM Based)
+# 40027 - SQL Injection - MsSQL
+# 40032 - .htaccess Information Leak
+# 40034 - .env Information Leak
+# 40035 - Hidden File Finder
+# 40038 - Bypassing 403
+# 40040 - CORS Header
+# 90019 - Server Side Code Injection
+# 90020 - Remote OS Command Injection
+# 90021 - XPath Injection
+# 90022 - Application Error Disclosure
+# 90023 - XML External Entity Attack
+# 90024 - Generic Padding Oracle
+# 90025 - Expression Language Injection
+# 90028 - Insecure HTTP Method
+# 90034 - Cloud Metadata Potentially Exposed
+
+# Keep these enabled but warn-only for development
+90022	WARN	.*
+
+# Strict rules for security-critical paths
+40018	FAIL	/api/v1/auth/.*
+40019	FAIL	/api/v1/auth/.*
+40022	FAIL	/api/v1/auth/.*
+90019	FAIL	/api/v1/.*
+90020	FAIL	/api/v1/.*

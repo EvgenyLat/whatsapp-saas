@@ -60,6 +60,10 @@ jobs:
         working-directory: Backend
         run: npm ci
 
+      - name: Install E2E test dependencies
+        working-directory: Backend/tests/e2e
+        run: npm ci
+
       - name: Install Playwright Browsers
         working-directory: Backend/tests/e2e
         run: npx playwright install --with-deps chromium
@@ -95,7 +99,7 @@ jobs:
         run: |
           npm start &
           sleep 10
-          curl --retry 10 --retry-delay 3 --retry-connrefused http://localhost:4000/healthz
+          curl --retry 10 --retry-delay 3 --retry-connrefused http://localhost:4000/api/v1/health
 
       - name: Run E2E Tests
         working-directory: Backend/tests/e2e
@@ -218,6 +222,10 @@ jobs:
         working-directory: Backend
         run: npm ci
 
+      - name: Install E2E test dependencies
+        working-directory: Backend/tests/e2e
+        run: npm ci
+
       - name: Install Playwright Browsers
         working-directory: Backend/tests/e2e
         run: npx playwright install --with-deps ${{ matrix.browser }}
@@ -253,7 +261,7 @@ jobs:
         run: |
           npm start &
           sleep 10
-          curl --retry 10 --retry-delay 3 --retry-connrefused http://localhost:4000/healthz
+          curl --retry 10 --retry-delay 3 --retry-connrefused http://localhost:4000/api/v1/health
 
       - name: Run E2E Tests - ${{ matrix.browser }}
         working-directory: Backend/tests/e2e
