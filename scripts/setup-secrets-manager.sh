@@ -395,7 +395,7 @@ main() {
     echo "   cd Backend && npm start"
     echo ""
     echo "6. Verify secrets are loaded:"
-    echo "   curl http://localhost:3000/healthz"
+    echo "   curl http://localhost:4000/api/v1/health"
     echo ""
 
     print_info "Documentation: See SECURITY_FIX.md for detailed instructions"

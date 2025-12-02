@@ -398,7 +398,7 @@ function Main {
     Write-Host "   npm start"
     Write-Host ""
     Write-Host "6. Verify secrets are loaded:"
-    Write-Host "   curl http://localhost:3000/healthz"
+    Write-Host "   curl http://localhost:4000/api/v1/health"
     Write-Host ""
 
     Write-InfoMessage "Documentation: See SECURITY_FIX.md for detailed instructions"

@@ -177,8 +177,8 @@ test_health_endpoints() {
     log_test "Testing health endpoints..."
 
     # Test 1: Main health endpoint
-    log_info "GET /healthz"
-    if http_get "$BASE_URL/healthz" 200; then
+    log_info "GET /api/v1/health"
+    if http_get "$BASE_URL/api/v1/health" 200; then
         local response=$(cat /tmp/smoke-response.txt)
 
         # Check if response is JSON
@@ -199,13 +199,7 @@ test_health_endpoints() {
         test_failed "Health endpoint check failed"
     fi
 
-    # Test 2: API health endpoint (if exists)
-    log_info "GET /api/health"
-    if http_get "$BASE_URL/api/health" 200; then
-        test_passed "API health endpoint accessible"
-    else
-        test_warning "API health endpoint not accessible (may not exist)"
-    fi
+    # Test 2 removed - main health endpoint at /api/v1/health is the only one
 
     echo ""
 }
@@ -261,7 +255,7 @@ test_security() {
 
     # Test 1: Security headers
     log_info "Checking security headers..."
-    local headers=$(curl -s -I --max-time 5 "$BASE_URL/healthz" 2>/dev/null)
+    local headers=$(curl -s -I --max-time 5 "$BASE_URL/api/v1/health" 2>/dev/null)
 
     # Check for important security headers
     if echo "$headers" | grep -qi "x-frame-options"; then
@@ -286,7 +280,7 @@ test_security() {
     log_info "Checking CORS configuration..."
     local cors_response=$(curl -s -I --max-time 5 \
         -H "Origin: https://malicious-site.com" \
-        "$BASE_URL/healthz" 2>/dev/null)
+        "$BASE_URL/api/v1/health" 2>/dev/null)
 
     if echo "$cors_response" | grep -qi "access-control-allow-origin: \*"; then
         test_warning "CORS allows all origins (may be intentional for public API)"
@@ -301,7 +295,7 @@ test_security() {
     local rate_limit_detected=false
 
     for i in {1..50}; do
-        local status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "$BASE_URL/healthz" 2>/dev/null || echo "000")
+        local status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 1 "$BASE_URL/api/v1/health" 2>/dev/null || echo "000")
         if [ "$status" = "429" ]; then
             rate_limit_detected=true
             break
@@ -322,13 +316,13 @@ test_performance() {
     log_test "Testing basic performance..."
 
     # Test 1: Response time
-    log_info "Measuring response time for /healthz..."
+    log_info "Measuring response time for /api/v1/health..."
 
     local total_time=0
     local requests=5
 
     for i in $(seq 1 $requests); do
-        local time=$(curl -s -o /dev/null -w '%{time_total}' --max-time $TIMEOUT "$BASE_URL/healthz" 2>/dev/null || echo "10.0")
+        local time=$(curl -s -o /dev/null -w '%{time_total}' --max-time $TIMEOUT "$BASE_URL/api/v1/health" 2>/dev/null || echo "10.0")
         total_time=$(echo "$total_time + $time" | bc)
     done
 
@@ -354,7 +348,7 @@ test_performance() {
     local start_time=$(date +%s.%N)
 
     for i in $(seq 1 $concurrent); do
-        curl -s -o /dev/null --max-time $TIMEOUT "$BASE_URL/healthz" 2>/dev/null &
+        curl -s -o /dev/null --max-time $TIMEOUT "$BASE_URL/api/v1/health" 2>/dev/null &
     done
 
     wait

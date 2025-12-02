@@ -308,7 +308,7 @@ jobs:
 
       - name: Check health endpoint
         run: |
-          curl -f -s -o /dev/null -w "%{http_code}" ${{ secrets.STAGING_URL }}/healthz || exit 1
+          curl -f -s -o /dev/null -w "%{http_code}" ${{ secrets.STAGING_URL }}/api/v1/health || exit 1
           echo "✅ Health check passed"
 
       - name: Upload smoke test results
@@ -341,7 +341,7 @@ jobs:
           echo "Running performance tests..."
 
           # Test health endpoint
-          ab -n 1000 -c 10 -g perf-results.tsv ${{ secrets.STAGING_URL }}/healthz
+          ab -n 1000 -c 10 -g perf-results.tsv ${{ secrets.STAGING_URL }}/api/v1/health
 
           # Check response times
           echo "Performance test completed"
@@ -431,7 +431,7 @@ jobs:
         id: health-check
         run: |
           echo "Running health checks..."
-          HEALTH_URL="${{ secrets.PRODUCTION_URL }}/healthz"
+          HEALTH_URL="${{ secrets.PRODUCTION_URL }}/api/v1/health"
 
           for i in {1..10}; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_URL)
@@ -558,8 +558,7 @@ jobs:
           echo "Verifying critical endpoints..."
 
           ENDPOINTS=(
-            "${{ secrets.PRODUCTION_URL }}/healthz"
-            "${{ secrets.PRODUCTION_URL }}/api/health"
+            "${{ secrets.PRODUCTION_URL }}/api/v1/health"
           )
 
           for endpoint in "${ENDPOINTS[@]}"; do
