@@ -15,18 +15,9 @@ export class BookingReminderProcessor extends WorkerHost {
   }
 
   async process(job: Job<BookingReminderJobData>): Promise<any> {
-    const {
-      bookingId,
-      salonId,
-      customerPhone,
-      serviceDate,
-      serviceName,
-      reminderType,
-    } = job.data;
+    const { bookingId, salonId, customerPhone, serviceDate, serviceName, reminderType } = job.data;
 
-    this.logger.debug(
-      `Processing ${reminderType} reminder for booking ${bookingId}`,
-    );
+    this.logger.debug(`Processing ${reminderType} reminder for booking ${bookingId}`);
 
     try {
       // Verify booking still exists and is not cancelled
@@ -50,9 +41,7 @@ export class BookingReminderProcessor extends WorkerHost {
       }
 
       if (booking.status === 'CANCELLED' || booking.status === 'COMPLETED') {
-        this.logger.debug(
-          `Booking ${bookingId} is ${booking.status}, skipping reminder`,
-        );
+        this.logger.debug(`Booking ${bookingId} is ${booking.status}, skipping reminder`);
         return { success: false, reason: `Booking ${booking.status}` };
       }
 
@@ -102,15 +91,15 @@ export class BookingReminderProcessor extends WorkerHost {
         where: { id: bookingId },
         data: {
           metadata: {
-            ...(typeof booking.metadata === 'object' && booking.metadata !== null ? booking.metadata : {}),
+            ...(typeof booking.metadata === 'object' && booking.metadata !== null
+              ? booking.metadata
+              : {}),
             [`${reminderType}_sent_at`]: new Date().toISOString(),
           },
         },
       });
 
-      this.logger.log(
-        `Successfully sent ${reminderType} reminder for booking ${bookingId}`,
-      );
+      this.logger.log(`Successfully sent ${reminderType} reminder for booking ${bookingId}`);
 
       return {
         success: true,

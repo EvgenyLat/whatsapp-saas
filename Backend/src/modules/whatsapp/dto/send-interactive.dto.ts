@@ -1,5 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, Matches, IsOptional, IsUUID, IsObject, ValidateNested, IsEnum, IsArray } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  Matches,
+  IsOptional,
+  IsUUID,
+  IsObject,
+  ValidateNested,
+  IsEnum,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export enum InteractiveType {
@@ -50,7 +60,12 @@ export class InteractiveActionDto {
 
   @ApiProperty({
     description: 'Sections for list interactive message',
-    example: [{ title: 'Available Slots', rows: [{ id: 'slot_1', title: '10:00 AM', description: 'Morning slot' }] }],
+    example: [
+      {
+        title: 'Available Slots',
+        rows: [{ id: 'slot_1', title: '10:00 AM', description: 'Morning slot' }],
+      },
+    ],
     required: false,
   })
   @IsArray()

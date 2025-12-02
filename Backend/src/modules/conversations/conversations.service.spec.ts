@@ -5,12 +5,18 @@ import { SalonsService } from '../salons/salons.service';
 
 describe('ConversationsService', () => {
   let service: ConversationsService;
-  const mockPrismaService = { conversation: { findUnique: jest.fn(), findMany: jest.fn(), update: jest.fn() } };
+  const mockPrismaService = {
+    conversation: { findUnique: jest.fn(), findMany: jest.fn(), update: jest.fn() },
+  };
   const mockSalonsService = { verifySalonOwnership: jest.fn(), findAll: jest.fn() };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ConversationsService, { provide: PrismaService, useValue: mockPrismaService }, { provide: SalonsService, useValue: mockSalonsService }],
+      providers: [
+        ConversationsService,
+        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: SalonsService, useValue: mockSalonsService },
+      ],
     }).compile();
 
     service = module.get<ConversationsService>(ConversationsService);

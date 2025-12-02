@@ -60,7 +60,7 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
 
   // Coverage thresholds
-  coverageThresholds: {
+  coverageThreshold: {
     global: {
       branches: 80,
       functions: 80,
@@ -69,20 +69,18 @@ module.exports = {
     },
   },
 
-  // Globals for ts-jest
-  globals: {
-    'ts-jest': {
-      tsconfig: {
-        // Compiler options for tests
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true,
-      },
-    },
-  },
-
-  // Transform configuration
+  // Transform configuration (updated ts-jest format)
   transform: {
-    '^.+\\.(t|j)s$': 'ts-jest',
+    '^.+\\.(t|j)s$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          // Compiler options for tests
+          esModuleInterop: true,
+          allowSyntheticDefaultImports: true,
+        },
+      },
+    ],
   },
 
   // Module file extensions

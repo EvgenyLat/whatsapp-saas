@@ -27,9 +27,7 @@ export class EmailNotificationProcessor extends WorkerHost {
       // Send email
       // Note: In production, integrate with SendGrid, AWS SES, or similar service
       // For now, we'll just log it
-      this.logger.log(
-        `Sending email to ${to} with subject: ${subject}`,
-      );
+      this.logger.log(`Sending email to ${to} with subject: ${subject}`);
 
       // Simulate email sending
       await this.simulateEmailSending(to, subject, emailContent);
@@ -45,10 +43,7 @@ export class EmailNotificationProcessor extends WorkerHost {
         sentAt: new Date().toISOString(),
       };
     } catch (error) {
-      this.logger.error(
-        `Failed to send email to ${to}: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Failed to send email to ${to}: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -130,11 +125,7 @@ export class EmailNotificationProcessor extends WorkerHost {
     `;
   }
 
-  private async simulateEmailSending(
-    to: string,
-    subject: string,
-    content: string,
-  ): Promise<void> {
+  private async simulateEmailSending(to: string, subject: string, content: string): Promise<void> {
     // Simulate network delay
     await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -145,8 +136,6 @@ export class EmailNotificationProcessor extends WorkerHost {
     //   html: content,
     // });
 
-    this.logger.debug(
-      `Email simulated: ${to} - ${subject} (${content.length} chars)`,
-    );
+    this.logger.debug(`Email simulated: ${to} - ${subject} (${content.length} chars)`);
   }
 }

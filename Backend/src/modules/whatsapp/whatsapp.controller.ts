@@ -1,9 +1,36 @@
-import { Controller, Get, Post, Body, Query, UseGuards, HttpStatus, HttpCode, Headers, UnauthorizedException, Logger, RawBodyRequest, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiHeader } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  HttpStatus,
+  HttpCode,
+  Headers,
+  UnauthorizedException,
+  Logger,
+  RawBodyRequest,
+  Req,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+  ApiHeader,
+} from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { WhatsAppService } from './whatsapp.service';
 import { WebhookService } from './webhook.service';
-import { SendTextDto, SendTemplateDto, SendMediaDto, WebhookVerifyDto, SendMessageResponseDto } from './dto';
+import {
+  SendTextDto,
+  SendTemplateDto,
+  SendMediaDto,
+  WebhookVerifyDto,
+  SendMessageResponseDto,
+} from './dto';
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { WebhookSignatureGuard } from './guards/webhook-signature.guard';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
@@ -26,12 +53,25 @@ export class WhatsAppController {
   @Get('webhook')
   @ApiOperation({
     summary: 'Verify WhatsApp webhook',
-    description: 'WhatsApp webhook verification endpoint. Called by WhatsApp to verify the webhook URL during setup.',
+    description:
+      'WhatsApp webhook verification endpoint. Called by WhatsApp to verify the webhook URL during setup.',
   })
   @ApiQuery({ name: 'hub.mode', description: 'Webhook mode', example: 'subscribe' })
-  @ApiQuery({ name: 'hub.verify_token', description: 'Verification token', example: 'your-verify-token' })
-  @ApiQuery({ name: 'hub.challenge', description: 'Challenge string', example: 'challenge-string-1234567890' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Webhook verified successfully', type: String })
+  @ApiQuery({
+    name: 'hub.verify_token',
+    description: 'Verification token',
+    example: 'your-verify-token',
+  })
+  @ApiQuery({
+    name: 'hub.challenge',
+    description: 'Challenge string',
+    example: 'challenge-string-1234567890',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Webhook verified successfully',
+    type: String,
+  })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Invalid verification token' })
   verifyWebhook(@Query() query: WebhookVerifyDto): string {
     this.logger.log('Webhook verification request received');
@@ -54,18 +94,20 @@ export class WhatsAppController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Receive WhatsApp webhook events',
-    description: 'Receives webhook events from WhatsApp including incoming messages and status updates. SECURITY: All requests MUST include valid X-Hub-Signature-256 header for HMAC verification.',
+    description:
+      'Receives webhook events from WhatsApp including incoming messages and status updates. SECURITY: All requests MUST include valid X-Hub-Signature-256 header for HMAC verification.',
   })
   @ApiHeader({
     name: 'X-Hub-Signature-256',
     description: 'HMAC SHA256 signature (format: sha256=<hash>). REQUIRED for security.',
-    required: true
+    required: true,
   })
   @ApiResponse({ status: HttpStatus.OK, description: 'Webhook processed successfully' })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Invalid or missing webhook signature' })
-  async handleWebhook(
-    @Body() body: any,
-  ): Promise<{ status: string }> {
+  @ApiResponse({
+    status: HttpStatus.UNAUTHORIZED,
+    description: 'Invalid or missing webhook signature',
+  })
+  async handleWebhook(@Body() body: any): Promise<{ status: string }> {
     this.logger.log('Webhook event received (signature validated by guard)');
 
     // SECURITY: WebhookSignatureGuard validates signature BEFORE this handler executes
@@ -89,7 +131,11 @@ export class WhatsAppController {
     summary: 'Send text message',
     description: 'Sends a text message via WhatsApp Business API.',
   })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Message sent successfully', type: SendMessageResponseDto })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Message sent successfully',
+    type: SendMessageResponseDto,
+  })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid request data' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
   async sendText(
@@ -107,7 +153,11 @@ export class WhatsAppController {
     summary: 'Send template message',
     description: 'Sends a pre-approved template message via WhatsApp Business API.',
   })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Template message sent successfully', type: SendMessageResponseDto })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Template message sent successfully',
+    type: SendMessageResponseDto,
+  })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid request data' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
   async sendTemplate(
@@ -125,7 +175,11 @@ export class WhatsAppController {
     summary: 'Send media message',
     description: 'Sends a media message (image, document, audio, video) via WhatsApp Business API.',
   })
-  @ApiResponse({ status: HttpStatus.CREATED, description: 'Media message sent successfully', type: SendMessageResponseDto })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Media message sent successfully',
+    type: SendMessageResponseDto,
+  })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid request data' })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
   async sendMedia(

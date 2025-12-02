@@ -6,11 +6,7 @@ import { AnalyticsService } from './analytics.service';
 import { AnalyticsController } from './analytics.controller';
 
 @Module({
-  imports: [
-    DatabaseModule,
-    CacheModule,
-    forwardRef(() => SalonsModule),
-  ],
+  imports: [DatabaseModule, CacheModule, forwardRef(() => SalonsModule)],
   providers: [AnalyticsService],
   controllers: [AnalyticsController],
   exports: [AnalyticsService],

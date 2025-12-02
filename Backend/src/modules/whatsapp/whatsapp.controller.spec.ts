@@ -130,28 +130,16 @@ describe('WhatsAppController', () => {
       mockWhatsAppService.verifyWebhookSignature.mockReturnValue(true);
       mockWebhookService.processWebhook.mockResolvedValue(undefined);
 
-      const signature = 'sha256=valid-signature';
-      const result = await controller.handleWebhook(webhookPayload, signature);
+      // Note: signature validation is handled by WebhookSignatureGuard, not the controller
+      const result = await controller.handleWebhook(webhookPayload);
 
       expect(result).toEqual({ status: 'success' });
-      expect(mockWhatsAppService.verifyWebhookSignature).toHaveBeenCalledWith(
-        JSON.stringify(webhookPayload),
-        signature,
-      );
       expect(mockWebhookService.processWebhook).toHaveBeenCalledWith(webhookPayload);
     });
 
-    it('should reject webhook with invalid signature', async () => {
-      mockWhatsAppService.verifyWebhookSignature.mockReturnValue(false);
-
-      const signature = 'sha256=invalid-signature';
-
-      await expect(controller.handleWebhook(webhookPayload, signature)).rejects.toThrow(
-        UnauthorizedException,
-      );
-
-      expect(mockWebhookService.processWebhook).not.toHaveBeenCalled();
-    });
+    // Note: Invalid signature rejection is handled by WebhookSignatureGuard
+    // This test has been removed as it's testing guard functionality, not controller
+    // Guard tests are in webhook-signature.guard.spec.ts
 
     it('should return success even if processing fails', async () => {
       mockWebhookService.processWebhook.mockRejectedValue(new Error('Processing error'));
@@ -188,9 +176,7 @@ describe('WhatsAppController', () => {
     });
 
     it('should handle errors from service', async () => {
-      mockWhatsAppService.sendTextMessage.mockRejectedValue(
-        new Error('Failed to send message'),
-      );
+      mockWhatsAppService.sendTextMessage.mockRejectedValue(new Error('Failed to send message'));
 
       await expect(controller.sendText(userId, sendTextDto)).rejects.toThrow(
         'Failed to send message',
@@ -225,16 +211,11 @@ describe('WhatsAppController', () => {
       const result = await controller.sendTemplate(userId, sendTemplateDto);
 
       expect(result).toEqual(expectedResponse);
-      expect(mockWhatsAppService.sendTemplateMessage).toHaveBeenCalledWith(
-        userId,
-        sendTemplateDto,
-      );
+      expect(mockWhatsAppService.sendTemplateMessage).toHaveBeenCalledWith(userId, sendTemplateDto);
     });
 
     it('should handle errors from service', async () => {
-      mockWhatsAppService.sendTemplateMessage.mockRejectedValue(
-        new Error('Template not found'),
-      );
+      mockWhatsAppService.sendTemplateMessage.mockRejectedValue(new Error('Template not found'));
 
       await expect(controller.sendTemplate(userId, sendTemplateDto)).rejects.toThrow(
         'Template not found',
@@ -270,13 +251,9 @@ describe('WhatsAppController', () => {
     });
 
     it('should handle errors from service', async () => {
-      mockWhatsAppService.sendMediaMessage.mockRejectedValue(
-        new Error('Invalid media URL'),
-      );
+      mockWhatsAppService.sendMediaMessage.mockRejectedValue(new Error('Invalid media URL'));
 
-      await expect(controller.sendMedia(userId, sendMediaDto)).rejects.toThrow(
-        'Invalid media URL',
-      );
+      await expect(controller.sendMedia(userId, sendMediaDto)).rejects.toThrow('Invalid media URL');
     });
   });
 

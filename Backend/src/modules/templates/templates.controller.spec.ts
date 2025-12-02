@@ -4,7 +4,13 @@ import { TemplatesService } from './templates.service';
 
 describe('TemplatesController', () => {
   let controller: TemplatesController;
-  const mockTemplatesService = { create: jest.fn(), findAll: jest.fn(), findOne: jest.fn(), update: jest.fn(), remove: jest.fn() };
+  const mockTemplatesService = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

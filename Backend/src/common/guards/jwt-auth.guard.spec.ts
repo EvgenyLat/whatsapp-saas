@@ -27,10 +27,7 @@ describe('JwtAuthGuard', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        JwtAuthGuard,
-        { provide: Reflector, useValue: mockReflector },
-      ],
+      providers: [JwtAuthGuard, { provide: Reflector, useValue: mockReflector }],
     }).compile();
 
     guard = module.get<JwtAuthGuard>(JwtAuthGuard);
@@ -62,7 +59,10 @@ describe('JwtAuthGuard', () => {
       const context = createMockExecutionContext();
 
       // Mock the parent's canActivate
-      const superCanActivate = jest.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(guard)), 'canActivate');
+      const superCanActivate = jest.spyOn(
+        Object.getPrototypeOf(Object.getPrototypeOf(guard)),
+        'canActivate',
+      );
       superCanActivate.mockReturnValue(true);
 
       guard.canActivate(context);
@@ -121,8 +121,12 @@ describe('JwtAuthGuard', () => {
     });
 
     it('should handle invalid JWT tokens', () => {
-      expect(() => guard.handleRequest(null, null, { name: 'JsonWebTokenError', message: 'invalid signature' }))
-        .toThrow(UnauthorizedException);
+      expect(() =>
+        guard.handleRequest(null, null, {
+          name: 'JsonWebTokenError',
+          message: 'invalid signature',
+        }),
+      ).toThrow(UnauthorizedException);
     });
 
     it('should return valid user object with all properties', () => {
@@ -165,7 +169,10 @@ describe('JwtAuthGuard', () => {
       mockReflector.getAllAndOverride.mockReturnValue(false);
       const context = createMockExecutionContext();
 
-      const superCanActivate = jest.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(guard)), 'canActivate');
+      const superCanActivate = jest.spyOn(
+        Object.getPrototypeOf(Object.getPrototypeOf(guard)),
+        'canActivate',
+      );
       superCanActivate.mockReturnValue(true);
 
       guard.canActivate(context);

@@ -41,17 +41,19 @@ async function bootstrap() {
 
   // Performance: Compression middleware (gzip/deflate)
   // Compress all responses > 1KB with high compression level
-  app.use(compression({
-    threshold: 1024, // Only compress responses > 1KB
-    level: 6, // Compression level (0-9, 6 is default and balanced)
-    filter: (req: Request, res: Response) => {
-      // Don't compress Server-Sent Events
-      if (req.headers['accept'] === 'text/event-stream') {
-        return false;
-      }
-      return compression.filter(req, res);
-    },
-  }));
+  app.use(
+    compression({
+      threshold: 1024, // Only compress responses > 1KB
+      level: 6, // Compression level (0-9, 6 is default and balanced)
+      filter: (req: Request, res: Response) => {
+        // Don't compress Server-Sent Events
+        if (req.headers['accept'] === 'text/event-stream') {
+          return false;
+        }
+        return compression.filter(req, res);
+      },
+    }),
+  );
 
   // Security: Helmet middleware
   app.use(helmet());
@@ -61,15 +63,20 @@ async function bootstrap() {
 
   // SECURITY: Reject wildcard origin with credentials in production
   if (environment === 'production' && corsOrigin === '*') {
-    logger.error('SECURITY ERROR: CORS_ORIGIN cannot be wildcard (*) in production when credentials are enabled');
-    logger.error('Set CORS_ORIGIN environment variable to specific allowed origins (comma-separated)');
-    throw new Error('SECURITY ERROR: Wildcard CORS origin not allowed in production with credentials');
+    logger.error(
+      'SECURITY ERROR: CORS_ORIGIN cannot be wildcard (*) in production when credentials are enabled',
+    );
+    logger.error(
+      'Set CORS_ORIGIN environment variable to specific allowed origins (comma-separated)',
+    );
+    throw new Error(
+      'SECURITY ERROR: Wildcard CORS origin not allowed in production with credentials',
+    );
   }
 
   // Parse multiple origins (comma-separated)
-  const allowedOrigins = corsOrigin === '*'
-    ? corsOrigin
-    : corsOrigin.split(',').map(origin => origin.trim());
+  const allowedOrigins =
+    corsOrigin === '*' ? corsOrigin : corsOrigin.split(',').map((origin) => origin.trim());
 
   app.enableCors({
     origin: (origin, callback) => {

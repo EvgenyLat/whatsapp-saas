@@ -1,6 +1,19 @@
-import { Injectable, NotFoundException, UnauthorizedException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { SalonsService } from '../salons/salons.service';
-import { SendMessageDto, MessageFilterDto, UpdateMessageStatusDto, MessageResponseDto, MessageDirection, MessageStatus } from './dto';
+import {
+  SendMessageDto,
+  MessageFilterDto,
+  UpdateMessageStatusDto,
+  MessageResponseDto,
+  MessageDirection,
+  MessageStatus,
+} from './dto';
 import { PaginatedResult } from '@common/dto/pagination.dto';
 import { MessagesRepository } from './messages.repository';
 
@@ -29,7 +42,11 @@ export class MessagesService {
     return new MessageResponseDto(message);
   }
 
-  async findAll(userId: string, userRole: string, filters: MessageFilterDto): Promise<PaginatedResult<MessageResponseDto>> {
+  async findAll(
+    userId: string,
+    userRole: string,
+    filters: MessageFilterDto,
+  ): Promise<PaginatedResult<MessageResponseDto>> {
     let salonId: string | string[] | null = null;
 
     if (filters.salon_id) {
@@ -82,7 +99,12 @@ export class MessagesService {
     return new MessageResponseDto(message);
   }
 
-  async updateStatus(id: string, userId: string, userRole: string, updateStatusDto: UpdateMessageStatusDto): Promise<MessageResponseDto> {
+  async updateStatus(
+    id: string,
+    userId: string,
+    userRole: string,
+    updateStatusDto: UpdateMessageStatusDto,
+  ): Promise<MessageResponseDto> {
     await this.findOne(id, userId, userRole);
 
     const updatedMessage = await this.messagesRepository.updateStatus(id, updateStatusDto.status);

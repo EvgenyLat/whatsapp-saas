@@ -22,10 +22,7 @@ export class ConfirmationFormatter {
   /**
    * Format booking confirmation message
    */
-  static formatConfirmation(
-    details: BookingDetails,
-    language: string = 'en'
-  ): string {
+  static formatConfirmation(details: BookingDetails, language: string = 'en'): string {
     const currency = details.currency || '₽';
 
     switch (language) {
@@ -199,10 +196,28 @@ Até breve! 🌟`;
    */
   private static formatDateRussian(date: Date): string {
     const months = [
-      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+      'января',
+      'февраля',
+      'марта',
+      'апреля',
+      'мая',
+      'июня',
+      'июля',
+      'августа',
+      'сентября',
+      'октября',
+      'ноября',
+      'декабря',
     ];
-    const days = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+    const days = [
+      'воскресенье',
+      'понедельник',
+      'вторник',
+      'среда',
+      'четверг',
+      'пятница',
+      'суббота',
+    ];
 
     const day = date.getDate();
     const month = months[date.getMonth()];
@@ -255,8 +270,18 @@ Até breve! 🌟`;
    */
   private static formatDateHebrew(date: Date): string {
     const months = [
-      'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
-      'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+      'ינואר',
+      'פברואר',
+      'מרץ',
+      'אפריל',
+      'מאי',
+      'יוני',
+      'יולי',
+      'אוגוסט',
+      'ספטמבר',
+      'אוקטובר',
+      'נובמבר',
+      'דצמבר',
     ];
     const days = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 
@@ -279,11 +304,7 @@ Até breve! 🌟`;
   /**
    * Format price with currency
    */
-  static formatPrice(
-    price: number,
-    currency: string,
-    language: string = 'en'
-  ): string {
+  static formatPrice(price: number, currency: string, language: string = 'en'): string {
     if (language === 'ru' || language === 'he') {
       return `${price}${currency}`;
     } else {
@@ -294,10 +315,7 @@ Até breve! 🌟`;
   /**
    * Format duration
    */
-  static formatDuration(
-    minutes: number,
-    language: string = 'en'
-  ): string {
+  static formatDuration(minutes: number, language: string = 'en'): string {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
 

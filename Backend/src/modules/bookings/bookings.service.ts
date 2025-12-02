@@ -43,10 +43,7 @@ export class BookingsService {
   /**
    * Create a new booking
    */
-  async create(
-    userId: string,
-    createBookingDto: CreateBookingDto,
-  ): Promise<BookingResponseDto> {
+  async create(userId: string, createBookingDto: CreateBookingDto): Promise<BookingResponseDto> {
     // Verify user owns the salon
     await this.salonsService.verifySalonOwnership(createBookingDto.salon_id, userId);
 
@@ -55,7 +52,8 @@ export class BookingsService {
 
     if (!usageCheck.allowed) {
       throw new BadRequestException(
-        usageCheck.message || 'Достигнут лимит бронирований. Счетчики обнулятся в начале следующего месяца.',
+        usageCheck.message ||
+          'Достигнут лимит бронирований. Счетчики обнулятся в начале следующего месяца.',
       );
     }
 
@@ -256,7 +254,11 @@ export class BookingsService {
   /**
    * Cancel booking (soft delete)
    */
-  async cancel(id: string, userId: string, userRole: string): Promise<{ deleted: boolean; id: string }> {
+  async cancel(
+    id: string,
+    userId: string,
+    userRole: string,
+  ): Promise<{ deleted: boolean; id: string }> {
     // Verify booking exists and user has access
     await this.findOne(id, userId, userRole);
 

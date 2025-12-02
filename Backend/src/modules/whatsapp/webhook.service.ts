@@ -71,7 +71,10 @@ export class WebhookService {
         }
       }
     } catch (error) {
-      this.logger.error(`Failed to process webhook: ${(error as Error).message}`, (error as Error).stack);
+      this.logger.error(
+        `Failed to process webhook: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
       await this.logWebhook(null, 'messages', payload, 'FAILED', (error as Error).message);
       throw error;
     }
@@ -91,12 +94,12 @@ export class WebhookService {
       }
 
       // 1. Detect language
-      const languageDetection = await this.languageDetector.detect(
-        message.text?.body || ''
-      );
+      const languageDetection = await this.languageDetector.detect(message.text?.body || '');
       const language = languageDetection.language;
 
-      this.logger.log(`Language detected: ${language} (confidence: ${languageDetection.confidence.toFixed(2)})`);
+      this.logger.log(
+        `Language detected: ${language} (confidence: ${languageDetection.confidence.toFixed(2)})`,
+      );
 
       // 2. Classify message type for routing using AI-based intent classification
       const routingType = await this.classifyMessageType(message, language);
@@ -176,7 +179,10 @@ export class WebhookService {
 
       this.logger.log(`Incoming message ${message.id} processed successfully`);
     } catch (error) {
-      this.logger.error(`Failed to process incoming message: ${(error as Error).message}`, (error as Error).stack);
+      this.logger.error(
+        `Failed to process incoming message: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
       throw error;
     }
   }
@@ -211,13 +217,17 @@ export class WebhookService {
       buttonTitle = interactive.button_reply.title;
       interactiveType = 'button_reply';
 
-      this.logger.log(`Button clicked: "${buttonTitle}" (ID: ${buttonId}) by customer ${message.from}`);
+      this.logger.log(
+        `Button clicked: "${buttonTitle}" (ID: ${buttonId}) by customer ${message.from}`,
+      );
     } else if (isListReply(interactive)) {
       buttonId = interactive.list_reply.id;
       buttonTitle = interactive.list_reply.title;
       interactiveType = 'list_reply';
 
-      this.logger.log(`List item selected: "${buttonTitle}" (ID: ${buttonId}) by customer ${message.from}`);
+      this.logger.log(
+        `List item selected: "${buttonTitle}" (ID: ${buttonId}) by customer ${message.from}`,
+      );
     } else {
       this.logger.warn(`Unknown interactive type for message ${message.id}: ${interactive.type}`);
       return `INTERACTIVE: ${interactive.type} - ${message.id}`;
@@ -227,20 +237,25 @@ export class WebhookService {
     try {
       const parsed = this.buttonParserService.parse(buttonId);
 
-      this.logger.log(
-        `Parsed button: type="${parsed.type}", data=${JSON.stringify(parsed.data)}`
-      );
+      this.logger.log(`Parsed button: type="${parsed.type}", data=${JSON.stringify(parsed.data)}`);
 
       // Route to appropriate handler based on button type
       // Note: Language should be passed from parent context, using 'en' as default for now
-      await this.routeButtonAction(salonId, message.from, parsed.type, parsed.data, message.id, 'en');
+      await this.routeButtonAction(
+        salonId,
+        message.from,
+        parsed.type,
+        parsed.data,
+        message.id,
+        'en',
+      );
 
       // Return content string for message storage
       return `INTERACTIVE_${interactiveType.toUpperCase()}: [${parsed.type}] ${buttonTitle} (${buttonId})`;
     } catch (error) {
       this.logger.error(
         `Failed to parse button ID "${buttonId}": ${(error as Error).message}`,
-        (error as Error).stack
+        (error as Error).stack,
       );
 
       // Still store the message, but mark it as unparseable
@@ -270,7 +285,7 @@ export class WebhookService {
     language: string = 'en',
   ): Promise<void> {
     this.logger.log(
-      `Routing button action: type="${buttonType}", customer="${customerPhone}", messageId="${messageId}"`
+      `Routing button action: type="${buttonType}", customer="${customerPhone}", messageId="${messageId}"`,
     );
 
     try {
@@ -333,16 +348,16 @@ export class WebhookService {
                   language,
                 );
 
-                if (alternativesResult.success && alternativesResult.messageType === 'interactive_card') {
+                if (
+                  alternativesResult.success &&
+                  alternativesResult.messageType === 'interactive_card'
+                ) {
                   // Send alternative slots card
-                  await this.whatsappService.sendInteractiveMessage(
-                    'system',
-                    {
-                      salon_id: salonId,
-                      to: customerPhone,
-                      interactive: (alternativesResult.payload as any).interactive,
-                    },
-                  );
+                  await this.whatsappService.sendInteractiveMessage('system', {
+                    salon_id: salonId,
+                    to: customerPhone,
+                    interactive: (alternativesResult.payload as any).interactive,
+                  });
                 } else {
                   // No alternatives found - send text message
                   await this.whatsappService.sendTextMessage('system', {
@@ -440,7 +455,7 @@ export class WebhookService {
     } catch (error) {
       this.logger.error(
         `Failed to route button action: ${(error as Error).message}`,
-        (error as Error).stack
+        (error as Error).stack,
       );
 
       // Send error message to customer
@@ -468,10 +483,7 @@ export class WebhookService {
    * @param language - Detected language code
    * @returns Routing type string
    */
-  private async classifyMessageType(
-    message: WhatsAppMessage,
-    language: string
-  ): Promise<string> {
+  private async classifyMessageType(message: WhatsAppMessage, language: string): Promise<string> {
     // Check if it's a button click response - highest priority
     if (message.type === 'interactive') {
       return 'BUTTON_CLICK';
@@ -484,14 +496,11 @@ export class WebhookService {
 
     try {
       // Use AI Intent Service for intelligent classification
-      const intentResult = await this.aiIntentService.classifyIntent(
-        message.text.body,
-        language
-      );
+      const intentResult = await this.aiIntentService.classifyIntent(message.text.body, language);
 
       // Log cache hit/miss info (will be visible in AIIntentService logs)
       this.logger.log(
-        `AI Intent: ${intentResult.intent} (confidence: ${intentResult.confidence.toFixed(2)}, reliable: ${intentResult.isReliable})`
+        `AI Intent: ${intentResult.intent} (confidence: ${intentResult.confidence.toFixed(2)}, reliable: ${intentResult.isReliable})`,
       );
 
       // Add cache performance tracking
@@ -502,7 +511,7 @@ export class WebhookService {
       // Log alternative intents for debugging
       if (intentResult.alternativeIntents.length > 0) {
         const alternatives = intentResult.alternativeIntents
-          .map(alt => `${alt.intent}:${alt.confidence.toFixed(2)}`)
+          .map((alt) => `${alt.intent}:${alt.confidence.toFixed(2)}`)
           .join(', ');
         this.logger.debug(`Alternative intents: ${alternatives}`);
       }
@@ -544,14 +553,13 @@ export class WebhookService {
 
       // Low confidence - fallback to conversation handler
       this.logger.log(
-        `Low confidence (${intentResult.confidence.toFixed(2)}) - routing to CONVERSATION`
+        `Low confidence (${intentResult.confidence.toFixed(2)}) - routing to CONVERSATION`,
       );
       return 'CONVERSATION';
-
     } catch (error) {
       this.logger.error(
         `AI intent classification failed: ${(error as Error).message}`,
-        (error as Error).stack
+        (error as Error).stack,
       );
 
       // Fallback to keyword-based classification if AI fails
@@ -570,15 +578,25 @@ export class WebhookService {
 
     // Check if text contains booking intent keywords
     const bookingKeywords = [
-      'booking', 'appointment', 'reservation', 'book',
-      'запись', 'записаться', 'хочу', 'нужно',
-      'reserva', 'cita', 'agendar',
-      'agendamento', 'marcar',
-      'תור', 'לקבוע'
+      'booking',
+      'appointment',
+      'reservation',
+      'book',
+      'запись',
+      'записаться',
+      'хочу',
+      'нужно',
+      'reserva',
+      'cita',
+      'agendar',
+      'agendamento',
+      'marcar',
+      'תור',
+      'לקבוע',
     ];
 
     const text = message.text?.body?.toLowerCase() || '';
-    const hasBookingIntent = bookingKeywords.some(kw => text.includes(kw));
+    const hasBookingIntent = bookingKeywords.some((kw) => text.includes(kw));
 
     if (hasBookingIntent) {
       return 'BOOKING_REQUEST';
@@ -596,7 +614,7 @@ export class WebhookService {
   private async handleBookingRequest(
     message: WhatsAppMessage,
     language: string,
-    salonId: string
+    salonId: string,
   ): Promise<void> {
     try {
       this.logger.log(`Handling booking request with unified router for ${message.from}`);
@@ -630,7 +648,7 @@ export class WebhookService {
     } catch (error) {
       this.logger.error(
         `Failed to handle booking request: ${(error as Error).message}`,
-        (error as Error).stack
+        (error as Error).stack,
       );
 
       // Send error message to customer
@@ -658,18 +676,15 @@ export class WebhookService {
   private async handleButtonClick(
     message: WhatsAppMessage,
     language: string,
-    salonId: string
+    salonId: string,
   ): Promise<void> {
     try {
-      const buttonId = message.interactive?.button_reply?.id ||
-                       message.interactive?.list_reply?.id || '';
+      const buttonId =
+        message.interactive?.button_reply?.id || message.interactive?.list_reply?.id || '';
 
       this.logger.log(`Handling button click: ${buttonId} from ${message.from}`);
 
-      const response = await this.quickBookingService.handleButtonClick(
-        buttonId,
-        message.from
-      );
+      const response = await this.quickBookingService.handleButtonClick(buttonId, message.from);
 
       if (response.messageType === 'interactive_card') {
         await this.whatsappService.sendInteractiveMessage('system', {
@@ -700,7 +715,7 @@ export class WebhookService {
     } catch (error) {
       this.logger.error(
         `Failed to handle button click: ${(error as Error).message}`,
-        (error as Error).stack
+        (error as Error).stack,
       );
 
       // Send error message to customer
@@ -725,7 +740,7 @@ export class WebhookService {
   private async handleConversation(
     message: WhatsAppMessage,
     language: string,
-    salonId: string
+    salonId: string,
   ): Promise<void> {
     try {
       this.logger.log(`Handling conversation for ${message.from}`);
@@ -740,11 +755,10 @@ export class WebhookService {
 
       // TODO: Add AI service conversation handling here when ready
       // For now, the processBookingRequest handles the flow
-
     } catch (error) {
       this.logger.error(
         `Failed to handle conversation: ${(error as Error).message}`,
-        (error as Error).stack
+        (error as Error).stack,
       );
     }
   }
@@ -813,14 +827,30 @@ export class WebhookService {
       // Basic heuristic to detect booking requests
       // In production, this could be more sophisticated
       const bookingKeywords = [
-        'book', 'appointment', 'schedule', 'reserve',
-        'haircut', 'manicure', 'pedicure', 'massage',
-        'tomorrow', 'today', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
-        'morning', 'afternoon', 'evening',
+        'book',
+        'appointment',
+        'schedule',
+        'reserve',
+        'haircut',
+        'manicure',
+        'pedicure',
+        'massage',
+        'tomorrow',
+        'today',
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+        'sunday',
+        'morning',
+        'afternoon',
+        'evening',
       ];
 
       const lowerText = messageText.toLowerCase();
-      const looksLikeBooking = bookingKeywords.some(keyword => lowerText.includes(keyword));
+      const looksLikeBooking = bookingKeywords.some((keyword) => lowerText.includes(keyword));
 
       if (!looksLikeBooking) {
         this.logger.debug(`Message doesn't look like a booking request: "${messageText}"`);
@@ -912,17 +942,30 @@ export class WebhookService {
       });
 
       if (status.errors && status.errors.length > 0) {
-        this.logger.error(`Message ${status.id} failed with errors: ${JSON.stringify(status.errors)}`);
+        this.logger.error(
+          `Message ${status.id} failed with errors: ${JSON.stringify(status.errors)}`,
+        );
       }
 
-      this.logger.log(`Status update for message ${status.id} processed successfully: ${newStatus}`);
+      this.logger.log(
+        `Status update for message ${status.id} processed successfully: ${newStatus}`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to process status update: ${(error as Error).message}`, (error as Error).stack);
+      this.logger.error(
+        `Failed to process status update: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
       throw error;
     }
   }
 
-  async logWebhook(salonId: string | null, eventType: string, payload: any, status: string, error: string | null): Promise<void> {
+  async logWebhook(
+    salonId: string | null,
+    eventType: string,
+    payload: any,
+    status: string,
+    error: string | null,
+  ): Promise<void> {
     try {
       await this.prisma.webhookLog.create({
         data: {
@@ -934,7 +977,10 @@ export class WebhookService {
         },
       });
     } catch (logError) {
-      this.logger.error(`Failed to log webhook: ${(logError as Error).message}`, (logError as Error).stack);
+      this.logger.error(
+        `Failed to log webhook: ${(logError as Error).message}`,
+        (logError as Error).stack,
+      );
     }
   }
 
@@ -944,7 +990,10 @@ export class WebhookService {
         where: { phone_number_id: phoneNumberId },
       });
     } catch (error) {
-      this.logger.error(`Failed to find salon by phone_number_id: ${(error as Error).message}`, (error as Error).stack);
+      this.logger.error(
+        `Failed to find salon by phone_number_id: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
       return null;
     }
   }

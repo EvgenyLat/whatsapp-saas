@@ -17,7 +17,7 @@ import { Language, MessageKey, ChoiceLabelKey } from '../types/choice.types';
 const MESSAGES: Record<MessageKey, Record<Language, string>> = {
   SLOT_TAKEN: {
     ru: 'К сожалению, {time} в {day} уже занято 😔\n\nНо не переживайте! Я нашёл отличные варианты 🎯\n\nЧто вам удобнее?',
-    en: 'Unfortunately, {time} on {day} is already booked 😔\n\nBut don\'t worry! I found great options 🎯\n\nWhat works better for you?',
+    en: "Unfortunately, {time} on {day} is already booked 😔\n\nBut don't worry! I found great options 🎯\n\nWhat works better for you?",
     es: 'Desafortunadamente, {time} el {day} ya está reservado 😔\n\n¡Pero no te preocupes! Encontré excelentes opciones 🎯\n\n¿Qué te conviene más?',
     pt: 'Infelizmente, {time} na {day} já está reservado 😔\n\nMas não se preocupe! Encontrei ótimas opções 🎯\n\nO que funciona melhor para você?',
     he: 'למרבה הצער, {time} ביום {day} כבר תפוס 😔\n\nאבל אל דאגה! מצאתי אפשרויות מעולות 🎯\n\nמה נוח לך יותר?',
@@ -41,7 +41,7 @@ const MESSAGES: Record<MessageKey, Record<Language, string>> = {
 
   ALL_DAY_BUSY: {
     ru: 'Ой! {day} полностью забронирована 📅\n\nМы очень популярны в этот день! 🎉\n\nНо у меня есть для вас варианты:',
-    en: 'Oh! {day} is fully booked 📅\n\nWe\'re very popular that day! 🎉\n\nBut I have options for you:',
+    en: "Oh! {day} is fully booked 📅\n\nWe're very popular that day! 🎉\n\nBut I have options for you:",
     es: '¡Oh! {day} está completamente reservado 📅\n\n¡Somos muy populares ese día! 🎉\n\nPero tengo opciones para ti:',
     pt: 'Oh! {day} está totalmente reservado 📅\n\nSomos muito populares nesse dia! 🎉\n\nMas tenho opções para você:',
     he: 'אופס! {day} תפוס לגמרי 📅\n\nאנחנו מאוד פופולריים באותו יום! 🎉\n\nאבל יש לי אפשרויות עבורך:',
@@ -57,7 +57,7 @@ const MESSAGES: Record<MessageKey, Record<Language, string>> = {
 
   NO_ALTERNATIVES: {
     ru: 'К сожалению, я не нашёл подходящих вариантов в ближайшее время 😔\n\nПопробуйте выбрать другую дату или свяжитесь с салоном напрямую 📞',
-    en: 'Unfortunately, I couldn\'t find suitable options in the near future 😔\n\nTry selecting a different date or contact the salon directly 📞',
+    en: "Unfortunately, I couldn't find suitable options in the near future 😔\n\nTry selecting a different date or contact the salon directly 📞",
     es: 'Desafortunadamente, no encontré opciones adecuadas en el futuro cercano 😔\n\nIntenta seleccionar otra fecha o contacta al salón directamente 📞',
     pt: 'Infelizmente, não encontrei opções adequadas no futuro próximo 😔\n\nTente selecionar outra data ou entre em contato com o salão diretamente 📞',
     he: 'למרבה הצער, לא מצאתי אפשרויות מתאימות בזמן הקרוב 😔\n\nנסו לבחור תאריך אחר או צרו קשר עם הסלון ישירות 📞',
@@ -155,11 +155,7 @@ export class MessageBuilderService {
    * getMessage('SLOT_TAKEN', 'ru', { time: '15:00', day: 'пятница' })
    * // => "К сожалению, 15:00 в пятница уже занято 😔..."
    */
-  getMessage(
-    key: MessageKey,
-    language: Language = 'en',
-    params?: Record<string, any>,
-  ): string {
+  getMessage(key: MessageKey, language: Language = 'en', params?: Record<string, any>): string {
     try {
       // Get template for language, fallback to English if not found
       const template = MESSAGES[key]?.[language] || MESSAGES[key]?.en;
@@ -203,8 +199,7 @@ export class MessageBuilderService {
   ): string {
     try {
       // Get label for language, fallback to English
-      const template = CHOICE_LABELS[choiceType]?.[language] ||
-                      CHOICE_LABELS[choiceType]?.en;
+      const template = CHOICE_LABELS[choiceType]?.[language] || CHOICE_LABELS[choiceType]?.en;
 
       if (!template) {
         this.logger.error(`Choice label not found for type: ${choiceType}`);
@@ -321,44 +316,54 @@ export class MessageBuilderService {
 
     const proximityTexts: Record<Language, { earlier: string; later: string }> = {
       ru: {
-        earlier: hours > 0
-          ? `${hours} ${this.pluralize(hours, 'час', 'часа', 'часов')} раньше`
-          : `${minutes} ${this.pluralize(minutes, 'минута', 'минуты', 'минут')} раньше`,
-        later: hours > 0
-          ? `${hours} ${this.pluralize(hours, 'час', 'часа', 'часов')} позже`
-          : `${minutes} ${this.pluralize(minutes, 'минута', 'минуты', 'минут')} позже`,
+        earlier:
+          hours > 0
+            ? `${hours} ${this.pluralize(hours, 'час', 'часа', 'часов')} раньше`
+            : `${minutes} ${this.pluralize(minutes, 'минута', 'минуты', 'минут')} раньше`,
+        later:
+          hours > 0
+            ? `${hours} ${this.pluralize(hours, 'час', 'часа', 'часов')} позже`
+            : `${minutes} ${this.pluralize(minutes, 'минута', 'минуты', 'минут')} позже`,
       },
       en: {
-        earlier: hours > 0
-          ? `${hours} ${hours === 1 ? 'hour' : 'hours'} earlier`
-          : `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} earlier`,
-        later: hours > 0
-          ? `${hours} ${hours === 1 ? 'hour' : 'hours'} later`
-          : `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} later`,
+        earlier:
+          hours > 0
+            ? `${hours} ${hours === 1 ? 'hour' : 'hours'} earlier`
+            : `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} earlier`,
+        later:
+          hours > 0
+            ? `${hours} ${hours === 1 ? 'hour' : 'hours'} later`
+            : `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} later`,
       },
       es: {
-        earlier: hours > 0
-          ? `${hours} ${hours === 1 ? 'hora' : 'horas'} antes`
-          : `${minutes} ${minutes === 1 ? 'minuto' : 'minutos'} antes`,
-        later: hours > 0
-          ? `${hours} ${hours === 1 ? 'hora' : 'horas'} después`
-          : `${minutes} ${minutes === 1 ? 'minuto' : 'minutos'} después`,
+        earlier:
+          hours > 0
+            ? `${hours} ${hours === 1 ? 'hora' : 'horas'} antes`
+            : `${minutes} ${minutes === 1 ? 'minuto' : 'minutos'} antes`,
+        later:
+          hours > 0
+            ? `${hours} ${hours === 1 ? 'hora' : 'horas'} después`
+            : `${minutes} ${minutes === 1 ? 'minuto' : 'minutos'} después`,
       },
       pt: {
-        earlier: hours > 0
-          ? `${hours} ${hours === 1 ? 'hora' : 'horas'} antes`
-          : `${minutes} ${minutes === 1 ? 'minuto' : 'minutos'} antes`,
-        later: hours > 0
-          ? `${hours} ${hours === 1 ? 'hora' : 'horas'} depois`
-          : `${minutes} ${minutes === 1 ? 'minuto' : 'minutos'} depois`,
+        earlier:
+          hours > 0
+            ? `${hours} ${hours === 1 ? 'hora' : 'horas'} antes`
+            : `${minutes} ${minutes === 1 ? 'minuto' : 'minutos'} antes`,
+        later:
+          hours > 0
+            ? `${hours} ${hours === 1 ? 'hora' : 'horas'} depois`
+            : `${minutes} ${minutes === 1 ? 'minuto' : 'minutos'} depois`,
       },
       he: {
-        earlier: hours > 0
-          ? `${hours} ${hours === 1 ? 'שעה' : 'שעות'} קודם`
-          : `${minutes} ${minutes === 1 ? 'דקה' : 'דקות'} קודם`,
-        later: hours > 0
-          ? `${hours} ${hours === 1 ? 'שעה' : 'שעות'} אחרי`
-          : `${minutes} ${minutes === 1 ? 'דקה' : 'דקות'} אחרי`,
+        earlier:
+          hours > 0
+            ? `${hours} ${hours === 1 ? 'שעה' : 'שעות'} קודם`
+            : `${minutes} ${minutes === 1 ? 'דקה' : 'דקות'} קודם`,
+        later:
+          hours > 0
+            ? `${hours} ${hours === 1 ? 'שעה' : 'שעות'} אחרי`
+            : `${minutes} ${minutes === 1 ? 'דקה' : 'דקות'} אחרי`,
       },
     };
 
@@ -379,10 +384,7 @@ export class MessageBuilderService {
    * buildAlternativeSlotsMessage(rankedSlots, 'en')
    * // => "This time is no longer available. Here are nearby alternatives:"
    */
-  buildAlternativeSlotsMessage(
-    alternatives: any[],
-    language: Language = 'en',
-  ): string {
+  buildAlternativeSlotsMessage(alternatives: any[], language: Language = 'en'): string {
     if (alternatives.length === 0) {
       return this.getMessage('NO_ALTERNATIVES', language);
     }

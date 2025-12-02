@@ -15,7 +15,11 @@ export class AnalyticsService {
     private readonly salonsService: SalonsService,
   ) {}
 
-  async getDashboardStats(userId: string, userRole: string, filters: AnalyticsFilterDto): Promise<DashboardStatsDto> {
+  async getDashboardStats(
+    userId: string,
+    userRole: string,
+    filters: AnalyticsFilterDto,
+  ): Promise<DashboardStatsDto> {
     // Try to get from cache first
     const cached = await this.cacheService.getDashboardStats(userId, filters.salon_id);
     if (cached) {
@@ -76,17 +80,17 @@ export class AnalyticsService {
     const todayBookings = allBookings.filter((b) => b.created_at >= todayStart);
     const last7DaysBookings = allBookings.filter((b) => b.created_at >= last7DaysStart);
     const previous7DaysBookings = allBookings.filter(
-      (b) => b.created_at >= last14DaysStart && b.created_at < last7DaysStart
+      (b) => b.created_at >= last14DaysStart && b.created_at < last7DaysStart,
     );
     const last30DaysBookings = allBookings.filter((b) => b.created_at >= last30DaysStart);
     const previous30DaysBookings = allBookings.filter(
-      (b) => b.created_at >= last60DaysStart && b.created_at < last30DaysStart
+      (b) => b.created_at >= last60DaysStart && b.created_at < last30DaysStart,
     );
 
     // Process messages in memory
     const last7DaysMessages = allMessages.filter((m) => m.created_at >= last7DaysStart);
     const previous7DaysMessages = allMessages.filter(
-      (m) => m.created_at >= last14DaysStart && m.created_at < last7DaysStart
+      (m) => m.created_at >= last14DaysStart && m.created_at < last7DaysStart,
     );
 
     // Calculate total bookings
@@ -109,38 +113,54 @@ export class AnalyticsService {
     // For now, we'll use a simple calculation based on message counts
     const inboundMessages = allMessages.filter((m) => m.direction === 'INBOUND').length;
     const outboundMessages = allMessages.filter((m) => m.direction === 'OUTBOUND').length;
-    const responseRate = inboundMessages > 0 ? Math.min((outboundMessages / inboundMessages) * 100, 100) : 0;
+    const responseRate =
+      inboundMessages > 0 ? Math.min((outboundMessages / inboundMessages) * 100, 100) : 0;
 
     // Calculate recent activity (last 7 days)
     const recentActivityBookings = last7DaysBookings.length;
     const recentActivityMessages = last7DaysMessages.length;
 
     // Calculate new customers (unique phone numbers in last 7 days)
-    const uniqueCustomersLast7Days = new Set(
-      last7DaysBookings.map((b) => b.customer_phone)
-    ).size;
+    const uniqueCustomersLast7Days = new Set(last7DaysBookings.map((b) => b.customer_phone)).size;
 
     // Calculate trends (percentage change vs previous period)
-    const bookingsChange = previous30DaysBookings.length > 0
-      ? ((last30DaysBookings.length - previous30DaysBookings.length) / previous30DaysBookings.length) * 100
-      : last30DaysBookings.length > 0 ? 100 : 0;
+    const bookingsChange =
+      previous30DaysBookings.length > 0
+        ? ((last30DaysBookings.length - previous30DaysBookings.length) /
+            previous30DaysBookings.length) *
+          100
+        : last30DaysBookings.length > 0
+          ? 100
+          : 0;
 
-    const messagesChange = previous7DaysMessages.length > 0
-      ? ((last7DaysMessages.length - previous7DaysMessages.length) / previous7DaysMessages.length) * 100
-      : last7DaysMessages.length > 0 ? 100 : 0;
+    const messagesChange =
+      previous7DaysMessages.length > 0
+        ? ((last7DaysMessages.length - previous7DaysMessages.length) /
+            previous7DaysMessages.length) *
+          100
+        : last7DaysMessages.length > 0
+          ? 100
+          : 0;
 
     // Calculate response rate change
     const inboundLast7 = last7DaysMessages.filter((m) => m.direction === 'INBOUND').length;
     const outboundLast7 = last7DaysMessages.filter((m) => m.direction === 'OUTBOUND').length;
-    const responseRateLast7 = inboundLast7 > 0 ? Math.min((outboundLast7 / inboundLast7) * 100, 100) : 0;
+    const responseRateLast7 =
+      inboundLast7 > 0 ? Math.min((outboundLast7 / inboundLast7) * 100, 100) : 0;
 
     const inboundPrevious7 = previous7DaysMessages.filter((m) => m.direction === 'INBOUND').length;
-    const outboundPrevious7 = previous7DaysMessages.filter((m) => m.direction === 'OUTBOUND').length;
-    const responseRatePrevious7 = inboundPrevious7 > 0 ? Math.min((outboundPrevious7 / inboundPrevious7) * 100, 100) : 0;
+    const outboundPrevious7 = previous7DaysMessages.filter(
+      (m) => m.direction === 'OUTBOUND',
+    ).length;
+    const responseRatePrevious7 =
+      inboundPrevious7 > 0 ? Math.min((outboundPrevious7 / inboundPrevious7) * 100, 100) : 0;
 
-    const responseRateChange = responseRatePrevious7 > 0
-      ? ((responseRateLast7 - responseRatePrevious7) / responseRatePrevious7) * 100
-      : responseRateLast7 > 0 ? 100 : 0;
+    const responseRateChange =
+      responseRatePrevious7 > 0
+        ? ((responseRateLast7 - responseRatePrevious7) / responseRatePrevious7) * 100
+        : responseRateLast7 > 0
+          ? 100
+          : 0;
 
     const stats = {
       totalBookings,

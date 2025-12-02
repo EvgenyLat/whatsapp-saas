@@ -145,9 +145,7 @@ async function inquiryTypesExample(service: AIIntentService): Promise<void> {
 /**
  * Example 7: Simple Conversational Intents
  */
-async function conversationalIntentsExample(
-  service: AIIntentService,
-): Promise<void> {
+async function conversationalIntentsExample(service: AIIntentService): Promise<void> {
   console.log('=== Example 7: Conversational Intents ===\n');
 
   const messages = [
@@ -196,9 +194,7 @@ async function confidenceLevelExample(service: AIIntentService): Promise<void> {
 /**
  * Example 9: Real-World WhatsApp Conversation Simulation
  */
-async function whatsappConversationExample(
-  service: AIIntentService,
-): Promise<void> {
+async function whatsappConversationExample(service: AIIntentService): Promise<void> {
   console.log('=== Example 9: WhatsApp Conversation Simulation ===\n');
 
   const conversation = [
@@ -261,9 +257,7 @@ async function errorHandlingExample(service: AIIntentService): Promise<void> {
 /**
  * Example 11: Performance Metrics
  */
-async function performanceMetricsExample(
-  service: AIIntentService,
-): Promise<void> {
+async function performanceMetricsExample(service: AIIntentService): Promise<void> {
   console.log('=== Example 11: Performance Metrics ===\n');
 
   const messages = Array(100).fill('I want to book tomorrow at 3pm');

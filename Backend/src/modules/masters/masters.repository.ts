@@ -148,15 +148,17 @@ export class MastersRepository {
     masterId: string,
     startDate: Date,
     endDate: Date,
-  ): Promise<Array<{
-    id: string;
-    booking_code: string;
-    customer_name: string;
-    service: string;
-    start_ts: Date;
-    end_ts: Date | null;
-    status: string;
-  }>> {
+  ): Promise<
+    Array<{
+      id: string;
+      booking_code: string;
+      customer_name: string;
+      service: string;
+      start_ts: Date;
+      end_ts: Date | null;
+      status: string;
+    }>
+  > {
     return this.prisma.booking.findMany({
       where: {
         master_id: masterId,
@@ -182,10 +184,12 @@ export class MastersRepository {
   async getBookingsForDate(
     masterId: string,
     date: Date,
-  ): Promise<Array<{
-    start_ts: Date;
-    end_ts: Date | null;
-  }>> {
+  ): Promise<
+    Array<{
+      start_ts: Date;
+      end_ts: Date | null;
+    }>
+  > {
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
 

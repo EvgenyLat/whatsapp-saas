@@ -31,18 +31,8 @@ import { validateEnvironment } from './common/config/env.validation';
     // Configuration module - loads .env files
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [
-        appConfig,
-        databaseConfig,
-        jwtConfig,
-        whatsappConfig,
-        cacheConfig,
-        queueConfig,
-      ],
-      envFilePath: [
-        `.env.${process.env.NODE_ENV || 'development'}`,
-        '.env',
-      ],
+      load: [appConfig, databaseConfig, jwtConfig, whatsappConfig, cacheConfig, queueConfig],
+      envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],
       cache: true,
       validate: validateEnvironment,
     }),

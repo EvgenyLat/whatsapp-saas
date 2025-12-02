@@ -31,10 +31,7 @@ export class AIConversationRepository {
   /**
    * Find conversation by salon and phone number
    */
-  async findBySalonAndPhone(
-    salonId: string,
-    phoneNumber: string,
-  ): Promise<AIConversation | null> {
+  async findBySalonAndPhone(salonId: string, phoneNumber: string): Promise<AIConversation | null> {
     return this.prisma.aIConversation.findUnique({
       where: {
         salon_id_phone_number: {

@@ -9,10 +9,7 @@ import { ITemplatesRepository } from './templates.repository.interface';
  * Handles all database operations for Template entities
  */
 @Injectable()
-export class TemplatesRepository
-  extends BaseRepository<Template>
-  implements ITemplatesRepository
-{
+export class TemplatesRepository extends BaseRepository<Template> implements ITemplatesRepository {
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, 'template');
   }
@@ -20,10 +17,7 @@ export class TemplatesRepository
   /**
    * Find templates by salon ID
    */
-  async findBySalonId(
-    salonId: string,
-    orderBy: any = { created_at: 'desc' },
-  ): Promise<Template[]> {
+  async findBySalonId(salonId: string, orderBy: any = { created_at: 'desc' }): Promise<Template[]> {
     return this.findAll({ salon_id: salonId }, { orderBy });
   }
 

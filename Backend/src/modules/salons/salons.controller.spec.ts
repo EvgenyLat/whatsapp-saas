@@ -127,11 +127,7 @@ describe('SalonsController', () => {
       const result = await controller.remove(mockSalonId, mockUserId, 'SALON_OWNER');
 
       expect(result).toEqual(mockResponse);
-      expect(mockSalonsService.remove).toHaveBeenCalledWith(
-        mockSalonId,
-        mockUserId,
-        'SALON_OWNER',
-      );
+      expect(mockSalonsService.remove).toHaveBeenCalledWith(mockSalonId, mockUserId, 'SALON_OWNER');
     });
   });
 });

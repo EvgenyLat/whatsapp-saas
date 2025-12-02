@@ -11,17 +11,17 @@ import { PrismaService } from '@database/prisma.service';
  */
 export interface US1AnalyticsEvent {
   eventType:
-    | 'booking_request_received'  // Customer sends initial message
-    | 'intent_parsed'             // AI parsed intent successfully
-    | 'slots_shown'               // Interactive card sent
-    | 'slot_selected'             // Customer tapped slot button
-    | 'confirmation_shown'        // Confirmation card sent
-    | 'booking_confirmed'         // Customer tapped Confirm button
-    | 'booking_completed'         // Booking saved to database
-    | 'typing_detected'           // Customer typed after buttons shown
-    | 'error_occurred'            // Error during booking flow
-    | 'choice_shown'              // Choice card shown (phase 5)
-    | 'choice_selected';          // Customer selected a choice (phase 5)
+    | 'booking_request_received' // Customer sends initial message
+    | 'intent_parsed' // AI parsed intent successfully
+    | 'slots_shown' // Interactive card sent
+    | 'slot_selected' // Customer tapped slot button
+    | 'confirmation_shown' // Confirmation card sent
+    | 'booking_confirmed' // Customer tapped Confirm button
+    | 'booking_completed' // Booking saved to database
+    | 'typing_detected' // Customer typed after buttons shown
+    | 'error_occurred' // Error during booking flow
+    | 'choice_shown' // Choice card shown (phase 5)
+    | 'choice_selected'; // Customer selected a choice (phase 5)
 
   salonId: string;
   customerId: string;
@@ -29,19 +29,19 @@ export interface US1AnalyticsEvent {
   timestamp: Date;
 
   metadata: {
-    tapCount?: number;           // Running tap counter
-    typingCount?: number;        // Running typing counter
-    durationMs?: number;         // Time since first message
-    intentComplete?: boolean;    // Did AI get all info?
-    language?: string;           // Detected language
+    tapCount?: number; // Running tap counter
+    typingCount?: number; // Running typing counter
+    durationMs?: number; // Time since first message
+    intentComplete?: boolean; // Did AI get all info?
+    language?: string; // Detected language
     cardType?: 'reply_buttons' | 'list_message' | 'alternative_slots'; // Which card sent
-    bookingId?: string;          // Final booking ID
-    slotId?: string;             // Selected slot ID
-    errorMessage?: string;       // Error details
-    errorType?: string;          // Error category
-    choiceId?: string;           // Choice ID (phase 5)
-    slotsShown?: number;         // Number of slots shown (phase 5)
-    reason?: string;             // Reason for choice (phase 5)
+    bookingId?: string; // Final booking ID
+    slotId?: string; // Selected slot ID
+    errorMessage?: string; // Error details
+    errorType?: string; // Error category
+    choiceId?: string; // Choice ID (phase 5)
+    slotsShown?: number; // Number of slots shown (phase 5)
+    reason?: string; // Reason for choice (phase 5)
   };
 }
 
@@ -65,9 +65,9 @@ export interface SessionMetrics {
  * Success Criteria Results
  */
 export interface SuccessCriteriaResults {
-  SC_001_zeroTyping: number;      // % bookings with 0 typing after initial
-  SC_002_avgTaps: number;         // Average taps per booking
-  SC_003_avgBookingTime: number;  // Average seconds to book
+  SC_001_zeroTyping: number; // % bookings with 0 typing after initial
+  SC_002_avgTaps: number; // Average taps per booking
+  SC_003_avgBookingTime: number; // Average seconds to book
   totalBookings: number;
   sampleSize: number;
   periodStart: Date;
@@ -138,17 +138,12 @@ export class US1AnalyticsService {
 
       // 3. Store event in database (async, non-blocking)
       this.storeEventAsync(event).catch((error) => {
-        this.logger.error(
-          `Failed to store analytics event: ${error.message}`,
-          error.stack,
-        );
+        this.logger.error(`Failed to store analytics event: ${error.message}`, error.stack);
       });
 
       const duration = Date.now() - startTime;
       if (duration > 10) {
-        this.logger.warn(
-          `Analytics tracking took ${duration}ms (expected <10ms)`,
-        );
+        this.logger.warn(`Analytics tracking took ${duration}ms (expected <10ms)`);
       }
     } catch (error) {
       this.logger.error(
@@ -183,11 +178,7 @@ export class US1AnalyticsService {
 
     try {
       // Get completed booking sessions
-      const completedSessions = await this.getCompletedSessions(
-        salonId,
-        startDate,
-        endDate,
-      );
+      const completedSessions = await this.getCompletedSessions(salonId, startDate, endDate);
 
       if (completedSessions.length === 0) {
         this.logger.warn('No completed bookings found in period');
@@ -195,23 +186,15 @@ export class US1AnalyticsService {
       }
 
       // SC-001: Calculate % with 0 typing after initial message
-      const zeroTypingCount = completedSessions.filter(
-        (s) => s.typingCount === 1,
-      ).length;
+      const zeroTypingCount = completedSessions.filter((s) => s.typingCount === 1).length;
       const SC_001 = (zeroTypingCount / completedSessions.length) * 100;
 
       // SC-002: Calculate average taps per booking
-      const totalTaps = completedSessions.reduce(
-        (sum, s) => sum + s.tapCount,
-        0,
-      );
+      const totalTaps = completedSessions.reduce((sum, s) => sum + s.tapCount, 0);
       const SC_002 = totalTaps / completedSessions.length;
 
       // SC-003: Calculate average booking time in seconds
-      const totalDuration = completedSessions.reduce(
-        (sum, s) => sum + s.durationMs,
-        0,
-      );
+      const totalDuration = completedSessions.reduce((sum, s) => sum + s.durationMs, 0);
       const SC_003 = totalDuration / completedSessions.length / 1000;
 
       // Generate detailed breakdown
@@ -258,11 +241,7 @@ export class US1AnalyticsService {
    * @param salonId - Salon ID
    * @param customerId - Customer ID
    */
-  async initializeSession(
-    sessionId: string,
-    salonId: string,
-    customerId: string,
-  ): Promise<void> {
+  async initializeSession(sessionId: string, salonId: string, customerId: string): Promise<void> {
     this.sessionMetrics.set(sessionId, {
       sessionId,
       salonId,
@@ -349,9 +328,7 @@ export class US1AnalyticsService {
    */
   private logEvent(event: US1AnalyticsEvent): void {
     const session = this.sessionMetrics.get(event.sessionId);
-    const durationMs = session
-      ? Date.now() - session.startTime
-      : event.metadata.durationMs || 0;
+    const durationMs = session ? Date.now() - session.startTime : event.metadata.durationMs || 0;
 
     this.logger.log({
       event: `us1.${event.eventType}`,
@@ -396,9 +373,7 @@ export class US1AnalyticsService {
     } catch (error) {
       // If table doesn't exist, log warning (table will be created in migration)
       if ((error as any).code === '42P01') {
-        this.logger.warn(
-          'us1_analytics_events table does not exist. Run migration to create it.',
-        );
+        this.logger.warn('us1_analytics_events table does not exist. Run migration to create it.');
       } else {
         throw error;
       }
@@ -452,9 +427,7 @@ export class US1AnalyticsService {
     } catch (error) {
       // If table doesn't exist, return empty array
       if ((error as any).code === '42P01') {
-        this.logger.warn(
-          'us1_analytics_events table does not exist. Returning empty results.',
-        );
+        this.logger.warn('us1_analytics_events table does not exist. Returning empty results.');
         return [];
       }
       throw error;
@@ -482,12 +455,8 @@ export class US1AnalyticsService {
     // Time distribution
     const timeDistribution = {
       under10s: sessions.filter((s) => s.durationMs < 10000).length,
-      under20s: sessions.filter(
-        (s) => s.durationMs >= 10000 && s.durationMs < 20000,
-      ).length,
-      under30s: sessions.filter(
-        (s) => s.durationMs >= 20000 && s.durationMs < 30000,
-      ).length,
+      under20s: sessions.filter((s) => s.durationMs >= 10000 && s.durationMs < 20000).length,
+      under30s: sessions.filter((s) => s.durationMs >= 20000 && s.durationMs < 30000).length,
       over30s: sessions.filter((s) => s.durationMs >= 30000).length,
     };
 
@@ -502,10 +471,7 @@ export class US1AnalyticsService {
   /**
    * Return empty results structure
    */
-  private getEmptyResults(
-    startDate: Date,
-    endDate: Date,
-  ): SuccessCriteriaResults {
+  private getEmptyResults(startDate: Date, endDate: Date): SuccessCriteriaResults {
     return {
       SC_001_zeroTyping: 0,
       SC_002_avgTaps: 0,

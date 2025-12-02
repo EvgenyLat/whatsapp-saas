@@ -77,10 +77,10 @@ function testValidation() {
 
   // Test 3: Phone number formats
   const phoneFormats = [
-    '+1234567890',      // Valid
-    '+11234567890',     // Valid (US with country code)
-    '+44234567890',     // Valid (UK)
-    '+972501234567',    // Valid (Israel)
+    '+1234567890', // Valid
+    '+11234567890', // Valid (US with country code)
+    '+44234567890', // Valid (UK)
+    '+972501234567', // Valid (Israel)
   ];
   console.log('\n✓ Valid phone number formats:', phoneFormats);
 

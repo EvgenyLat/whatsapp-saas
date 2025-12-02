@@ -76,9 +76,7 @@ describe('AnalyticsService', () => {
     },
   ];
 
-  const mockSalons = [
-    { id: mockSalonId, name: 'Test Salon', owner_id: mockUserId },
-  ];
+  const mockSalons = [{ id: mockSalonId, name: 'Test Salon', owner_id: mockUserId }];
 
   const mockPrismaService = {
     booking: {
@@ -330,18 +328,22 @@ describe('AnalyticsService', () => {
 
       // 10 bookings in last 30 days, 5 in previous 30 days = 100% growth
       const bookingsWithGrowth = [
-        ...Array(10).fill(null).map((_, i) => ({
-          id: `booking-recent-${i}`,
-          status: 'CONFIRMED',
-          customer_phone: `+111111111${i}`,
-          created_at: new Date(now.getTime() - (i + 1) * 24 * 60 * 60 * 1000), // Last 10 days
-        })),
-        ...Array(5).fill(null).map((_, i) => ({
-          id: `booking-old-${i}`,
-          status: 'CONFIRMED',
-          customer_phone: `+222222222${i}`,
-          created_at: new Date(now.getTime() - (35 + i) * 24 * 60 * 60 * 1000), // 35-40 days ago
-        })),
+        ...Array(10)
+          .fill(null)
+          .map((_, i) => ({
+            id: `booking-recent-${i}`,
+            status: 'CONFIRMED',
+            customer_phone: `+111111111${i}`,
+            created_at: new Date(now.getTime() - (i + 1) * 24 * 60 * 60 * 1000), // Last 10 days
+          })),
+        ...Array(5)
+          .fill(null)
+          .map((_, i) => ({
+            id: `booking-old-${i}`,
+            status: 'CONFIRMED',
+            customer_phone: `+222222222${i}`,
+            created_at: new Date(now.getTime() - (35 + i) * 24 * 60 * 60 * 1000), // 35-40 days ago
+          })),
       ];
 
       mockCacheService.getDashboardStats.mockResolvedValue(null);

@@ -244,9 +244,7 @@ describe('WhatsAppService', () => {
 
       mockHttpService.post.mockReturnValue(throwError(() => axiosError));
 
-      await expect(service.sendTextMessage(userId, sendTextDto)).rejects.toThrow(
-        HttpException,
-      );
+      await expect(service.sendTextMessage(userId, sendTextDto)).rejects.toThrow(HttpException);
     });
   });
 
@@ -524,10 +522,7 @@ describe('WhatsAppService', () => {
     it('should verify valid signature', () => {
       const payload = JSON.stringify({ test: 'data' });
       const crypto = require('crypto');
-      const signature = crypto
-        .createHmac('sha256', 'test-secret')
-        .update(payload)
-        .digest('hex');
+      const signature = crypto.createHmac('sha256', 'test-secret').update(payload).digest('hex');
 
       const result = service.verifyWebhookSignature(payload, `sha256=${signature}`);
 
@@ -551,10 +546,7 @@ describe('WhatsAppService', () => {
     it('should handle signature without sha256 prefix', () => {
       const payload = JSON.stringify({ test: 'data' });
       const crypto = require('crypto');
-      const signature = crypto
-        .createHmac('sha256', 'test-secret')
-        .update(payload)
-        .digest('hex');
+      const signature = crypto.createHmac('sha256', 'test-secret').update(payload).digest('hex');
 
       const result = service.verifyWebhookSignature(payload, signature);
 

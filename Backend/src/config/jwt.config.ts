@@ -8,14 +8,14 @@ export default registerAs('jwt', () => {
   if (!jwtSecret || jwtSecret.length < 32) {
     throw new Error(
       'SECURITY ERROR: JWT_SECRET environment variable must be set and at least 32 characters long. ' +
-      'Generate a secure secret using: openssl rand -base64 32'
+        'Generate a secure secret using: openssl rand -base64 32',
     );
   }
 
   if (!jwtRefreshSecret || jwtRefreshSecret.length < 32) {
     throw new Error(
       'SECURITY ERROR: JWT_REFRESH_SECRET environment variable must be set and at least 32 characters long. ' +
-      'Generate a secure secret using: openssl rand -base64 32'
+        'Generate a secure secret using: openssl rand -base64 32',
     );
   }
 
@@ -36,7 +36,7 @@ export default registerAs('jwt', () => {
     if (secretLower.includes(pattern) || refreshSecretLower.includes(pattern)) {
       throw new Error(
         'SECURITY ERROR: JWT secrets appear to be using insecure default values. ' +
-        'Please set strong, randomly generated secrets.'
+          'Please set strong, randomly generated secrets.',
       );
     }
   }

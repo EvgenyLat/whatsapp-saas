@@ -348,7 +348,7 @@ describe('WebhookService - Enhanced', () => {
           id: 'img-123',
           mime_type: 'image/jpeg',
           sha256: 'abc123def456',
-          caption: 'My hairstyle reference'
+          caption: 'My hairstyle reference',
         },
       };
 
@@ -378,7 +378,7 @@ describe('WebhookService - Enhanced', () => {
           mime_type: 'application/pdf',
           sha256: 'xyz789abc123',
           filename: 'prescription.pdf',
-          caption: 'Medical document'
+          caption: 'Medical document',
         },
       };
 
@@ -624,7 +624,9 @@ describe('WebhookService - Enhanced', () => {
       mockPrismaService.webhookLog.create.mockRejectedValue(new Error('DB error'));
 
       // Should not throw
-      await expect(service.logWebhook(mockSalon.id, 'messages', payload, 'SUCCESS', null)).resolves.not.toThrow();
+      await expect(
+        service.logWebhook(mockSalon.id, 'messages', payload, 'SUCCESS', null),
+      ).resolves.not.toThrow();
     });
   });
 });

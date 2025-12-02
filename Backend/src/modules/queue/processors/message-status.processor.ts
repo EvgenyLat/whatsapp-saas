@@ -21,9 +21,7 @@ export class MessageStatusProcessor extends WorkerHost {
   async process(job: Job<MessageStatusJobData>): Promise<any> {
     const { messageId, status, timestamp, errorCode, errorMessage } = job.data;
 
-    this.logger.debug(
-      `Processing message status update: ${messageId} -> ${status}`,
-    );
+    this.logger.debug(`Processing message status update: ${messageId} -> ${status}`);
 
     try {
       // First, get the current message to access its metadata
@@ -42,7 +40,9 @@ export class MessageStatusProcessor extends WorkerHost {
         data: {
           status: status.toUpperCase(),
           metadata: {
-            ...(typeof currentMessage?.metadata === 'object' && currentMessage.metadata !== null ? currentMessage.metadata : {}),
+            ...(typeof currentMessage?.metadata === 'object' && currentMessage.metadata !== null
+              ? currentMessage.metadata
+              : {}),
             ...(errorCode && { errorCode }),
             ...(errorMessage && { errorMessage }),
             statusUpdatedAt: new Date(timestamp).toISOString(),
@@ -51,17 +51,13 @@ export class MessageStatusProcessor extends WorkerHost {
       });
 
       if (updated.count === 0) {
-        this.logger.warn(
-          `No message found with whatsapp_message_id: ${messageId}`,
-        );
+        this.logger.warn(`No message found with whatsapp_message_id: ${messageId}`);
         return { success: false, reason: 'Message not found' };
       }
 
       // If message failed, log additional details
       if (status === 'FAILED' && errorCode) {
-        this.logger.error(
-          `Message ${messageId} failed with error ${errorCode}: ${errorMessage}`,
-        );
+        this.logger.error(`Message ${messageId} failed with error ${errorCode}: ${errorMessage}`);
 
         // You can add additional error handling here
         // e.g., notify admin, mark conversation for review, etc.
@@ -82,9 +78,7 @@ export class MessageStatusProcessor extends WorkerHost {
         }
       }
 
-      this.logger.debug(
-        `Successfully updated status for message ${messageId} to ${status}`,
-      );
+      this.logger.debug(`Successfully updated status for message ${messageId} to ${status}`);
 
       return {
         success: true,
@@ -93,10 +87,7 @@ export class MessageStatusProcessor extends WorkerHost {
         updatedCount: updated.count,
       };
     } catch (error) {
-      this.logger.error(
-        `Failed to update message status: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Failed to update message status: ${error.message}`, error.stack);
       throw error;
     }
   }

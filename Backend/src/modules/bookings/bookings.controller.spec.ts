@@ -33,7 +33,13 @@ describe('BookingsController', () => {
 
   describe('create', () => {
     it('should create a booking', async () => {
-      const dto = { salon_id: 'salon-1', customer_phone: '+123', customer_name: 'John', service: 'Cut', start_ts: '2024-12-25T10:00:00Z' };
+      const dto = {
+        salon_id: 'salon-1',
+        customer_phone: '+123',
+        customer_name: 'John',
+        service: 'Cut',
+        start_ts: '2024-12-25T10:00:00Z',
+      };
       mockBookingsService.create.mockResolvedValue({ id: 'booking-1', ...dto });
 
       const result = await controller.create('user-1', dto);
@@ -48,7 +54,11 @@ describe('BookingsController', () => {
       const mockResult = { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 0 } };
       mockBookingsService.findAll.mockResolvedValue(mockResult);
 
-      const result = await controller.findAll('user-1', 'SALON_OWNER', { page: 1, limit: 10, skip: 0 } as any);
+      const result = await controller.findAll('user-1', 'SALON_OWNER', {
+        page: 1,
+        limit: 10,
+        skip: 0,
+      } as any);
 
       expect(result).toEqual(mockResult);
     });

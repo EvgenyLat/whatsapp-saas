@@ -41,9 +41,7 @@ const SESSION_CONFIG = {
 export class SessionContextService {
   private readonly logger = new Logger(SessionContextService.name);
 
-  constructor(
-    @Inject('REDIS_CLIENT') private readonly redis: Redis,
-  ) {}
+  constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
 
   /**
    * Save booking context to Redis
@@ -60,10 +58,7 @@ export class SessionContextService {
    *   ...
    * });
    */
-  async save(
-    customerPhone: string,
-    context: BookingContext,
-  ): Promise<void> {
+  async save(customerPhone: string, context: BookingContext): Promise<void> {
     const startTime = Date.now();
     const key = this.getRedisKey(customerPhone);
 
@@ -78,13 +73,9 @@ export class SessionContextService {
       );
 
       const duration = Date.now() - startTime;
-      this.logger.debug(
-        `Session saved for ${customerPhone} in ${duration}ms`,
-      );
+      this.logger.debug(`Session saved for ${customerPhone} in ${duration}ms`);
     } catch (error) {
-      this.logger.warn(
-        `Failed to save session for ${customerPhone}: ${(error as Error).message}`,
-      );
+      this.logger.warn(`Failed to save session for ${customerPhone}: ${(error as Error).message}`);
       // Graceful degradation - don't throw, allow stateless operation
     }
   }
@@ -131,9 +122,7 @@ export class SessionContextService {
       await this.extendTTL(key);
 
       const duration = Date.now() - startTime;
-      this.logger.debug(
-        `Session retrieved for ${customerPhone} in ${duration}ms`,
-      );
+      this.logger.debug(`Session retrieved for ${customerPhone} in ${duration}ms`);
 
       return context;
     } catch (error) {
@@ -157,10 +146,7 @@ export class SessionContextService {
    *   lastInteractionAt: new Date(),
    * });
    */
-  async update(
-    customerPhone: string,
-    updates: Partial<BookingContext>,
-  ): Promise<void> {
+  async update(customerPhone: string, updates: Partial<BookingContext>): Promise<void> {
     const startTime = Date.now();
 
     try {
@@ -183,9 +169,7 @@ export class SessionContextService {
       await this.save(customerPhone, updated);
 
       const duration = Date.now() - startTime;
-      this.logger.debug(
-        `Session updated for ${customerPhone} in ${duration}ms`,
-      );
+      this.logger.debug(`Session updated for ${customerPhone} in ${duration}ms`);
     } catch (error) {
       this.logger.warn(
         `Failed to update session for ${customerPhone}: ${(error as Error).message}`,
@@ -207,10 +191,7 @@ export class SessionContextService {
     const key = this.getRedisKey(customerPhone);
 
     try {
-      await this.executeWithTimeout(
-        this.redis.del(key),
-        SESSION_CONFIG.OPERATION_TIMEOUT_MS,
-      );
+      await this.executeWithTimeout(this.redis.del(key), SESSION_CONFIG.OPERATION_TIMEOUT_MS);
 
       this.logger.debug(`Session deleted for ${customerPhone}`);
     } catch (error) {
@@ -248,17 +229,11 @@ export class SessionContextService {
    *
    * @private
    */
-  private async executeWithTimeout<T>(
-    promise: Promise<T>,
-    timeoutMs: number,
-  ): Promise<T> {
+  private async executeWithTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
     return Promise.race([
       promise,
       new Promise<T>((_, reject) =>
-        setTimeout(
-          () => reject(new Error('Redis operation timeout')),
-          timeoutMs,
-        ),
+        setTimeout(() => reject(new Error('Redis operation timeout')), timeoutMs),
       ),
     ]);
   }
@@ -298,9 +273,7 @@ export class SessionContextService {
 
       return parsed as BookingContext;
     } catch (error) {
-      this.logger.error(
-        `Failed to parse context: ${(error as Error).message}`,
-      );
+      this.logger.error(`Failed to parse context: ${(error as Error).message}`);
       return null;
     }
   }
@@ -344,9 +317,7 @@ export class SessionContextService {
       );
       return keys;
     } catch (error) {
-      this.logger.error(
-        `Failed to get active sessions: ${(error as Error).message}`,
-      );
+      this.logger.error(`Failed to get active sessions: ${(error as Error).message}`);
       return [];
     }
   }
@@ -372,9 +343,7 @@ export class SessionContextService {
       this.logger.log(`Cleared ${cleared} expired sessions`);
       return cleared;
     } catch (error) {
-      this.logger.error(
-        `Failed to clear expired sessions: ${(error as Error).message}`,
-      );
+      this.logger.error(`Failed to clear expired sessions: ${(error as Error).message}`);
       return 0;
     }
   }
@@ -402,9 +371,7 @@ export class SessionContextService {
         averageTTL: keys.length > 0 ? Math.floor(totalTTL / keys.length) : 0,
       };
     } catch (error) {
-      this.logger.error(
-        `Failed to get statistics: ${(error as Error).message}`,
-      );
+      this.logger.error(`Failed to get statistics: ${(error as Error).message}`);
       return {
         totalSessions: 0,
         averageTTL: 0,

@@ -121,8 +121,12 @@ export class ServicesService {
     // Update service
     const updated = await this.servicesRepository.update(id, {
       ...(updateServiceDto.name && { name: updateServiceDto.name }),
-      ...(updateServiceDto.description !== undefined && { description: updateServiceDto.description }),
-      ...(updateServiceDto.duration_minutes && { duration_minutes: updateServiceDto.duration_minutes }),
+      ...(updateServiceDto.description !== undefined && {
+        description: updateServiceDto.description,
+      }),
+      ...(updateServiceDto.duration_minutes && {
+        duration_minutes: updateServiceDto.duration_minutes,
+      }),
       ...(updateServiceDto.price !== undefined && { price: new Decimal(updateServiceDto.price) }),
       ...(updateServiceDto.category && { category: updateServiceDto.category }),
     });

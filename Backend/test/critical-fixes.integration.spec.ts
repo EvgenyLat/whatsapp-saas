@@ -130,7 +130,7 @@ describe('Phase 1 Critical Fixes - Integration Tests', () => {
         const currentAttempt = bookingCount++;
 
         // Simulate delay to create race condition
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         if (currentAttempt === 0) {
           // First booking succeeds
@@ -158,13 +158,15 @@ describe('Phase 1 Critical Fixes - Integration Tests', () => {
             master: { findUnique: jest.fn().mockResolvedValue(mockMaster) },
             $executeRaw: jest.fn().mockResolvedValue([]),
             booking: {
-              findMany: jest.fn().mockResolvedValue([{
-                id: 'booking-1',
-                booking_code: 'BK111111',
-                start_ts: new Date(`${dateStr}T${timeStr}:00Z`),
-                end_ts: new Date(`${dateStr}T16:00:00Z`),
-                status: 'CONFIRMED',
-              }]),
+              findMany: jest.fn().mockResolvedValue([
+                {
+                  id: 'booking-1',
+                  booking_code: 'BK111111',
+                  start_ts: new Date(`${dateStr}T${timeStr}:00Z`),
+                  end_ts: new Date(`${dateStr}T16:00:00Z`),
+                  status: 'CONFIRMED',
+                },
+              ]),
               findFirst: jest.fn(),
               create: jest.fn(),
             },
@@ -194,22 +196,32 @@ describe('Phase 1 Critical Fixes - Integration Tests', () => {
 
       // Both customers confirm simultaneously
       const promises = [
-        buttonHandler.handleBookingConfirmation('confirm_booking_1', testCustomer1, testSalonId, 'en'),
-        buttonHandler.handleBookingConfirmation('confirm_booking_2', testCustomer2, testSalonId, 'en'),
+        buttonHandler.handleBookingConfirmation(
+          'confirm_booking_1',
+          testCustomer1,
+          testSalonId,
+          'en',
+        ),
+        buttonHandler.handleBookingConfirmation(
+          'confirm_booking_2',
+          testCustomer2,
+          testSalonId,
+          'en',
+        ),
       ];
 
       // Execute concurrently
       const results = await Promise.allSettled(promises);
 
       // Verify: One succeeds, one fails
-      const succeeded = results.filter(r => r.status === 'fulfilled').length;
-      const failed = results.filter(r => r.status === 'rejected').length;
+      const succeeded = results.filter((r) => r.status === 'fulfilled').length;
+      const failed = results.filter((r) => r.status === 'rejected').length;
 
       expect(succeeded).toBe(1);
       expect(failed).toBe(1);
 
       // Verify the failed one has ConflictException
-      const failedResult = results.find(r => r.status === 'rejected') as PromiseRejectedResult;
+      const failedResult = results.find((r) => r.status === 'rejected') as PromiseRejectedResult;
       expect(failedResult.reason.message).toContain('no longer available');
     });
 
@@ -236,7 +248,7 @@ describe('Phase 1 Critical Fixes - Integration Tests', () => {
 
       let successCount = 0;
       jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback) => {
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 20));
+        await new Promise((resolve) => setTimeout(resolve, Math.random() * 20));
 
         if (successCount === 0) {
           successCount++;
@@ -283,14 +295,19 @@ describe('Phase 1 Critical Fixes - Integration Tests', () => {
         };
 
         buttonHandler['storeSession'](customerPhone, testSalonId, slotData, 'en');
-        return buttonHandler.handleBookingConfirmation(`confirm_${i}`, customerPhone, testSalonId, 'en');
+        return buttonHandler.handleBookingConfirmation(
+          `confirm_${i}`,
+          customerPhone,
+          testSalonId,
+          'en',
+        );
       });
 
       const results = await Promise.allSettled(promises);
 
       // Verify: Exactly 1 succeeds, 9 fail
-      const succeeded = results.filter(r => r.status === 'fulfilled');
-      const failed = results.filter(r => r.status === 'rejected');
+      const succeeded = results.filter((r) => r.status === 'fulfilled');
+      const failed = results.filter((r) => r.status === 'rejected');
 
       expect(succeeded.length).toBe(1);
       expect(failed.length).toBe(9);
@@ -668,17 +685,12 @@ describe('Phase 1 Critical Fixes - Integration Tests', () => {
 
       buttonHandler['storeSession'](testCustomer1, testSalonId, slotData, 'en');
 
-      jest.spyOn(prismaService, '$transaction').mockRejectedValue(
-        new Error('Cannot book time slots in the past'),
-      );
+      jest
+        .spyOn(prismaService, '$transaction')
+        .mockRejectedValue(new Error('Cannot book time slots in the past'));
 
       await expect(
-        buttonHandler.handleBookingConfirmation(
-          'confirm_past',
-          testCustomer1,
-          testSalonId,
-          'en',
-        ),
+        buttonHandler.handleBookingConfirmation('confirm_past', testCustomer1, testSalonId, 'en'),
       ).rejects.toThrow();
     });
   });
@@ -814,7 +826,7 @@ describe('Phase 1 Critical Fixes - Integration Tests', () => {
 
       jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback) => {
         // Simulate fast database response
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
 
         return callback({
           master: { findUnique: jest.fn().mockResolvedValue({ id: testMasterId }) },

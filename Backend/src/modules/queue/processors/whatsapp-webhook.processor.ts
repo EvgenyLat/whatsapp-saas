@@ -27,9 +27,7 @@ export class WhatsappWebhookProcessor extends WorkerHost {
   async process(job: Job<WebhookJobData>): Promise<any> {
     const { salonId, payload, receivedAt } = job.data;
 
-    this.logger.debug(
-      `Processing webhook for salon ${salonId} (Job ${job.id})`,
-    );
+    this.logger.debug(`Processing webhook for salon ${salonId} (Job ${job.id})`);
 
     try {
       // Update job progress
@@ -63,9 +61,7 @@ export class WhatsappWebhookProcessor extends WorkerHost {
       await this.logWebhookProcessing(salonId, payload, 'SUCCESS');
       await job.updateProgress(100);
 
-      this.logger.log(
-        `Successfully processed webhook for salon ${salonId}`,
-      );
+      this.logger.log(`Successfully processed webhook for salon ${salonId}`);
 
       return {
         success: true,
@@ -84,10 +80,7 @@ export class WhatsappWebhookProcessor extends WorkerHost {
     }
   }
 
-  private async processIncomingMessages(
-    salonId: string,
-    messages: any[],
-  ): Promise<void> {
+  private async processIncomingMessages(salonId: string, messages: any[]): Promise<void> {
     for (const message of messages) {
       try {
         const customerPhone = message.from;
@@ -134,13 +127,15 @@ export class WhatsappWebhookProcessor extends WorkerHost {
           },
         });
 
-        this.logger.debug(
-          `Processed incoming message ${message.id} for salon ${salonId}`,
-        );
+        this.logger.debug(`Processed incoming message ${message.id} for salon ${salonId}`);
 
         // 🤖 AI BOT: Process message with AI if it's a text message
         const messageContent = this.extractMessageContent(message);
-        if (message.type === 'text' && messageContent && messageContent !== '[Unknown Message Type]') {
+        if (
+          message.type === 'text' &&
+          messageContent &&
+          messageContent !== '[Unknown Message Type]'
+        ) {
           try {
             this.logger.log(`🤖 AI processing message from ${customerPhone}`);
 
@@ -152,8 +147,12 @@ export class WhatsappWebhookProcessor extends WorkerHost {
               conversation_id: conversation.id,
             });
 
-            this.logger.log(`✅ AI generated response: "${aiResponse.response.substring(0, 50)}..."`);
-            this.logger.log(`💰 Cost: $${aiResponse.cost.toFixed(4)}, Tokens: ${aiResponse.tokens_used}`);
+            this.logger.log(
+              `✅ AI generated response: "${aiResponse.response.substring(0, 50)}..."`,
+            );
+            this.logger.log(
+              `💰 Cost: $${aiResponse.cost.toFixed(4)}, Tokens: ${aiResponse.tokens_used}`,
+            );
 
             // Send AI response via WhatsApp
             const salon = await this.prisma.salon.findUnique({
@@ -193,26 +192,22 @@ export class WhatsappWebhookProcessor extends WorkerHost {
 
               this.logger.log(`📤 AI response sent to ${customerPhone}`);
             } else {
-              this.logger.warn(`⚠️ Cannot send AI response: Salon ${salonId} missing WhatsApp credentials`);
+              this.logger.warn(
+                `⚠️ Cannot send AI response: Salon ${salonId} missing WhatsApp credentials`,
+              );
             }
           } catch (aiError) {
             this.logger.error(`❌ AI processing failed: ${aiError.message}`);
             // Continue without AI response - message is still logged
           }
         }
-
       } catch (error) {
-        this.logger.error(
-          `Failed to process message ${message.id}: ${error.message}`,
-        );
+        this.logger.error(`Failed to process message ${message.id}: ${error.message}`);
       }
     }
   }
 
-  private async processStatusUpdates(
-    salonId: string,
-    statuses: any[],
-  ): Promise<void> {
+  private async processStatusUpdates(salonId: string, statuses: any[]): Promise<void> {
     for (const status of statuses) {
       try {
         // First, get the current message to access its metadata
@@ -232,19 +227,17 @@ export class WhatsappWebhookProcessor extends WorkerHost {
           data: {
             status: status.status?.toUpperCase(),
             metadata: {
-              ...(typeof currentMessage?.metadata === 'object' && currentMessage.metadata !== null ? currentMessage.metadata : {}),
+              ...(typeof currentMessage?.metadata === 'object' && currentMessage.metadata !== null
+                ? currentMessage.metadata
+                : {}),
               ...status,
             },
           },
         });
 
-        this.logger.debug(
-          `Updated message status for ${status.id}: ${status.status}`,
-        );
+        this.logger.debug(`Updated message status for ${status.id}: ${status.status}`);
       } catch (error) {
-        this.logger.error(
-          `Failed to update message status ${status.id}: ${error.message}`,
-        );
+        this.logger.error(`Failed to update message status ${status.id}: ${error.message}`);
       }
     }
   }
@@ -276,9 +269,7 @@ export class WhatsappWebhookProcessor extends WorkerHost {
   ): Promise<void> {
     try {
       // Log to database or monitoring system
-      this.logger.debug(
-        `Webhook ${status} for salon ${salonId}${error ? `: ${error}` : ''}`,
-      );
+      this.logger.debug(`Webhook ${status} for salon ${salonId}${error ? `: ${error}` : ''}`);
 
       // You can add database logging here if needed
       // await this.prisma.webhookLog.create({ ... });

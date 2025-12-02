@@ -86,14 +86,8 @@ export class AiCacheService {
       }
 
       // Normalize query and generate cache key
-      const normalizedQuery = QueryNormalizer.normalize(
-        input.query,
-        input.language,
-      );
-      const cacheKey = CacheKeyGenerator.generateResponseKey(
-        normalizedQuery,
-        input.language,
-      );
+      const normalizedQuery = QueryNormalizer.normalize(input.query, input.language);
+      const cacheKey = CacheKeyGenerator.generateResponseKey(normalizedQuery, input.language);
 
       // Try to retrieve from cache
       const cached = await this.get(cacheKey);
@@ -104,9 +98,7 @@ export class AiCacheService {
         this.metricsBuffer.totalResponseTime += responseTime;
         this.metricsBuffer.requestCount++;
 
-        this.logger.debug(
-          `Cache HIT for key: ${cacheKey} (${responseTime}ms)`,
-        );
+        this.logger.debug(`Cache HIT for key: ${cacheKey} (${responseTime}ms)`);
 
         // Update hit count and last accessed time
         await this.incrementHitCount(cacheKey, cached);
@@ -158,10 +150,7 @@ export class AiCacheService {
       }
 
       // Normalize query and generate cache key
-      const cacheKey = CacheKeyGenerator.generateResponseKey(
-        input.normalizedQuery,
-        input.language,
-      );
+      const cacheKey = CacheKeyGenerator.generateResponseKey(input.normalizedQuery, input.language);
 
       // Create cached response object
       const cachedResponse: CachedResponse = {
@@ -209,10 +198,7 @@ export class AiCacheService {
   async invalidate(query: string, language: LanguageCode): Promise<boolean> {
     try {
       const normalizedQuery = QueryNormalizer.normalize(query, language);
-      const cacheKey = CacheKeyGenerator.generateResponseKey(
-        normalizedQuery,
-        language,
-      );
+      const cacheKey = CacheKeyGenerator.generateResponseKey(normalizedQuery, language);
 
       await this.delete(cacheKey);
       this.logger.log(`Invalidated cache key: ${cacheKey}`);
@@ -227,27 +213,16 @@ export class AiCacheService {
   /**
    * Invalidate cache entries by category
    */
-  async invalidateByCategory(
-    category: ResponseCategory,
-    language?: LanguageCode,
-  ): Promise<number> {
+  async invalidateByCategory(category: ResponseCategory, language?: LanguageCode): Promise<number> {
     try {
       const client = this.redisConnection.getClient();
-      const pattern = language
-        ? `ai:response:${language}:*`
-        : `ai:response:*`;
+      const pattern = language ? `ai:response:${language}:*` : `ai:response:*`;
 
       let cursor = '0';
       let deletedCount = 0;
 
       do {
-        const [newCursor, keys] = await client.scan(
-          cursor,
-          'MATCH',
-          pattern,
-          'COUNT',
-          100,
-        );
+        const [newCursor, keys] = await client.scan(cursor, 'MATCH', pattern, 'COUNT', 100);
         cursor = newCursor;
 
         for (const key of keys) {
@@ -259,9 +234,7 @@ export class AiCacheService {
         }
       } while (cursor !== '0');
 
-      this.logger.log(
-        `Invalidated ${deletedCount} entries for category: ${category}`,
-      );
+      this.logger.log(`Invalidated ${deletedCount} entries for category: ${category}`);
 
       return deletedCount;
     } catch (error) {
@@ -325,11 +298,7 @@ export class AiCacheService {
   /**
    * Set value in Redis with TTL
    */
-  private async set(
-    key: string,
-    value: CachedResponse,
-    ttlSeconds: number | null,
-  ): Promise<void> {
+  private async set(key: string, value: CachedResponse, ttlSeconds: number | null): Promise<void> {
     const client = this.redisConnection.getClient();
     const serialized = JSON.stringify(value);
 
@@ -351,10 +320,7 @@ export class AiCacheService {
   /**
    * Increment hit count for a cached response
    */
-  private async incrementHitCount(
-    key: string,
-    cached: CachedResponse,
-  ): Promise<void> {
+  private async incrementHitCount(key: string, cached: CachedResponse): Promise<void> {
     try {
       cached.hitCount++;
       cached.lastAccessedAt = new Date();
@@ -391,9 +357,7 @@ export class AiCacheService {
   /**
    * Calculate expiration date for a category
    */
-  private calculateExpirationDate(
-    category: ResponseCategory,
-  ): Date | null {
+  private calculateExpirationDate(category: ResponseCategory): Date | null {
     const ttl = this.getTtlForCategory(category);
 
     if (ttl === null) {
@@ -412,10 +376,7 @@ export class AiCacheService {
     }
 
     // Check if we should attempt to close the circuit
-    if (
-      this.lastFailureTime &&
-      Date.now() - this.lastFailureTime > CIRCUIT_BREAKER.RESET_TIMEOUT
-    ) {
+    if (this.lastFailureTime && Date.now() - this.lastFailureTime > CIRCUIT_BREAKER.RESET_TIMEOUT) {
       this.logger.log('Circuit breaker: Attempting to close circuit');
       this.circuitOpen = false;
       this.failureCount = 0;
@@ -445,17 +406,12 @@ export class AiCacheService {
     this.failureCount++;
     this.lastFailureTime = Date.now();
 
-    this.logger.error(
-      `Cache ${operation} error: ${error.message}`,
-      error.stack,
-    );
+    this.logger.error(`Cache ${operation} error: ${error.message}`, error.stack);
 
     // Open circuit if threshold reached
     if (this.failureCount >= CIRCUIT_BREAKER.FAILURE_THRESHOLD) {
       this.circuitOpen = true;
-      this.logger.error(
-        `Circuit breaker OPENED after ${this.failureCount} failures`,
-      );
+      this.logger.error(`Circuit breaker OPENED after ${this.failureCount} failures`);
     }
 
     // Graceful degradation: swallow error if enabled

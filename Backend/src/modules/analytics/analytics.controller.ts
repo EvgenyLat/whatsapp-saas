@@ -15,7 +15,11 @@ export class AnalyticsController {
   @Get('dashboard')
   @ApiOperation({ summary: 'Get dashboard statistics' })
   @ApiResponse({ status: HttpStatus.OK, type: DashboardStatsDto })
-  async getDashboardStats(@CurrentUser('id') userId: string, @CurrentUser('role') userRole: string, @Query() filters: AnalyticsFilterDto): Promise<{ success: boolean; data: DashboardStatsDto; timestamp: string }> {
+  async getDashboardStats(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') userRole: string,
+    @Query() filters: AnalyticsFilterDto,
+  ): Promise<{ success: boolean; data: DashboardStatsDto; timestamp: string }> {
     const data = await this.analyticsService.getDashboardStats(userId, userRole, filters);
     return {
       success: true,

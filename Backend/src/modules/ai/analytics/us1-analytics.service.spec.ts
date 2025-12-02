@@ -64,11 +64,7 @@ describe('US1AnalyticsService', () => {
       const sessionId = 'session_test_123';
 
       // Initialize session
-      await service.initializeSession(
-        sessionId,
-        'salon_123',
-        'customer_456',
-      );
+      await service.initializeSession(sessionId, 'salon_123', 'customer_456');
 
       // Track slot selection
       await service.trackEvent({
@@ -91,11 +87,7 @@ describe('US1AnalyticsService', () => {
       const sessionId = 'session_complete_123';
 
       // Initialize session
-      await service.initializeSession(
-        sessionId,
-        'salon_123',
-        'customer_456',
-      );
+      await service.initializeSession(sessionId, 'salon_123', 'customer_456');
 
       // Complete booking
       await service.trackEvent({
@@ -123,11 +115,7 @@ describe('US1AnalyticsService', () => {
       const sessionId = 'session_typing_123';
 
       // Initialize session
-      await service.initializeSession(
-        sessionId,
-        'salon_123',
-        'customer_456',
-      );
+      await service.initializeSession(sessionId, 'salon_123', 'customer_456');
 
       // Customer types additional message
       await service.trackEvent({
@@ -148,11 +136,7 @@ describe('US1AnalyticsService', () => {
     it('should initialize new session with default values', async () => {
       const sessionId = 'session_init_123';
 
-      await service.initializeSession(
-        sessionId,
-        'salon_123',
-        'customer_456',
-      );
+      await service.initializeSession(sessionId, 'salon_123', 'customer_456');
 
       const session = await service.getSessionMetrics(sessionId);
       expect(session).toBeDefined();
@@ -169,11 +153,7 @@ describe('US1AnalyticsService', () => {
     it('should mark session as complete', async () => {
       const sessionId = 'session_complete_test_123';
 
-      await service.initializeSession(
-        sessionId,
-        'salon_123',
-        'customer_456',
-      );
+      await service.initializeSession(sessionId, 'salon_123', 'customer_456');
 
       await service.completeSession(sessionId, 'booking_xyz');
 
@@ -303,11 +283,7 @@ describe('US1AnalyticsService', () => {
     it('should return session metrics', async () => {
       const sessionId = 'session_get_123';
 
-      await service.initializeSession(
-        sessionId,
-        'salon_123',
-        'customer_456',
-      );
+      await service.initializeSession(sessionId, 'salon_123', 'customer_456');
 
       const session = await service.getSessionMetrics(sessionId);
       expect(session).toBeDefined();
@@ -337,11 +313,7 @@ describe('US1AnalyticsService', () => {
     it('should not clean up active sessions', async () => {
       const sessionId = 'session_active_123';
 
-      await service.initializeSession(
-        sessionId,
-        'salon_123',
-        'customer_456',
-      );
+      await service.initializeSession(sessionId, 'salon_123', 'customer_456');
 
       // Session should still exist
       const session = await service.getSessionMetrics(sessionId);

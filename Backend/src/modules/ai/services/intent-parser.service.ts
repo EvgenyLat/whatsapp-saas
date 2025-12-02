@@ -1,4 +1,9 @@
-import { Injectable, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OpenAI } from 'openai';
 
@@ -221,10 +226,7 @@ export class IntentParserService {
       return intent;
     } catch (error) {
       const duration = Date.now() - startTime;
-      this.logger.error(
-        `Intent parsing failed after ${duration}ms: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Intent parsing failed after ${duration}ms: ${error.message}`, error.stack);
 
       // Handle timeout
       if (error.name === 'TimeoutError') {
@@ -296,7 +298,7 @@ export class IntentParserService {
         }
 
         // Make API call with timeout
-        const completion = await Promise.race([
+        const completion = (await Promise.race([
           this.openai.chat.completions.create({
             model: this.model,
             messages: [
@@ -314,7 +316,7 @@ export class IntentParserService {
             response_format: { type: 'json_object' },
           }),
           this.createTimeout(),
-        ]) as OpenAI.Chat.Completions.ChatCompletion;
+        ])) as OpenAI.Chat.Completions.ChatCompletion;
 
         // Success - log if retried
         if (attempt > 0) {

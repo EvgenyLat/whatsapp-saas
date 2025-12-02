@@ -61,26 +61,18 @@ export class QueueService {
   /**
    * Add WhatsApp webhook to processing queue
    */
-  async addWebhookJob(
-    data: WebhookJobData,
-    priority: number = 5,
-  ): Promise<void> {
+  async addWebhookJob(data: WebhookJobData, priority: number = 5): Promise<void> {
     try {
       await this.webhookQueue.add('process-webhook', data, {
         priority,
         removeOnComplete: true,
         removeOnFail: false,
       });
-      this.logger.debug(
-        `Webhook job added for salon ${data.salonId}`,
-      );
+      this.logger.debug(`Webhook job added for salon ${data.salonId}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(
-        `Failed to add webhook job: ${message}`,
-        stack,
-      );
+      this.logger.error(`Failed to add webhook job: ${message}`, stack);
       throw error;
     }
   }
@@ -88,34 +80,24 @@ export class QueueService {
   /**
    * Add message status update to queue
    */
-  async addMessageStatusJob(
-    data: MessageStatusJobData,
-  ): Promise<void> {
+  async addMessageStatusJob(data: MessageStatusJobData): Promise<void> {
     try {
       await this.messageStatusQueue.add('update-status', data, {
         priority: 8, // Higher priority for status updates
         attempts: 5, // More attempts for critical updates
       });
-      this.logger.debug(
-        `Message status job added for message ${data.messageId}`,
-      );
+      this.logger.debug(`Message status job added for message ${data.messageId}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(
-        `Failed to add message status job: ${message}`,
-        stack,
-      );
+      this.logger.error(`Failed to add message status job: ${message}`, stack);
     }
   }
 
   /**
    * Schedule booking reminder
    */
-  async scheduleBookingReminder(
-    data: BookingReminderJobData,
-    sendAt: Date,
-  ): Promise<void> {
+  async scheduleBookingReminder(data: BookingReminderJobData, sendAt: Date): Promise<void> {
     try {
       const delay = sendAt.getTime() - Date.now();
 
@@ -138,19 +120,14 @@ export class QueueService {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(
-        `Failed to schedule booking reminder: ${message}`,
-        stack,
-      );
+      this.logger.error(`Failed to schedule booking reminder: ${message}`, stack);
     }
   }
 
   /**
    * Add email notification to queue
    */
-  async addEmailJob(
-    data: EmailNotificationJobData,
-  ): Promise<void> {
+  async addEmailJob(data: EmailNotificationJobData): Promise<void> {
     try {
       await this.emailQueue.add('send-email', data, {
         priority: data.priority || 5,
@@ -164,10 +141,7 @@ export class QueueService {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(
-        `Failed to add email job: ${message}`,
-        stack,
-      );
+      this.logger.error(`Failed to add email job: ${message}`, stack);
     }
   }
 
@@ -214,10 +188,7 @@ export class QueueService {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const stack = error instanceof Error ? error.stack : undefined;
-      this.logger.error(
-        `Failed to get queue stats: ${message}`,
-        stack,
-      );
+      this.logger.error(`Failed to get queue stats: ${message}`, stack);
       throw error;
     }
   }
@@ -250,9 +221,7 @@ export class QueueService {
   ): Promise<string[]> {
     const queue = this.getQueueByName(queueName);
     const jobs = await queue.clean(grace, 1000, status);
-    this.logger.log(
-      `Cleaned ${jobs.length} ${status} jobs from ${queueName}`,
-    );
+    this.logger.log(`Cleaned ${jobs.length} ${status} jobs from ${queueName}`);
     return jobs;
   }
 

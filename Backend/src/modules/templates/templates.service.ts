@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ConflictException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { SalonsService } from '../salons/salons.service';
 import { CreateTemplateDto, UpdateTemplateDto, TemplateResponseDto, TemplateStatus } from './dto';
 import { TemplatesRepository } from './templates.repository';
@@ -23,7 +29,9 @@ export class TemplatesService {
     );
 
     if (exists) {
-      throw new ConflictException('Template with this name and language already exists for this salon');
+      throw new ConflictException(
+        'Template with this name and language already exists for this salon',
+      );
     }
 
     const template = await this.templatesRepository.create({
@@ -37,7 +45,11 @@ export class TemplatesService {
     return new TemplateResponseDto(template);
   }
 
-  async findAll(userId: string, userRole: string, salonId?: string): Promise<TemplateResponseDto[]> {
+  async findAll(
+    userId: string,
+    userRole: string,
+    salonId?: string,
+  ): Promise<TemplateResponseDto[]> {
     let templates;
 
     if (salonId) {
@@ -70,7 +82,12 @@ export class TemplatesService {
     return new TemplateResponseDto(template);
   }
 
-  async update(id: string, userId: string, userRole: string, updateTemplateDto: UpdateTemplateDto): Promise<TemplateResponseDto> {
+  async update(
+    id: string,
+    userId: string,
+    userRole: string,
+    updateTemplateDto: UpdateTemplateDto,
+  ): Promise<TemplateResponseDto> {
     await this.findOne(id, userId, userRole);
 
     const updatedTemplate = await this.templatesRepository.update(id, updateTemplateDto);

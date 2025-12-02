@@ -55,6 +55,6 @@ export interface Master {
   services: string[];
   workingHours: {
     start: string; // HH:mm format
-    end: string;   // HH:mm format
+    end: string; // HH:mm format
   };
 }

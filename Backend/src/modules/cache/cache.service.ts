@@ -80,11 +80,7 @@ export class CacheService {
     return this.get(key);
   }
 
-  async setDashboardStats(
-    userId: string,
-    stats: any,
-    salonId?: string,
-  ): Promise<void> {
+  async setDashboardStats(userId: string, stats: any, salonId?: string): Promise<void> {
     const key = this.buildDashboardKey(userId, salonId);
     await this.set(key, stats, this.ttls.dashboard);
   }
@@ -177,11 +173,7 @@ export class CacheService {
   /**
    * Wrap a function with caching
    */
-  async wrap<T>(
-    key: string,
-    fn: () => Promise<T>,
-    ttl?: number,
-  ): Promise<T> {
+  async wrap<T>(key: string, fn: () => Promise<T>, ttl?: number): Promise<T> {
     try {
       const cached = await this.get<T>(key);
       if (cached !== undefined) {

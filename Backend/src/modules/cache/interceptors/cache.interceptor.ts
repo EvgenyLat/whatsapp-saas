@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Observable, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -21,10 +15,7 @@ export class CacheInterceptor implements NestInterceptor {
     private readonly reflector: Reflector,
   ) {}
 
-  async intercept(
-    context: ExecutionContext,
-    next: CallHandler,
-  ): Promise<Observable<any>> {
+  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
     const cacheableOptions = this.reflector.get<CacheableOptions>(
       CACHEABLE_KEY,
       context.getHandler(),
@@ -60,11 +51,7 @@ export class CacheInterceptor implements NestInterceptor {
         this.logger.debug(`Cache miss: ${cacheKey}`);
         return next.handle().pipe(
           tap(async (data) => {
-            await this.cacheService.set(
-              cacheKey,
-              data,
-              cacheableOptions.ttl,
-            );
+            await this.cacheService.set(cacheKey, data, cacheableOptions.ttl);
           }),
         );
       } catch (error) {
@@ -88,10 +75,7 @@ export class CacheInterceptor implements NestInterceptor {
     return options.prefix ? `${options.prefix}${key}` : key;
   }
 
-  private async evictCache(
-    options: CacheEvictOptions,
-    args: any[],
-  ): Promise<void> {
+  private async evictCache(options: CacheEvictOptions, args: any[]): Promise<void> {
     try {
       if (options.allEntries) {
         await (this.cacheService as any).reset();

@@ -83,9 +83,9 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
       ]),
     },
     master: {
-      findMany: jest.fn().mockResolvedValue([
-        { id: 'master_1', name: 'Anna', specialization: 'Haircut' },
-      ]),
+      findMany: jest
+        .fn()
+        .mockResolvedValue([{ id: 'master_1', name: 'Anna', specialization: 'Haircut' }]),
     },
     webhookLog: {
       create: jest.fn(),
@@ -107,9 +107,8 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
           interactive: {
             type: 'button',
             body: {
-              text: request.language === 'ru'
-                ? 'Выберите удобное время'
-                : 'Choose a convenient time',
+              text:
+                request.language === 'ru' ? 'Выберите удобное время' : 'Choose a convenient time',
             },
             action: {
               buttons: [
@@ -134,9 +133,7 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
             interactive: {
               type: 'button',
               body: {
-                text: lang === 'ru'
-                  ? 'Подтвердите бронирование'
-                  : 'Confirm your booking',
+                text: lang === 'ru' ? 'Подтвердите бронирование' : 'Confirm your booking',
               },
               action: {
                 buttons: [
@@ -160,9 +157,7 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
           success: true,
           messageType: 'text',
           payload: {
-            text: lang === 'ru'
-              ? 'Ваше бронирование подтверждено!'
-              : 'Your booking is confirmed!',
+            text: lang === 'ru' ? 'Ваше бронирование подтверждено!' : 'Your booking is confirmed!',
           },
         };
       } else if (buttonId === 'cancel_booking') {
@@ -172,9 +167,7 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
           success: true,
           messageType: 'text',
           payload: {
-            text: lang === 'ru'
-              ? 'Бронирование отменено'
-              : 'Booking cancelled',
+            text: lang === 'ru' ? 'Бронирование отменено' : 'Booking cancelled',
           },
         };
       }
@@ -183,9 +176,7 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
         success: false,
         messageType: 'text',
         payload: {
-          text: lang === 'ru'
-            ? 'Произошла ошибка'
-            : 'An error occurred',
+          text: lang === 'ru' ? 'Произошла ошибка' : 'An error occurred',
         },
       };
     }),
@@ -195,7 +186,11 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
     detect: jest.fn().mockImplementation(async (text: string) => {
       if (text.includes('записаться') || text.includes('стрижк') || text.includes('маникюр')) {
         return { language: 'ru', confidence: 0.95 };
-      } else if (text.includes('appointment') || text.includes('book') || text.includes('haircut')) {
+      } else if (
+        text.includes('appointment') ||
+        text.includes('book') ||
+        text.includes('haircut')
+      ) {
         return { language: 'en', confidence: 0.95 };
       } else if (text.includes('reservar') || text.includes('cita')) {
         return { language: 'es', confidence: 0.95 };
@@ -211,16 +206,24 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
   const mockAIIntentService = {
     classifyIntent: jest.fn().mockImplementation(async (text: string, language: string) => {
       const bookingKeywords = [
-        'book', 'appointment', 'reservation', 'schedule',
-        'записаться', 'запись', 'хочу', 'нужно',
-        'reservar', 'cita', 'agendar',
-        'agendamento', 'marcar',
-        'תור', 'לקבוע'
+        'book',
+        'appointment',
+        'reservation',
+        'schedule',
+        'записаться',
+        'запись',
+        'хочу',
+        'нужно',
+        'reservar',
+        'cita',
+        'agendar',
+        'agendamento',
+        'marcar',
+        'תור',
+        'לקבוע',
       ];
 
-      const hasBookingIntent = bookingKeywords.some(kw =>
-        text.toLowerCase().includes(kw)
-      );
+      const hasBookingIntent = bookingKeywords.some((kw) => text.toLowerCase().includes(kw));
 
       if (hasBookingIntent) {
         return {
@@ -230,7 +233,8 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
           language,
           alternativeIntents: [],
           entities: {
-            dateReferences: text.includes('tomorrow') || text.includes('завтра') ? ['tomorrow'] : [],
+            dateReferences:
+              text.includes('tomorrow') || text.includes('завтра') ? ['tomorrow'] : [],
             timeReferences: [],
             emails: [],
             numbers: [],
@@ -342,13 +346,13 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
 
       // Verify language detection was called
       expect(mockLanguageDetectorService.detect).toHaveBeenCalledWith(
-        'Хочу записаться на стрижку завтра'
+        'Хочу записаться на стрижку завтра',
       );
 
       // Verify AI intent classification was called
       expect(mockAIIntentService.classifyIntent).toHaveBeenCalledWith(
         'Хочу записаться на стрижку завтра',
-        'ru'
+        'ru',
       );
 
       // Verify QuickBookingService was called with Russian language
@@ -400,7 +404,7 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
       expect(mockQuickBookingService.handleButtonClick).toHaveBeenCalledWith(
         'slot_1',
         '+79001234567',
-        expect.any(String) // language parameter may vary
+        expect.any(String), // language parameter may vary
       );
 
       // Verify confirmation card sent in Russian
@@ -462,13 +466,13 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
 
       // Verify language detection
       expect(mockLanguageDetectorService.detect).toHaveBeenCalledWith(
-        'I want to book a haircut appointment'
+        'I want to book a haircut appointment',
       );
 
       // Verify intent classification
       expect(mockAIIntentService.classifyIntent).toHaveBeenCalledWith(
         'I want to book a haircut appointment',
-        'en'
+        'en',
       );
 
       // Verify QuickBookingService called with English
@@ -582,7 +586,7 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
       expect(mockQuickBookingService.handleButtonClick).toHaveBeenCalledWith(
         'slot_1',
         '+79001234567',
-        expect.any(String)
+        expect.any(String),
       );
 
       // Verify confirmation card sent
@@ -634,7 +638,7 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
       } as any);
 
       expect(mockQuickBookingService.handleBookingRequest).toHaveBeenLastCalledWith(
-        expect.objectContaining({ language: 'ru' })
+        expect.objectContaining({ language: 'ru' }),
       );
 
       // Clear session to simulate new conversation
@@ -650,7 +654,7 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
       } as any);
 
       expect(mockQuickBookingService.handleBookingRequest).toHaveBeenLastCalledWith(
-        expect.objectContaining({ language: 'en' })
+        expect.objectContaining({ language: 'en' }),
       );
     });
   });
@@ -658,9 +662,7 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
   describe('Error Cases', () => {
     it('should handle AI service failures gracefully', async () => {
       // Mock AI service to fail
-      mockAIIntentService.classifyIntent.mockRejectedValueOnce(
-        new Error('AI Service unavailable')
-      );
+      mockAIIntentService.classifyIntent.mockRejectedValueOnce(new Error('AI Service unavailable'));
 
       const message: WhatsAppMessage = {
         id: 'msg_error_ai',
@@ -680,7 +682,7 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
     it('should handle booking service failures', async () => {
       // Mock booking service to fail
       mockQuickBookingService.handleBookingRequest.mockRejectedValueOnce(
-        new Error('Service unavailable')
+        new Error('Service unavailable'),
       );
 
       const message: WhatsAppMessage = {
@@ -707,7 +709,7 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
 
       // Should not throw
       await expect(
-        webhookService.processIncomingMessage('salon_123', invalidMessage)
+        webhookService.processIncomingMessage('salon_123', invalidMessage),
       ).resolves.not.toThrow();
     });
   });
@@ -777,7 +779,7 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
       ];
 
       // Send all messages concurrently
-      const promises = customers.map(customer => {
+      const promises = customers.map((customer) => {
         const message: WhatsAppMessage = {
           id: `concurrent_${customer.phone}`,
           from: customer.phone,
@@ -814,9 +816,7 @@ describe('Unified Booking Flow Integration (Task 1.3)', () => {
 
       const startTime = Date.now();
       await Promise.all(
-        clicks.map(click =>
-          webhookService.processIncomingMessage('salon_123', click as any)
-        )
+        clicks.map((click) => webhookService.processIncomingMessage('salon_123', click as any)),
       );
       const endTime = Date.now();
 

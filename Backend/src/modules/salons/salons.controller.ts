@@ -10,13 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { SalonsService } from './salons.service';
 import { UsageTrackingService } from './services/usage-tracking.service';
 import { CreateSalonDto, UpdateSalonDto, SalonResponseDto } from './dto';

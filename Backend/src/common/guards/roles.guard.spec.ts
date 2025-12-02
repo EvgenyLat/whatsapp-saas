@@ -26,10 +26,7 @@ describe('RolesGuard', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        RolesGuard,
-        { provide: Reflector, useValue: mockReflector },
-      ],
+      providers: [RolesGuard, { provide: Reflector, useValue: mockReflector }],
     }).compile();
 
     guard = module.get<RolesGuard>(RolesGuard);
@@ -95,7 +92,9 @@ describe('RolesGuard', () => {
       const context = createMockExecutionContext(user);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
-      expect(() => guard.canActivate(context)).toThrow('User does not have required roles: SUPER_ADMIN');
+      expect(() => guard.canActivate(context)).toThrow(
+        'User does not have required roles: SUPER_ADMIN',
+      );
     });
 
     it('should throw ForbiddenException when user does not have any of required roles', () => {
@@ -104,7 +103,9 @@ describe('RolesGuard', () => {
       const context = createMockExecutionContext(user);
 
       expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
-      expect(() => guard.canActivate(context)).toThrow('User does not have required roles: SUPER_ADMIN, ADMIN');
+      expect(() => guard.canActivate(context)).toThrow(
+        'User does not have required roles: SUPER_ADMIN, ADMIN',
+      );
     });
 
     it('should check roles from both handler and class decorators', () => {

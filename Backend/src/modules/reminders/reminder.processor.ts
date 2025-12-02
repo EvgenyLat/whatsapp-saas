@@ -43,9 +43,7 @@ export class ReminderProcessor extends WorkerHost {
       // Call the service method to send the reminder
       await this.remindersService.sendReminder(reminderId);
 
-      this.logger.log(
-        `Successfully processed reminder ${reminderId} for booking ${bookingId}`,
-      );
+      this.logger.log(`Successfully processed reminder ${reminderId} for booking ${bookingId}`);
 
       return {
         success: true,
@@ -68,9 +66,7 @@ export class ReminderProcessor extends WorkerHost {
    * Called when a job completes successfully
    */
   onCompleted(job: Job<ReminderJobData>, result: any) {
-    this.logger.debug(
-      `Job ${job.id} completed successfully: ${JSON.stringify(result)}`,
-    );
+    this.logger.debug(`Job ${job.id} completed successfully: ${JSON.stringify(result)}`);
   }
 
   /**
@@ -87,8 +83,6 @@ export class ReminderProcessor extends WorkerHost {
    * Called when a job is about to be retried
    */
   onActive(job: Job<ReminderJobData>) {
-    this.logger.debug(
-      `Job ${job.id} is now active (attempt ${job.attemptsMade + 1})`,
-    );
+    this.logger.debug(`Job ${job.id} is now active (attempt ${job.attemptsMade + 1})`);
   }
 }

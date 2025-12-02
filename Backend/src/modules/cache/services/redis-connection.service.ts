@@ -47,14 +47,9 @@ export class RedisConnectionService implements OnModuleInit, OnModuleDestroy {
           this.reconnectAttempts = times;
 
           // Exponential backoff with max delay
-          const delay = Math.min(
-            times * REDIS_POOL.RETRY_DELAY,
-            REDIS_POOL.MAX_RETRY_DELAY,
-          );
+          const delay = Math.min(times * REDIS_POOL.RETRY_DELAY, REDIS_POOL.MAX_RETRY_DELAY);
 
-          this.logger.warn(
-            `Redis reconnection attempt ${times}, retrying in ${delay}ms`,
-          );
+          this.logger.warn(`Redis reconnection attempt ${times}, retrying in ${delay}ms`);
 
           // Never give up - always retry
           return delay;
@@ -72,14 +67,9 @@ export class RedisConnectionService implements OnModuleInit, OnModuleDestroy {
       // Wait for connection to be ready
       await this.client.ping();
       this.isConnected = true;
-      this.logger.log(
-        `Redis connected successfully to ${cacheConfig.host}:${cacheConfig.port}`,
-      );
+      this.logger.log(`Redis connected successfully to ${cacheConfig.host}:${cacheConfig.port}`);
     } catch (error) {
-      this.logger.error(
-        `Failed to connect to Redis: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Failed to connect to Redis: ${error.message}`, error.stack);
       this.isConnected = false;
       throw error;
     }
@@ -129,9 +119,7 @@ export class RedisConnectionService implements OnModuleInit, OnModuleDestroy {
         await this.client.quit();
         this.logger.log('Redis disconnected successfully');
       } catch (error) {
-        this.logger.error(
-          `Error disconnecting from Redis: ${error.message}`,
-        );
+        this.logger.error(`Error disconnecting from Redis: ${error.message}`);
       }
       this.isConnected = false;
     }
@@ -177,10 +165,7 @@ export class RedisConnectionService implements OnModuleInit, OnModuleDestroy {
     return Promise.race([
       operation(),
       new Promise<T>((_, reject) =>
-        setTimeout(
-          () => reject(new Error('Redis operation timeout')),
-          timeoutMs,
-        ),
+        setTimeout(() => reject(new Error('Redis operation timeout')), timeoutMs),
       ),
     ]);
   }

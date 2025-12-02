@@ -151,7 +151,12 @@ export class CreateMasterDto {
     description: 'Weekly working hours schedule',
     type: WorkingHours,
     example: {
-      monday: { enabled: true, start: '09:00', end: '18:00', breaks: [{ start: '13:00', end: '14:00' }] },
+      monday: {
+        enabled: true,
+        start: '09:00',
+        end: '18:00',
+        breaks: [{ start: '13:00', end: '14:00' }],
+      },
       tuesday: { enabled: true, start: '09:00', end: '18:00', breaks: [] },
       wednesday: { enabled: true, start: '09:00', end: '18:00', breaks: [] },
       thursday: { enabled: true, start: '09:00', end: '18:00', breaks: [] },

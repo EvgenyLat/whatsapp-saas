@@ -441,10 +441,7 @@ describe('QuickBookingService - Language Handling', () => {
 
       await service.handleButtonClick('slot_slot-123', mockCustomerPhone);
 
-      expect(cardBuilder.buildConfirmationCard).toHaveBeenCalledWith(
-        expect.any(Object),
-        'pt',
-      );
+      expect(cardBuilder.buildConfirmationCard).toHaveBeenCalledWith(expect.any(Object), 'pt');
     });
 
     it('should default to English if session has no language (session migration)', async () => {
@@ -588,7 +585,9 @@ describe('QuickBookingService - Language Handling', () => {
         searchedDays: 1,
         hasMore: false,
       });
-      jest.spyOn((service as any).alternativeSuggester, 'rankByTimeProximity').mockResolvedValue([mockRankedSlot]);
+      jest
+        .spyOn((service as any).alternativeSuggester, 'rankByTimeProximity')
+        .mockResolvedValue([mockRankedSlot]);
       jest.spyOn(cardBuilder, 'buildSlotSelectionCard').mockReturnValue(mockCard as any);
       jest.spyOn(sessionContext, 'update').mockResolvedValue(undefined);
 
@@ -664,7 +663,9 @@ describe('QuickBookingService - Language Handling', () => {
         searchedDays: 14,
         hasMore: false,
       });
-      jest.spyOn((service as any).alternativeSuggester, 'rankByDateProximity').mockResolvedValue([mockRankedSlot]);
+      jest
+        .spyOn((service as any).alternativeSuggester, 'rankByDateProximity')
+        .mockResolvedValue([mockRankedSlot]);
       jest.spyOn(cardBuilder, 'buildSlotSelectionCard').mockReturnValue(mockCard as any);
       jest.spyOn(sessionContext, 'update').mockResolvedValue(undefined);
 
@@ -738,10 +739,7 @@ describe('QuickBookingService - Language Handling', () => {
       await service.handleButtonClick('slot_slot-123', mockCustomerPhone);
 
       // Verify Spanish was used for confirmation card
-      expect(cardBuilder.buildConfirmationCard).toHaveBeenCalledWith(
-        expect.any(Object),
-        'es',
-      );
+      expect(cardBuilder.buildConfirmationCard).toHaveBeenCalledWith(expect.any(Object), 'es');
 
       // Step 3: Confirmation - should still use Spanish
       const mockSessionWithSelectedSlot = {
@@ -909,10 +907,7 @@ describe('QuickBookingService - Language Handling', () => {
       await service.handleButtonClick('slot_slot-123', mockCustomerPhone, 'es');
 
       // Verify Spanish was used
-      expect(cardBuilder.buildConfirmationCard).toHaveBeenCalledWith(
-        expect.any(Object),
-        'es',
-      );
+      expect(cardBuilder.buildConfirmationCard).toHaveBeenCalledWith(expect.any(Object), 'es');
 
       // Verify save was called for slot selection, but not for language update
       // (since language didn't change, there should be only 1 additional save call)
@@ -977,10 +972,7 @@ describe('QuickBookingService - Language Handling', () => {
       );
 
       // Verify English was used as default
-      expect(cardBuilder.buildConfirmationCard).toHaveBeenCalledWith(
-        expect.any(Object),
-        'en',
-      );
+      expect(cardBuilder.buildConfirmationCard).toHaveBeenCalledWith(expect.any(Object), 'en');
     });
 
     it('should not re-migrate sessions that already have language field', async () => {
@@ -1013,10 +1005,7 @@ describe('QuickBookingService - Language Handling', () => {
       expect(saveCallsAfter).toBe(saveCallsBefore + 1);
 
       // Verify Russian language was preserved
-      expect(cardBuilder.buildConfirmationCard).toHaveBeenCalledWith(
-        expect.any(Object),
-        'ru',
-      );
+      expect(cardBuilder.buildConfirmationCard).toHaveBeenCalledWith(expect.any(Object), 'ru');
     });
 
     it('should apply migration during storeSession if language field is missing', async () => {
@@ -1065,7 +1054,7 @@ describe('QuickBookingService - Language Handling', () => {
       // Test getConfirmationMessage fallback
       const confirmMsg = (service as any).getConfirmationMessage(
         { bookingCode: 'TEST-123' },
-        'xyz-invalid'
+        'xyz-invalid',
       );
       expect(confirmMsg).toContain('Booking confirmed');
       expect(confirmMsg).toContain('TEST-123');
@@ -1080,10 +1069,7 @@ describe('QuickBookingService - Language Handling', () => {
       const errorMsg = (service as any).getErrorMessage('');
       expect(errorMsg).not.toContain('Извините');
 
-      const confirmMsg = (service as any).getConfirmationMessage(
-        { bookingCode: 'TEST' },
-        ''
-      );
+      const confirmMsg = (service as any).getConfirmationMessage({ bookingCode: 'TEST' }, '');
       expect(confirmMsg).not.toContain('подтверждено');
     });
   });

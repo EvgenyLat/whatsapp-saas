@@ -13,10 +13,7 @@ import {
  * Handles all database operations for Booking entities
  */
 @Injectable()
-export class BookingsRepository
-  extends BaseRepository<Booking>
-  implements IBookingsRepository
-{
+export class BookingsRepository extends BaseRepository<Booking> implements IBookingsRepository {
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, 'booking');
   }
@@ -24,10 +21,7 @@ export class BookingsRepository
   /**
    * Find booking by booking code and salon ID
    */
-  async findByBookingCodeAndSalonId(
-    bookingCode: string,
-    salonId: string,
-  ): Promise<Booking | null> {
+  async findByBookingCodeAndSalonId(bookingCode: string, salonId: string): Promise<Booking | null> {
     return this.findFirst({
       booking_code: bookingCode,
       salon_id: salonId,
@@ -176,10 +170,7 @@ export class BookingsRepository
   /**
    * Build where clause from filters
    */
-  private buildWhereClause(
-    salonId: string | string[] | null,
-    filters?: BookingFilters,
-  ): any {
+  private buildWhereClause(salonId: string | string[] | null, filters?: BookingFilters): any {
     const where: any = {};
 
     // Handle salon ID filter

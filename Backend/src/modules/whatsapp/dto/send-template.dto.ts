@@ -1,5 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, Matches, IsOptional, IsArray, IsUUID, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  Matches,
+  IsOptional,
+  IsArray,
+  IsUUID,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class TemplateParameterDto {

@@ -46,7 +46,10 @@ export class ServicesController {
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - User does not own the salon' })
-  async create(@Req() req: any, @Body() createServiceDto: CreateServiceDto): Promise<ServiceResponseDto> {
+  async create(
+    @Req() req: any,
+    @Body() createServiceDto: CreateServiceDto,
+  ): Promise<ServiceResponseDto> {
     return this.servicesService.create(req.user.id, createServiceDto);
   }
 
@@ -70,7 +73,7 @@ export class ServicesController {
   @ApiQuery({
     name: 'salon_id',
     required: false,
-    description: 'Salon ID (optional, defaults to user\'s first salon)',
+    description: "Salon ID (optional, defaults to user's first salon)",
   })
   @ApiResponse({
     status: 200,

@@ -93,7 +93,6 @@ export class WhatsAppWebhookProcessor {
 
       // Track successful AI interaction
       await this.trackAIInteraction(salon.id, from, aiResponse);
-
     } catch (error) {
       this.logger.error('Error processing WhatsApp message:', error);
 

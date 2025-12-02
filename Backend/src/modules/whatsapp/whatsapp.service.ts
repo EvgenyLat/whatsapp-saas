@@ -1,4 +1,12 @@
-import { Injectable, BadRequestException, HttpException, HttpStatus, Logger, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Logger,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { PrismaService } from '@database/prisma.service';
@@ -7,8 +15,19 @@ import { AxiosError } from 'axios';
 import * as crypto from 'crypto';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationsService } from '../conversations/conversations.service';
-import { MessageResponse, MediaUrlResponse, WhatsAppApiError, InteractiveMessagePayload } from './interfaces';
-import { SendTextDto, SendTemplateDto, SendMediaDto, SendInteractiveDto, TemplateParameterDto } from './dto';
+import {
+  MessageResponse,
+  MediaUrlResponse,
+  WhatsAppApiError,
+  InteractiveMessagePayload,
+} from './interfaces';
+import {
+  SendTextDto,
+  SendTemplateDto,
+  SendMediaDto,
+  SendInteractiveDto,
+  TemplateParameterDto,
+} from './dto';
 
 @Injectable()
 export class WhatsAppService {
@@ -41,9 +60,10 @@ export class WhatsAppService {
     this.logger.log(`Sending text message to ${sendTextDto.to} from salon ${sendTextDto.salon_id}`);
 
     // Allow 'system' userId for AI bot (skip ownership verification)
-    const salon = userId === 'system'
-      ? await this.getSalonById(sendTextDto.salon_id)
-      : await this.getSalonWithVerification(sendTextDto.salon_id, userId);
+    const salon =
+      userId === 'system'
+        ? await this.getSalonById(sendTextDto.salon_id)
+        : await this.getSalonWithVerification(sendTextDto.salon_id, userId);
 
     const payload = {
       messaging_product: 'whatsapp',
@@ -56,7 +76,11 @@ export class WhatsAppService {
     };
 
     try {
-      const response = await this.sendWhatsAppMessage(salon.phone_number_id, salon.access_token, payload);
+      const response = await this.sendWhatsAppMessage(
+        salon.phone_number_id,
+        salon.access_token,
+        payload,
+      );
 
       const message = await this.prisma.message.create({
         data: {
@@ -72,7 +96,11 @@ export class WhatsAppService {
         },
       });
 
-      await this.updateOrCreateConversation(salon.id, sendTextDto.to, this.calculateMessageCost('TEXT'));
+      await this.updateOrCreateConversation(
+        salon.id,
+        sendTextDto.to,
+        this.calculateMessageCost('TEXT'),
+      );
 
       return {
         success: true,
@@ -88,7 +116,9 @@ export class WhatsAppService {
   }
 
   async sendTemplateMessage(userId: string, sendTemplateDto: SendTemplateDto): Promise<any> {
-    this.logger.log(`Sending template message to ${sendTemplateDto.to} from salon ${sendTemplateDto.salon_id}`);
+    this.logger.log(
+      `Sending template message to ${sendTemplateDto.to} from salon ${sendTemplateDto.salon_id}`,
+    );
 
     const salon = await this.getSalonWithVerification(sendTemplateDto.salon_id, userId);
 
@@ -118,7 +148,11 @@ export class WhatsAppService {
     };
 
     try {
-      const response = await this.sendWhatsAppMessage(salon.phone_number_id, salon.access_token, payload);
+      const response = await this.sendWhatsAppMessage(
+        salon.phone_number_id,
+        salon.access_token,
+        payload,
+      );
 
       const contentPreview = `Template: ${sendTemplateDto.template_name} (${sendTemplateDto.language_code})`;
       const message = await this.prisma.message.create({
@@ -135,7 +169,11 @@ export class WhatsAppService {
         },
       });
 
-      await this.updateOrCreateConversation(salon.id, sendTemplateDto.to, this.calculateMessageCost('TEMPLATE'));
+      await this.updateOrCreateConversation(
+        salon.id,
+        sendTemplateDto.to,
+        this.calculateMessageCost('TEMPLATE'),
+      );
 
       return {
         success: true,
@@ -151,11 +189,15 @@ export class WhatsAppService {
   }
 
   async sendMediaMessage(userId: string, sendMediaDto: SendMediaDto): Promise<any> {
-    this.logger.log(`Sending ${sendMediaDto.media_type} message to ${sendMediaDto.to} from salon ${sendMediaDto.salon_id}`);
+    this.logger.log(
+      `Sending ${sendMediaDto.media_type} message to ${sendMediaDto.to} from salon ${sendMediaDto.salon_id}`,
+    );
 
     const salon = await this.getSalonWithVerification(sendMediaDto.salon_id, userId);
 
-    const isUrl = sendMediaDto.media_url_or_id.startsWith('http://') || sendMediaDto.media_url_or_id.startsWith('https://');
+    const isUrl =
+      sendMediaDto.media_url_or_id.startsWith('http://') ||
+      sendMediaDto.media_url_or_id.startsWith('https://');
 
     const mediaObject: any = {};
     if (isUrl) {
@@ -164,7 +206,12 @@ export class WhatsAppService {
       mediaObject.id = sendMediaDto.media_url_or_id;
     }
 
-    if (sendMediaDto.caption && (sendMediaDto.media_type === 'image' || sendMediaDto.media_type === 'video' || sendMediaDto.media_type === 'document')) {
+    if (
+      sendMediaDto.caption &&
+      (sendMediaDto.media_type === 'image' ||
+        sendMediaDto.media_type === 'video' ||
+        sendMediaDto.media_type === 'document')
+    ) {
       mediaObject.caption = sendMediaDto.caption;
     }
 
@@ -181,9 +228,15 @@ export class WhatsAppService {
     };
 
     try {
-      const response = await this.sendWhatsAppMessage(salon.phone_number_id, salon.access_token, payload);
+      const response = await this.sendWhatsAppMessage(
+        salon.phone_number_id,
+        salon.access_token,
+        payload,
+      );
 
-      const contentPreview = sendMediaDto.caption || `${sendMediaDto.media_type.toUpperCase()}: ${sendMediaDto.media_url_or_id.substring(0, 100)}`;
+      const contentPreview =
+        sendMediaDto.caption ||
+        `${sendMediaDto.media_type.toUpperCase()}: ${sendMediaDto.media_url_or_id.substring(0, 100)}`;
       const message = await this.prisma.message.create({
         data: {
           salon_id: salon.id,
@@ -198,7 +251,11 @@ export class WhatsAppService {
         },
       });
 
-      await this.updateOrCreateConversation(salon.id, sendMediaDto.to, this.calculateMessageCost(sendMediaDto.media_type.toUpperCase()));
+      await this.updateOrCreateConversation(
+        salon.id,
+        sendMediaDto.to,
+        this.calculateMessageCost(sendMediaDto.media_type.toUpperCase()),
+      );
 
       return {
         success: true,
@@ -219,16 +276,22 @@ export class WhatsAppService {
    * @param sendInteractiveDto - Interactive message DTO
    * @returns Message ID and database record
    */
-  async sendInteractiveMessage(userId: string, sendInteractiveDto: SendInteractiveDto): Promise<any> {
-    this.logger.log(`Sending interactive message to ${sendInteractiveDto.to} from salon ${sendInteractiveDto.salon_id}`);
+  async sendInteractiveMessage(
+    userId: string,
+    sendInteractiveDto: SendInteractiveDto,
+  ): Promise<any> {
+    this.logger.log(
+      `Sending interactive message to ${sendInteractiveDto.to} from salon ${sendInteractiveDto.salon_id}`,
+    );
 
     // Validate and normalize phone number
     const validatedPhone = this.validatePhoneNumber(sendInteractiveDto.to);
 
     // Allow 'system' userId for AI bot (skip ownership verification)
-    const salon = userId === 'system'
-      ? await this.getSalonById(sendInteractiveDto.salon_id)
-      : await this.getSalonWithVerification(sendInteractiveDto.salon_id, userId);
+    const salon =
+      userId === 'system'
+        ? await this.getSalonById(sendInteractiveDto.salon_id)
+        : await this.getSalonWithVerification(sendInteractiveDto.salon_id, userId);
 
     const payload = {
       messaging_product: 'whatsapp',
@@ -241,15 +304,20 @@ export class WhatsAppService {
     try {
       const response = await this.retryRequest(
         () => this.sendWhatsAppMessage(salon.phone_number_id, salon.access_token, payload),
-        3
+        3,
       );
 
       // Determine item count for logging
-      const itemCount = sendInteractiveDto.interactive.action.buttons?.length ||
-                        sendInteractiveDto.interactive.action.sections?.reduce((sum, section) => sum + section.rows.length, 0) || 0;
+      const itemCount =
+        sendInteractiveDto.interactive.action.buttons?.length ||
+        sendInteractiveDto.interactive.action.sections?.reduce(
+          (sum, section) => sum + section.rows.length,
+          0,
+        ) ||
+        0;
 
       this.logger.log(
-        `Sent interactive message to ${validatedPhone}: ${sendInteractiveDto.interactive.type} (${itemCount} items)`
+        `Sent interactive message to ${validatedPhone}: ${sendInteractiveDto.interactive.type} (${itemCount} items)`,
       );
 
       // Create content preview for database
@@ -269,7 +337,11 @@ export class WhatsAppService {
         },
       });
 
-      await this.updateOrCreateConversation(salon.id, validatedPhone, this.calculateMessageCost('INTERACTIVE'));
+      await this.updateOrCreateConversation(
+        salon.id,
+        validatedPhone,
+        this.calculateMessageCost('INTERACTIVE'),
+      );
 
       return {
         success: true,
@@ -347,7 +419,12 @@ export class WhatsAppService {
     );
   }
 
-  private async sendWhatsAppMessage(phoneNumberId: string, accessToken: string, payload: any, attempt: number = 1): Promise<MessageResponse> {
+  private async sendWhatsAppMessage(
+    phoneNumberId: string,
+    accessToken: string,
+    payload: any,
+    attempt: number = 1,
+  ): Promise<MessageResponse> {
     const url = `${this.apiUrl}/${this.apiVersion}/${phoneNumberId}/messages`;
 
     try {
@@ -364,7 +441,9 @@ export class WhatsAppService {
       return response.data;
     } catch (error) {
       if (attempt < this.retryAttempts && this.shouldRetry(error)) {
-        this.logger.warn(`Retrying WhatsApp API call (attempt ${attempt + 1}/${this.retryAttempts})`);
+        this.logger.warn(
+          `Retrying WhatsApp API call (attempt ${attempt + 1}/${this.retryAttempts})`,
+        );
         await this.sleep(this.retryDelay * attempt);
         return this.sendWhatsAppMessage(phoneNumberId, accessToken, payload, attempt + 1);
       }
@@ -421,7 +500,11 @@ export class WhatsAppService {
     return salon;
   }
 
-  private async updateOrCreateConversation(salonId: string, phoneNumber: string, cost: number): Promise<void> {
+  private async updateOrCreateConversation(
+    salonId: string,
+    phoneNumber: string,
+    cost: number,
+  ): Promise<void> {
     try {
       const existingConversation = await this.prisma.conversation.findUnique({
         where: {
@@ -504,18 +587,27 @@ export class WhatsAppService {
           case 403:
             return new HttpException('Insufficient WhatsApp API permissions', HttpStatus.FORBIDDEN);
           case 429:
-            return new HttpException('WhatsApp API rate limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
+            return new HttpException(
+              'WhatsApp API rate limit exceeded',
+              HttpStatus.TOO_MANY_REQUESTS,
+            );
           case 500:
           case 502:
           case 503:
-            return new HttpException('WhatsApp API service unavailable', HttpStatus.SERVICE_UNAVAILABLE);
+            return new HttpException(
+              'WhatsApp API service unavailable',
+              HttpStatus.SERVICE_UNAVAILABLE,
+            );
           default:
             return new HttpException(`WhatsApp API error (${code}): ${message}`, status);
         }
       }
     }
 
-    return new HttpException('Failed to communicate with WhatsApp API', HttpStatus.INTERNAL_SERVER_ERROR);
+    return new HttpException(
+      'Failed to communicate with WhatsApp API',
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
   }
 
   /**
@@ -537,7 +629,7 @@ export class WhatsAppService {
     const e164Regex = /^\+[1-9]\d{1,14}$/;
     if (!e164Regex.test(cleaned)) {
       throw new BadRequestException(
-        `Invalid phone number format. Must be in E.164 format (e.g., +1234567890). Received: ${phone}`
+        `Invalid phone number format. Must be in E.164 format (e.g., +1234567890). Received: ${phone}`,
       );
     }
 
@@ -577,7 +669,7 @@ export class WhatsAppService {
         // Calculate exponential backoff: 1s, 2s, 4s
         const delayMs = Math.pow(2, attempt - 1) * 1000;
         this.logger.warn(
-          `Request failed (attempt ${attempt}/${maxRetries}). Retrying in ${delayMs}ms... Error: ${axiosError.message}`
+          `Request failed (attempt ${attempt}/${maxRetries}). Retrying in ${delayMs}ms... Error: ${axiosError.message}`,
         );
 
         await this.sleep(delayMs);

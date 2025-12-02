@@ -754,11 +754,23 @@ export function formatTime(hours: number, minutes: number, language: SupportedLa
  * getDayName(1, 'ru', true); // "Пн"
  * ```
  */
-export function getDayName(dayIndex: number, language: SupportedLanguage, short: boolean = false): string {
+export function getDayName(
+  dayIndex: number,
+  language: SupportedLanguage,
+  short: boolean = false,
+): string {
   const t = getTranslations(language);
   const days = short ? t.shortDays : t.days;
 
-  const dayKeys: (keyof DayNames)[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const dayKeys: (keyof DayNames)[] = [
+    'sunday',
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+  ];
   const key = dayKeys[dayIndex];
 
   return days[key] || '';

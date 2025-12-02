@@ -34,10 +34,7 @@ describe('SalonsService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        SalonsService,
-        { provide: PrismaService, useValue: mockPrismaService },
-      ],
+      providers: [SalonsService, { provide: PrismaService, useValue: mockPrismaService }],
     }).compile();
 
     service = module.get<SalonsService>(SalonsService);
@@ -80,9 +77,7 @@ describe('SalonsService', () => {
     it('should throw ConflictException if phone_number_id already exists', async () => {
       mockPrismaService.salon.findUnique.mockResolvedValue(mockSalon);
 
-      await expect(service.create(mockUserId, createSalonDto)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.create(mockUserId, createSalonDto)).rejects.toThrow(ConflictException);
       expect(mockPrismaService.salon.create).not.toHaveBeenCalled();
     });
 
@@ -168,18 +163,18 @@ describe('SalonsService', () => {
     it('should throw NotFoundException if salon not found', async () => {
       mockPrismaService.salon.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.findOne(mockSalonId, mockUserId, 'SALON_OWNER'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.findOne(mockSalonId, mockUserId, 'SALON_OWNER')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw UnauthorizedException if user is not owner and not admin', async () => {
       const otherUserSalon = { ...mockSalon, owner_id: mockOtherUserId };
       mockPrismaService.salon.findUnique.mockResolvedValue(otherUserSalon);
 
-      await expect(
-        service.findOne(mockSalonId, mockUserId, 'SALON_OWNER'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.findOne(mockSalonId, mockUserId, 'SALON_OWNER')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -196,12 +191,7 @@ describe('SalonsService', () => {
         ...updateSalonDto,
       });
 
-      const result = await service.update(
-        mockSalonId,
-        mockUserId,
-        'SALON_OWNER',
-        updateSalonDto,
-      );
+      const result = await service.update(mockSalonId, mockUserId, 'SALON_OWNER', updateSalonDto);
 
       expect(result.name).toBe(updateSalonDto.name);
       expect(result.is_active).toBe(updateSalonDto.is_active);
@@ -230,12 +220,7 @@ describe('SalonsService', () => {
       mockPrismaService.salon.findUnique.mockResolvedValue(mockSalon);
       mockPrismaService.salon.update.mockResolvedValue(mockSalon);
 
-      const result = await service.update(
-        mockSalonId,
-        mockUserId,
-        'SALON_OWNER',
-        updateDto,
-      );
+      const result = await service.update(mockSalonId, mockUserId, 'SALON_OWNER', updateDto);
 
       expect(result.id).toBe(mockSalonId);
       expect(mockPrismaService.salon.update).toHaveBeenCalled();
@@ -279,18 +264,18 @@ describe('SalonsService', () => {
     it('should throw NotFoundException if salon not found', async () => {
       mockPrismaService.salon.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.remove(mockSalonId, mockUserId, 'SALON_OWNER'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.remove(mockSalonId, mockUserId, 'SALON_OWNER')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw UnauthorizedException if user does not own salon', async () => {
       const otherUserSalon = { ...mockSalon, owner_id: mockOtherUserId };
       mockPrismaService.salon.findUnique.mockResolvedValue(otherUserSalon);
 
-      await expect(
-        service.remove(mockSalonId, mockUserId, 'SALON_OWNER'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.remove(mockSalonId, mockUserId, 'SALON_OWNER')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -298,17 +283,15 @@ describe('SalonsService', () => {
     it('should verify ownership successfully', async () => {
       mockPrismaService.salon.findUnique.mockResolvedValue(mockSalon);
 
-      await expect(
-        service.verifySalonOwnership(mockSalonId, mockUserId),
-      ).resolves.not.toThrow();
+      await expect(service.verifySalonOwnership(mockSalonId, mockUserId)).resolves.not.toThrow();
     });
 
     it('should throw NotFoundException if salon not found', async () => {
       mockPrismaService.salon.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.verifySalonOwnership(mockSalonId, mockUserId),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.verifySalonOwnership(mockSalonId, mockUserId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw UnauthorizedException if user does not own salon', async () => {
@@ -316,9 +299,9 @@ describe('SalonsService', () => {
         owner_id: mockOtherUserId,
       });
 
-      await expect(
-        service.verifySalonOwnership(mockSalonId, mockUserId),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.verifySalonOwnership(mockSalonId, mockUserId)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });

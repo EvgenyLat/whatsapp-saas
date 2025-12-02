@@ -51,11 +51,7 @@ export class QueueAdminController {
     @Query('grace') grace?: number,
     @Query('status') status?: 'completed' | 'failed',
   ) {
-    const cleaned = await this.queueService.cleanQueue(
-      queueName,
-      grace,
-      status,
-    );
+    const cleaned = await this.queueService.cleanQueue(queueName, grace, status);
     return {
       success: true,
       message: `Cleaned ${cleaned.length} jobs from ${queueName}`,
@@ -68,13 +64,9 @@ export class QueueAdminController {
   @ApiResponse({ status: 200, description: 'Queue system is healthy' })
   async healthCheck() {
     const queues = ['webhook', 'message-status', 'booking-reminder', 'email'];
-    const stats = await Promise.all(
-      queues.map((q) => this.queueService.getQueueStats(q)),
-    );
+    const stats = await Promise.all(queues.map((q) => this.queueService.getQueueStats(q)));
 
-    const healthy = stats.every(
-      (s) => s.failed < 100 && s.active < 1000,
-    );
+    const healthy = stats.every((s) => s.failed < 100 && s.active < 1000);
 
     return {
       success: true,

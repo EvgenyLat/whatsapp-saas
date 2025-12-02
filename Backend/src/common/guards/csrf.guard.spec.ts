@@ -146,7 +146,11 @@ describe('CsrfGuard', () => {
       const sessionId = 'test-session-id';
       const validToken = guard.generateCsrfToken(sessionId);
 
-      const contextWithValidToken = createMockExecutionContext('POST', { 'x-csrf-token': validToken }, null);
+      const contextWithValidToken = createMockExecutionContext(
+        'POST',
+        { 'x-csrf-token': validToken },
+        null,
+      );
 
       const result = guard.canActivate(contextWithValidToken);
 
@@ -220,7 +224,7 @@ describe('CsrfGuard', () => {
       const token1 = guard.generateCsrfToken(sessionId);
 
       // Wait a moment to ensure different timestamp
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       const token2 = guard.generateCsrfToken(sessionId);
 
@@ -234,8 +238,9 @@ describe('CsrfGuard', () => {
       const user = { id: 'user-123' };
 
       // Create token with timestamp 25 hours in the past (beyond 24h limit)
-      const expiredTimestamp = Date.now() - (25 * 60 * 60 * 1000);
-      const hash = require('crypto').createHash('sha256')
+      const expiredTimestamp = Date.now() - 25 * 60 * 60 * 1000;
+      const hash = require('crypto')
+        .createHash('sha256')
         .update(`${user.id}:${expiredTimestamp}:test-csrf-secret-12345`)
         .digest('hex');
       const expiredToken = Buffer.from(`${expiredTimestamp}:${hash}`).toString('base64');
@@ -250,8 +255,9 @@ describe('CsrfGuard', () => {
       const user = { id: 'user-123' };
 
       // Create token with timestamp in the future
-      const futureTimestamp = Date.now() + (60 * 60 * 1000);
-      const hash = require('crypto').createHash('sha256')
+      const futureTimestamp = Date.now() + 60 * 60 * 1000;
+      const hash = require('crypto')
+        .createHash('sha256')
         .update(`${user.id}:${futureTimestamp}:test-csrf-secret-12345`)
         .digest('hex');
       const futureToken = Buffer.from(`${futureTimestamp}:${hash}`).toString('base64');

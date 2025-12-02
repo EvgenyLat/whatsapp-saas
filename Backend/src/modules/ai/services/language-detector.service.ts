@@ -270,7 +270,9 @@ export class LanguageDetectorService {
       );
       return openaiResult;
     } catch (error) {
-      this.logger.error(`OpenAI detection failed: ${error.message}. Falling back to pattern result.`);
+      this.logger.error(
+        `OpenAI detection failed: ${error.message}. Falling back to pattern result.`,
+      );
       // Return pattern result even with low confidence
       return patternResult;
     }
@@ -454,7 +456,10 @@ If the language is not in the list, return "en" as default.`,
    * @returns Language name in English
    */
   getLanguageName(code: string): string {
-    const patterns = this.LANGUAGE_PATTERNS as Record<string, { name: string; unicodeRanges: RegExp[]; commonWords: string[]; threshold: number }>;
+    const patterns = this.LANGUAGE_PATTERNS as Record<
+      string,
+      { name: string; unicodeRanges: RegExp[]; commonWords: string[]; threshold: number }
+    >;
     return patterns[code]?.name || 'Unknown';
   }
 

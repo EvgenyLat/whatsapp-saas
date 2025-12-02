@@ -7,7 +7,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 export class AIResponseDto {
   @ApiProperty({
     description: 'AI response text to send to customer',
-    example: '✅ Записала вас на 25 октября в 15:00 к мастеру Аня. Услуга: Маникюр. Код брони: BK-ABC123',
+    example:
+      '✅ Записала вас на 25 октября в 15:00 к мастеру Аня. Услуга: Маникюр. Код брони: BK-ABC123',
   })
   response: string;
 
@@ -43,7 +44,12 @@ export class AIResponseDto {
 
   @ApiPropertyOptional({
     description: 'Function calls made during processing',
-    example: [{ name: 'check_availability', arguments: { master_name: 'Аня', date_time: '2025-10-25T15:00:00Z' } }],
+    example: [
+      {
+        name: 'check_availability',
+        arguments: { master_name: 'Аня', date_time: '2025-10-25T15:00:00Z' },
+      },
+    ],
   })
   function_calls?: Array<{
     name: string;

@@ -12,7 +12,11 @@ import { AIConversationRepository } from './repositories/ai-conversation.reposit
 import { AIMessageRepository } from './repositories/ai-message.repository';
 import { CacheService } from './services/cache.service';
 import { LanguageDetectorService } from './services/language-detector.service';
-import { getSystemPrompt, buildSystemPromptWithContext, ContextVariables } from './prompts/system-prompts';
+import {
+  getSystemPrompt,
+  buildSystemPromptWithContext,
+  ContextVariables,
+} from './prompts/system-prompts';
 import { ServiceMatcher, AvailabilitySuggester, ConfirmationFormatter } from './helpers';
 import {
   ProcessMessageDto,
@@ -115,7 +119,9 @@ export class AIService {
 
         // Return limit reached message in English (primary language)
         return new AIResponseDto({
-          response: usageCheck.message || 'AI message limit reached. Counters will reset at the beginning of next month.',
+          response:
+            usageCheck.message ||
+            'AI message limit reached. Counters will reset at the beginning of next month.',
           tokens_used: 0,
           cost: 0,
           response_time_ms: Date.now() - startTime,
@@ -371,17 +377,17 @@ export class AIService {
   async getServiceInfo(
     salonId: string,
     serviceName: string,
-    language: string = 'en'
+    language: string = 'en',
   ): Promise<any> {
     try {
       // Get all services for the salon
-      const servicesResult = await this.servicesService.findAll(
-        'ai-system',
-        'SUPER_ADMIN',
-        { is_active: true, page: 1, limit: 100 } as any
-      );
+      const servicesResult = await this.servicesService.findAll('ai-system', 'SUPER_ADMIN', {
+        is_active: true,
+        page: 1,
+        limit: 100,
+      } as any);
 
-      const services = servicesResult.data.map(s => ({
+      const services = servicesResult.data.map((s) => ({
         id: s.id,
         name: s.name,
         description: s.description,
@@ -397,16 +403,17 @@ export class AIService {
       if (matches.length === 0) {
         return {
           found: false,
-          message: language === 'en'
-            ? `Service "${serviceName}" not found. Please clarify the name.`
-            : language === 'ru'
-              ? `Услуга "${serviceName}" не найдена. Пожалуйста, уточните название.`
-              : `Service "${serviceName}" not found. Please clarify the name.`,
+          message:
+            language === 'en'
+              ? `Service "${serviceName}" not found. Please clarify the name.`
+              : language === 'ru'
+                ? `Услуга "${serviceName}" не найдена. Пожалуйста, уточните название.`
+                : `Service "${serviceName}" not found. Please clarify the name.`,
         };
       }
 
       // Return top matches
-      const topMatches = matches.slice(0, 3).map(m => ({
+      const topMatches = matches.slice(0, 3).map((m) => ({
         name: m.service.name,
         description: m.service.description,
         price: m.service.price,
@@ -421,11 +428,12 @@ export class AIService {
       return {
         found: true,
         services: topMatches,
-        message: language === 'en'
-          ? `Found ${topMatches.length} services: ${topMatches.map(s => `${s.name} - ${currency}${s.price}, ${s.duration} min`).join('; ')}`
-          : language === 'ru'
-            ? `Найдено услуг: ${topMatches.length}. ${topMatches.map(s => `${s.name} - ${s.price}${currency}, ${s.duration} мин`).join('; ')}`
-            : `Found ${topMatches.length} services: ${topMatches.map(s => `${s.name} - ${currency}${s.price}, ${s.duration} min`).join('; ')}`,
+        message:
+          language === 'en'
+            ? `Found ${topMatches.length} services: ${topMatches.map((s) => `${s.name} - ${currency}${s.price}, ${s.duration} min`).join('; ')}`
+            : language === 'ru'
+              ? `Найдено услуг: ${topMatches.length}. ${topMatches.map((s) => `${s.name} - ${s.price}${currency}, ${s.duration} мин`).join('; ')}`
+              : `Found ${topMatches.length} services: ${topMatches.map((s) => `${s.name} - ${currency}${s.price}, ${s.duration} min`).join('; ')}`,
       };
     } catch (error) {
       this.logger.error('Error getting service info:', error);
@@ -443,7 +451,7 @@ export class AIService {
     salonId: string,
     serviceName: string,
     dateTime: string,
-    language: string = 'en'
+    language: string = 'en',
   ): Promise<any> {
     try {
       const requestedDate = new Date(dateTime);
@@ -451,7 +459,12 @@ export class AIService {
       if (isNaN(requestedDate.getTime())) {
         return {
           available: false,
-          message: language === 'en' ? 'Invalid date' : language === 'ru' ? 'Некорректная дата' : 'Invalid date',
+          message:
+            language === 'en'
+              ? 'Invalid date'
+              : language === 'ru'
+                ? 'Некорректная дата'
+                : 'Invalid date',
         };
       }
 
@@ -468,16 +481,21 @@ export class AIService {
       const durationMinutes = service.duration;
 
       // Get all masters
-      const mastersResult = await this.mastersService.findAll(
-        'ai-system',
-        'SUPER_ADMIN',
-        { is_active: true, page: 1, limit: 50 } as any
-      );
+      const mastersResult = await this.mastersService.findAll('ai-system', 'SUPER_ADMIN', {
+        is_active: true,
+        page: 1,
+        limit: 50,
+      } as any);
 
       if (mastersResult.data.length === 0) {
         return {
           available: false,
-          message: language === 'en' ? 'No staff available' : language === 'ru' ? 'Нет доступных мастеров' : 'No staff available',
+          message:
+            language === 'en'
+              ? 'No staff available'
+              : language === 'ru'
+                ? 'Нет доступных мастеров'
+                : 'No staff available',
         };
       }
 
@@ -496,7 +514,7 @@ export class AIService {
             in: ['CONFIRMED', 'PENDING', 'IN_PROGRESS'],
           },
         },
-        {}
+        {},
       );
 
       // Build booking map
@@ -516,7 +534,7 @@ export class AIService {
           requestedDate,
           durationMinutes,
           [master as any],
-          bookingMap
+          bookingMap,
         );
 
         if (availableMaster) {
@@ -531,22 +549,24 @@ export class AIService {
       if (availableStaff.length === 0) {
         return {
           available: false,
-          message: language === 'en'
-            ? 'No staff available at this time. Suggest alternative times.'
-            : language === 'ru'
-              ? 'На это время нет свободных мастеров. Предложите клиенту другое время.'
-              : 'No staff available at this time. Suggest alternative times.',
+          message:
+            language === 'en'
+              ? 'No staff available at this time. Suggest alternative times.'
+              : language === 'ru'
+                ? 'На это время нет свободных мастеров. Предложите клиенту другое время.'
+                : 'No staff available at this time. Suggest alternative times.',
         };
       }
 
       return {
         available: true,
         staff: availableStaff,
-        message: language === 'en'
-          ? `Available staff: ${availableStaff.map(s => s.name).join(', ')}`
-          : language === 'ru'
-            ? `Доступно мастеров: ${availableStaff.map(s => s.name).join(', ')}`
-            : `Available staff: ${availableStaff.map(s => s.name).join(', ')}`,
+        message:
+          language === 'en'
+            ? `Available staff: ${availableStaff.map((s) => s.name).join(', ')}`
+            : language === 'ru'
+              ? `Доступно мастеров: ${availableStaff.map((s) => s.name).join(', ')}`
+              : `Available staff: ${availableStaff.map((s) => s.name).join(', ')}`,
       };
     } catch (error) {
       this.logger.error('Error checking staff availability:', error);
@@ -663,7 +683,11 @@ export class AIService {
     const workingHours = { start: 10, end: 20 }; // 10:00 - 20:00
 
     // Try to find 3 alternative slots on the same day
-    for (let hour = workingHours.start; hour < workingHours.end && alternatives.length < 3; hour++) {
+    for (
+      let hour = workingHours.start;
+      hour < workingHours.end && alternatives.length < 3;
+      hour++
+    ) {
       const candidate = new Date(requestedDate);
       candidate.setHours(hour, 0, 0, 0);
 
@@ -825,7 +849,9 @@ export class AIService {
     message: string;
   }> {
     try {
-      this.logger.log(`AI attempting to cancel booking: ${data.booking_code} for phone ${data.customer_phone}`);
+      this.logger.log(
+        `AI attempting to cancel booking: ${data.booking_code} for phone ${data.customer_phone}`,
+      );
 
       // Find booking by phone and code
       const booking = await this.bookingsRepository.findByPhoneAndCode(
@@ -869,7 +895,8 @@ export class AIService {
       this.logger.error('Error cancelling booking from AI:', error);
       return {
         success: false,
-        message: 'An error occurred while cancelling the booking. Please try again later or contact the salon.',
+        message:
+          'An error occurred while cancelling the booking. Please try again later or contact the salon.',
       };
     }
   }
@@ -917,24 +944,27 @@ export class AIService {
   /**
    * Get context for conversation (services and staff)
    */
-  async getContextForConversation(salonId: string, language: string = 'en'): Promise<ContextVariables> {
+  async getContextForConversation(
+    salonId: string,
+    language: string = 'en',
+  ): Promise<ContextVariables> {
     try {
       // Get services (simulate user context - in production you'd need proper user)
-      const servicesResult = await this.servicesService.findAll(
-        'ai-system',
-        'SUPER_ADMIN',
-        { is_active: true, page: 1, limit: 100 } as any
-      );
+      const servicesResult = await this.servicesService.findAll('ai-system', 'SUPER_ADMIN', {
+        is_active: true,
+        page: 1,
+        limit: 100,
+      } as any);
 
       // Get masters
-      const mastersResult = await this.mastersService.findAll(
-        'ai-system',
-        'SUPER_ADMIN',
-        { is_active: true, page: 1, limit: 50 } as any
-      );
+      const mastersResult = await this.mastersService.findAll('ai-system', 'SUPER_ADMIN', {
+        is_active: true,
+        page: 1,
+        limit: 50,
+      } as any);
 
       // Format services for AI
-      const services = servicesResult.data.map(s => ({
+      const services = servicesResult.data.map((s) => ({
         id: s.id,
         name: s.name,
         description: s.description,
@@ -946,12 +976,14 @@ export class AIService {
       const servicesContext = ServiceMatcher.formatForAI(services as any, language);
 
       // Format masters for AI
-      const mastersContext = mastersResult.data.map(m => {
-        const specializations = Array.isArray(m.specialization)
-          ? m.specialization.join(', ')
-          : m.specialization;
-        return `  - ${m.name} (${specializations})${m.phone ? `, тел: ${m.phone}` : ''}`;
-      }).join('\n');
+      const mastersContext = mastersResult.data
+        .map((m) => {
+          const specializations = Array.isArray(m.specialization)
+            ? m.specialization.join(', ')
+            : m.specialization;
+          return `  - ${m.name} (${specializations})${m.phone ? `, тел: ${m.phone}` : ''}`;
+        })
+        .join('\n');
 
       return {
         servicesContext,
@@ -973,7 +1005,7 @@ export class AIService {
   private async getSystemPrompt(
     salonId: string,
     customerName?: string,
-    language: string = 'en'
+    language: string = 'en',
   ): Promise<string> {
     // Get context (services and staff)
     const context = await this.getContextForConversation(salonId, language);
@@ -1006,9 +1038,7 @@ export class AIService {
     }
 
     // Combine prompt with customer greeting
-    return customerGreeting
-      ? `${systemPrompt}\n\n${customerGreeting}`
-      : systemPrompt;
+    return customerGreeting ? `${systemPrompt}\n\n${customerGreeting}` : systemPrompt;
   }
 
   /**
@@ -1193,9 +1223,7 @@ export class AIService {
         // - Network errors
         if (attempt === maxRetries - 1) {
           // Last attempt failed
-          throw new Error(
-            `OpenAI API failed after ${maxRetries} attempts: ${lastError.message}`,
-          );
+          throw new Error(`OpenAI API failed after ${maxRetries} attempts: ${lastError.message}`);
         }
       }
     }
@@ -1228,8 +1256,9 @@ export class AIService {
    * Calculate API cost
    */
   private calculateCost(promptTokens: number, completionTokens: number, model: string): number {
-    const pricing = (this.PRICING as Record<string, { input: number; output: number }>)[model] ||
-                     this.PRICING['gpt-4'];
+    const pricing =
+      (this.PRICING as Record<string, { input: number; output: number }>)[model] ||
+      this.PRICING['gpt-4'];
 
     const inputCost = (promptTokens / 1000) * pricing.input;
     const outputCost = (completionTokens / 1000) * pricing.output;

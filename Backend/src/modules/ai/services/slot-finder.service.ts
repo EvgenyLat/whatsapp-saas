@@ -1,10 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@database/prisma.service';
-import {
-  SlotSearchParams,
-  SlotSuggestion,
-  SlotSearchResult,
-} from '../types/booking-intent.types';
+import { SlotSearchParams, SlotSuggestion, SlotSearchResult } from '../types/booking-intent.types';
 import { Decimal } from '@prisma/client/runtime/library';
 
 /**
@@ -65,9 +61,7 @@ export class SlotFinderService {
    * });
    * ```
    */
-  async findAvailableSlots(
-    params: SlotSearchParams,
-  ): Promise<SlotSearchResult> {
+  async findAvailableSlots(params: SlotSearchParams): Promise<SlotSearchResult> {
     const startTime = Date.now();
 
     const {
@@ -118,25 +112,17 @@ export class SlotFinderService {
       }
 
       // Step 2: Find relevant masters
-      const masters = await this.findRelevantMasters(
-        salonId,
-        serviceId,
-        masterId,
-      );
+      const masters = await this.findRelevantMasters(salonId, serviceId, masterId);
 
       if (masters.length === 0) {
-        this.logger.warn(
-          `No masters found for service ${serviceId} in salon ${salonId}`,
-        );
+        this.logger.warn(`No masters found for service ${serviceId} in salon ${salonId}`);
         return this.emptyResult();
       }
 
       const masterIds = masters.map((m) => m.id);
 
       // Step 3: Calculate date range
-      const startDate = preferredDate
-        ? new Date(preferredDate)
-        : new Date();
+      const startDate = preferredDate ? new Date(preferredDate) : new Date();
       const endDate = new Date(startDate);
       endDate.setDate(endDate.getDate() + maxDaysAhead);
 
@@ -167,9 +153,7 @@ export class SlotFinderService {
       const allSlots: SlotSuggestion[] = [];
 
       for (const master of masters) {
-        const masterBookings = bookings.filter(
-          (b) => b.master_id === master.id,
-        );
+        const masterBookings = bookings.filter((b) => b.master_id === master.id);
 
         const slots = this.generateSlotsForMaster(
           master,
@@ -185,12 +169,7 @@ export class SlotFinderService {
       }
 
       // Step 6: Rank and sort slots
-      const rankedSlots = this.rankSlots(
-        allSlots,
-        masterId,
-        preferredDate,
-        preferredTime,
-      );
+      const rankedSlots = this.rankSlots(allSlots, masterId, preferredDate, preferredTime);
 
       // Step 7: Apply limit
       const limitedSlots = rankedSlots.slice(0, limit);
@@ -384,14 +363,20 @@ export class SlotFinderService {
 
     // Use the more restrictive hours (later start, earlier end)
     const startHour = Math.max(masterStartHour, salonStartHour);
-    const startMinute = masterStartHour === salonStartHour
-      ? Math.max(masterStartMinute, salonStartMinute)
-      : (masterStartHour > salonStartHour ? masterStartMinute : salonStartMinute);
+    const startMinute =
+      masterStartHour === salonStartHour
+        ? Math.max(masterStartMinute, salonStartMinute)
+        : masterStartHour > salonStartHour
+          ? masterStartMinute
+          : salonStartMinute;
 
     const endHour = Math.min(masterEndHour, salonEndHour);
-    const endMinute = masterEndHour === salonEndHour
-      ? Math.min(masterEndMinute, salonEndMinute)
-      : (masterEndHour < salonEndHour ? masterEndMinute : salonEndMinute);
+    const endMinute =
+      masterEndHour === salonEndHour
+        ? Math.min(masterEndMinute, salonEndMinute)
+        : masterEndHour < salonEndHour
+          ? masterEndMinute
+          : salonEndMinute;
 
     // Create start and end timestamps for the day
     const workStart = new Date(date);
@@ -406,8 +391,7 @@ export class SlotFinderService {
     if (this.isSameDay(date, now) && now > workStart) {
       // Round up to next slot interval
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
-      const nextSlotMinutes =
-        Math.ceil(nowMinutes / slotInterval) * slotInterval;
+      const nextSlotMinutes = Math.ceil(nowMinutes / slotInterval) * slotInterval;
       currentSlot.setHours(0, nextSlotMinutes, 0, 0);
     }
 
@@ -425,18 +409,12 @@ export class SlotFinderService {
       if (currentSlot < now) {
         // Move to next slot
         currentSlot = new Date(currentSlot);
-        currentSlot.setMinutes(
-          currentSlot.getMinutes() + slotInterval,
-        );
+        currentSlot.setMinutes(currentSlot.getMinutes() + slotInterval);
         continue;
       }
 
       // Check for conflicts with existing bookings
-      const hasConflict = this.hasBookingConflict(
-        currentSlot,
-        slotEnd,
-        bookings,
-      );
+      const hasConflict = this.hasBookingConflict(currentSlot, slotEnd, bookings);
 
       if (!hasConflict) {
         slots.push({
@@ -456,9 +434,7 @@ export class SlotFinderService {
 
       // Move to next slot
       currentSlot = new Date(currentSlot);
-      currentSlot.setMinutes(
-        currentSlot.getMinutes() + slotInterval,
-      );
+      currentSlot.setMinutes(currentSlot.getMinutes() + slotInterval);
     }
 
     return slots;
@@ -472,11 +448,7 @@ export class SlotFinderService {
    * @param bookings - Existing bookings
    * @returns True if there's a conflict
    */
-  private hasBookingConflict(
-    slotStart: Date,
-    slotEnd: Date,
-    bookings: any[],
-  ): boolean {
+  private hasBookingConflict(slotStart: Date, slotEnd: Date, bookings: any[]): boolean {
     return bookings.some((booking) => {
       const bookingStart = new Date(booking.start_ts);
       const bookingEnd = booking.end_ts
@@ -506,20 +478,12 @@ export class SlotFinderService {
     return slots
       .map((slot) => {
         let score = 0;
-        let proximityLabel:
-          | 'exact'
-          | 'close'
-          | 'same-day'
-          | 'same-week'
-          | 'alternative' = 'alternative';
+        let proximityLabel: 'exact' | 'close' | 'same-day' | 'same-week' | 'alternative' =
+          'alternative';
 
-        const isMasterMatch = preferredMasterId
-          ? slot.masterId === preferredMasterId
-          : false;
+        const isMasterMatch = preferredMasterId ? slot.masterId === preferredMasterId : false;
         const isDateMatch = preferredDate ? slot.date === preferredDate : false;
-        const isTimeMatch = preferredTime
-          ? this.isTimeClose(slot.startTime, preferredTime)
-          : false;
+        const isTimeMatch = preferredTime ? this.isTimeClose(slot.startTime, preferredTime) : false;
 
         // Exact match (master + date + time)
         if (isMasterMatch && isDateMatch && isTimeMatch) {

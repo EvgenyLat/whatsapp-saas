@@ -92,11 +92,7 @@ describe('AIService', () => {
       // Mock no existing bookings
       mockBookingsRepository.findAll.mockResolvedValue([]);
 
-      const result = await service.checkAvailability(
-        'salon-id',
-        'Аня',
-        '2025-10-25T15:00:00Z',
-      );
+      const result = await service.checkAvailability('salon-id', 'Аня', '2025-10-25T15:00:00Z');
 
       expect(result.available).toBe(true);
       expect(result.masterName).toBe('Аня');
@@ -112,11 +108,7 @@ describe('AIService', () => {
         },
       ]);
 
-      const result = await service.checkAvailability(
-        'salon-id',
-        'Аня',
-        '2025-10-25T15:00:00Z',
-      );
+      const result = await service.checkAvailability('salon-id', 'Аня', '2025-10-25T15:00:00Z');
 
       expect(result.available).toBe(false);
       expect(result.alternatives).toBeDefined();
@@ -127,11 +119,7 @@ describe('AIService', () => {
       const pastDate = new Date();
       pastDate.setDate(pastDate.getDate() - 1);
 
-      const result = await service.checkAvailability(
-        'salon-id',
-        'Аня',
-        pastDate.toISOString(),
-      );
+      const result = await service.checkAvailability('salon-id', 'Аня', pastDate.toISOString());
 
       expect(result.available).toBe(false);
       expect(result.message).toContain('прошлом');

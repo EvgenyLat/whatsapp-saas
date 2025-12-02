@@ -1,1 +1,10 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common'; @Controller('test') export class TestController { @Post('raw') @HttpCode(HttpStatus.OK) testRaw(@Body() body: any) { console.log('[TEST] Raw body received:', JSON.stringify(body)); console.log('[TEST] Body keys:', Object.keys(body || {})); console.log('[TEST] Body type:', typeof body); return { received: body }; } }
+import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+@Controller('test')
+export class TestController {
+  @Post('raw') @HttpCode(HttpStatus.OK) testRaw(@Body() body: any) {
+    console.log('[TEST] Raw body received:', JSON.stringify(body));
+    console.log('[TEST] Body keys:', Object.keys(body || {}));
+    console.log('[TEST] Body type:', typeof body);
+    return { received: body };
+  }
+}

@@ -13,10 +13,7 @@ import {
  * Handles all database operations for Message entities
  */
 @Injectable()
-export class MessagesRepository
-  extends BaseRepository<Message>
-  implements IMessagesRepository
-{
+export class MessagesRepository extends BaseRepository<Message> implements IMessagesRepository {
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, 'message');
   }
@@ -72,10 +69,7 @@ export class MessagesRepository
    * Find messages by conversation ID
    */
   async findByConversationId(conversationId: string): Promise<Message[]> {
-    return this.findAll(
-      { conversation_id: conversationId },
-      { orderBy: { created_at: 'asc' } },
-    );
+    return this.findAll({ conversation_id: conversationId }, { orderBy: { created_at: 'asc' } });
   }
 
   /**
@@ -177,10 +171,7 @@ export class MessagesRepository
   /**
    * Build where clause from filters
    */
-  private buildWhereClause(
-    salonId: string | string[] | null,
-    filters?: MessageFilters,
-  ): any {
+  private buildWhereClause(salonId: string | string[] | null, filters?: MessageFilters): any {
     const where: any = {};
 
     // Handle salon ID filter

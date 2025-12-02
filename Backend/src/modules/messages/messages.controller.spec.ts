@@ -4,7 +4,12 @@ import { MessagesService } from './messages.service';
 
 describe('MessagesController', () => {
   let controller: MessagesController;
-  const mockMessagesService = { sendMessage: jest.fn(), findAll: jest.fn(), findOne: jest.fn(), updateStatus: jest.fn() };
+  const mockMessagesService = {
+    sendMessage: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    updateStatus: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

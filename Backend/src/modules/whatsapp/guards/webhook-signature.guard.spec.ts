@@ -32,7 +32,7 @@ describe('WebhookSignatureGuard', () => {
   const createMockExecutionContext = (
     headers: Record<string, string>,
     body: any,
-    rawBody?: string
+    rawBody?: string,
   ): ExecutionContext => {
     return {
       switchToHttp: () => ({
@@ -60,7 +60,7 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=validhash123' },
         { message: 'test' },
-        '{"message":"test"}'
+        '{"message":"test"}',
       );
 
       const result = guard.canActivate(context);
@@ -68,7 +68,7 @@ describe('WebhookSignatureGuard', () => {
       expect(result).toBe(true);
       expect(mockValidator.validateSignature).toHaveBeenCalledWith(
         'sha256=validhash123',
-        '{"message":"test"}'
+        '{"message":"test"}',
       );
     });
 
@@ -78,7 +78,7 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=invalidhash' },
         { message: 'test' },
-        '{"message":"test"}'
+        '{"message":"test"}',
       );
 
       expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
@@ -86,11 +86,7 @@ describe('WebhookSignatureGuard', () => {
     });
 
     it('should reject request without signature header', () => {
-      const context = createMockExecutionContext(
-        {},
-        { message: 'test' },
-        '{"message":"test"}'
-      );
+      const context = createMockExecutionContext({}, { message: 'test' }, '{"message":"test"}');
 
       expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
       expect(() => guard.canActivate(context)).toThrow('Missing webhook signature');
@@ -104,7 +100,7 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=validhash' },
         body,
-        undefined // No rawBody
+        undefined, // No rawBody
       );
 
       const result = guard.canActivate(context);
@@ -112,7 +108,7 @@ describe('WebhookSignatureGuard', () => {
       expect(result).toBe(true);
       expect(mockValidator.validateSignature).toHaveBeenCalledWith(
         'sha256=validhash',
-        JSON.stringify(body)
+        JSON.stringify(body),
       );
     });
 
@@ -124,16 +120,13 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=validhash' },
         body,
-        rawBody
+        rawBody,
       );
 
       const result = guard.canActivate(context);
 
       expect(result).toBe(true);
-      expect(mockValidator.validateSignature).toHaveBeenCalledWith(
-        'sha256=validhash',
-        rawBody
-      );
+      expect(mockValidator.validateSignature).toHaveBeenCalledWith('sha256=validhash', rawBody);
     });
   });
 
@@ -144,7 +137,7 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=validhash' },
         { message: 'test' },
-        '{"message":"test"}'
+        '{"message":"test"}',
       );
 
       guard.canActivate(context);
@@ -159,18 +152,14 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=invalidhash' },
         { message: 'test' },
-        '{"message":"test"}'
+        '{"message":"test"}',
       );
 
       expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
     });
 
     it('should log request details when signature is missing', () => {
-      const context = createMockExecutionContext(
-        {},
-        { message: 'test' },
-        '{"message":"test"}'
-      );
+      const context = createMockExecutionContext({}, { message: 'test' }, '{"message":"test"}');
 
       expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
     });
@@ -181,7 +170,7 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': '' },
         { message: 'test' },
-        '{"message":"test"}'
+        '{"message":"test"}',
       );
 
       expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
@@ -192,7 +181,7 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': '   ' },
         { message: 'test' },
-        '{"message":"test"}'
+        '{"message":"test"}',
       );
 
       // Guard passes signature to validator, validator will reject
@@ -209,16 +198,13 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=validhash' },
         largeBody,
-        rawBody
+        rawBody,
       );
 
       const result = guard.canActivate(context);
 
       expect(result).toBe(true);
-      expect(mockValidator.validateSignature).toHaveBeenCalledWith(
-        'sha256=validhash',
-        rawBody
-      );
+      expect(mockValidator.validateSignature).toHaveBeenCalledWith('sha256=validhash', rawBody);
     });
 
     it('should handle special characters in body', () => {
@@ -229,16 +215,13 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=validhash' },
         specialBody,
-        rawBody
+        rawBody,
       );
 
       const result = guard.canActivate(context);
 
       expect(result).toBe(true);
-      expect(mockValidator.validateSignature).toHaveBeenCalledWith(
-        'sha256=validhash',
-        rawBody
-      );
+      expect(mockValidator.validateSignature).toHaveBeenCalledWith('sha256=validhash', rawBody);
     });
 
     it('should handle case-insensitive header name', () => {
@@ -248,7 +231,7 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=validhash' },
         { message: 'test' },
-        '{"message":"test"}'
+        '{"message":"test"}',
       );
 
       const result = guard.canActivate(context);
@@ -256,7 +239,7 @@ describe('WebhookSignatureGuard', () => {
       expect(result).toBe(true);
       expect(mockValidator.validateSignature).toHaveBeenCalledWith(
         'sha256=validhash',
-        '{"message":"test"}'
+        '{"message":"test"}',
       );
     });
   });
@@ -268,7 +251,7 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=oldvalidhash' },
         { message: 'new data' },
-        '{"message":"new data"}'
+        '{"message":"new data"}',
       );
 
       expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
@@ -280,7 +263,7 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=forgedhash123' },
         { malicious: 'payload' },
-        '{"malicious":"payload"}'
+        '{"malicious":"payload"}',
       );
 
       expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
@@ -292,7 +275,7 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': "sha256=' OR '1'='1" },
         { message: 'test' },
-        '{"message":"test"}'
+        '{"message":"test"}',
       );
 
       expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
@@ -304,7 +287,7 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=<script>alert("xss")</script>' },
         { message: 'test' },
-        '{"message":"test"}'
+        '{"message":"test"}',
       );
 
       expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
@@ -316,7 +299,7 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=' + 'a'.repeat(64) },
         { message: 'tampered' },
-        '{"message":"tampered"}'
+        '{"message":"tampered"}',
       );
 
       expect(() => guard.canActivate(context)).toThrow(UnauthorizedException);
@@ -332,7 +315,7 @@ describe('WebhookSignatureGuard', () => {
       const context = createMockExecutionContext(
         { 'x-hub-signature-256': signature },
         { test: 'data' },
-        rawBody
+        rawBody,
       );
 
       guard.canActivate(context);
@@ -347,7 +330,7 @@ describe('WebhookSignatureGuard', () => {
       const validContext = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=valid' },
         {},
-        '{}'
+        '{}',
       );
       expect(guard.canActivate(validContext)).toBe(true);
 
@@ -356,7 +339,7 @@ describe('WebhookSignatureGuard', () => {
       const invalidContext = createMockExecutionContext(
         { 'x-hub-signature-256': 'sha256=invalid' },
         {},
-        '{}'
+        '{}',
       );
       expect(() => guard.canActivate(invalidContext)).toThrow(UnauthorizedException);
     });

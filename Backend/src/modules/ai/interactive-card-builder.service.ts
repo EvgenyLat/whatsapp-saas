@@ -117,13 +117,15 @@ export class InteractiveCardBuilderService {
 
     return {
       type: 'button',
-      header: message ? {
-        type: 'text',
-        text: message,
-      } : {
-        type: 'text',
-        text: this.getHeaderText(language),
-      },
+      header: message
+        ? {
+            type: 'text',
+            text: message,
+          }
+        : {
+            type: 'text',
+            text: this.getHeaderText(language),
+          },
       body: {
         text: this.getBodyText(slots[0].serviceName, language),
       },
@@ -162,13 +164,15 @@ export class InteractiveCardBuilderService {
 
     return {
       type: 'list',
-      header: message ? {
-        type: 'text',
-        text: message,
-      } : {
-        type: 'text',
-        text: this.getHeaderText(language),
-      },
+      header: message
+        ? {
+            type: 'text',
+            text: message,
+          }
+        : {
+            type: 'text',
+            text: this.getHeaderText(language),
+          },
       body: {
         text: this.getBodyText(slots[0].serviceName, language),
       },
@@ -185,10 +189,7 @@ export class InteractiveCardBuilderService {
   /**
    * Build booking confirmation card
    */
-  buildConfirmationCard(
-    slot: SlotSuggestion,
-    language: string = 'en',
-  ): InteractiveMessagePayload {
+  buildConfirmationCard(slot: SlotSuggestion, language: string = 'en'): InteractiveMessagePayload {
     this.logger.debug(`Building confirmation card for slot ${slot.id}`);
 
     return {
@@ -276,9 +277,7 @@ export class InteractiveCardBuilderService {
   /**
    * Group slots by date
    */
-  private groupSlotsByDate(
-    slots: SlotSuggestion[],
-  ): Record<string, SlotSuggestion[]> {
+  private groupSlotsByDate(slots: SlotSuggestion[]): Record<string, SlotSuggestion[]> {
     const grouped: Record<string, SlotSuggestion[]> = {};
 
     for (const slot of slots) {

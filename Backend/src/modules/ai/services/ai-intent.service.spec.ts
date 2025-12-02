@@ -32,10 +32,7 @@ describe('AIIntentService', () => {
     });
 
     it('should detect booking request in Russian', async () => {
-      const result = await service.classifyIntent(
-        'Хочу записаться на завтра в 15:00',
-        'ru',
-      );
+      const result = await service.classifyIntent('Хочу записаться на завтра в 15:00', 'ru');
 
       // Russian patterns might have lower confidence due to Unicode handling
       expect(result.intent).toBe(IntentType.BOOKING_REQUEST);
@@ -55,10 +52,7 @@ describe('AIIntentService', () => {
     });
 
     it('should detect booking request in Portuguese', async () => {
-      const result = await service.classifyIntent(
-        'Preciso agendar para amanhã às 15h',
-        'pt',
-      );
+      const result = await service.classifyIntent('Preciso agendar para amanhã às 15h', 'pt');
 
       expect(result.intent).toBe(IntentType.BOOKING_REQUEST);
       expect(result.confidence).toBeGreaterThan(0.7);
@@ -77,10 +71,7 @@ describe('AIIntentService', () => {
 
   describe('Booking Cancellation Detection', () => {
     it('should detect cancellation intent', async () => {
-      const result = await service.classifyIntent(
-        'I need to cancel my booking for tomorrow',
-        'en',
-      );
+      const result = await service.classifyIntent('I need to cancel my booking for tomorrow', 'en');
 
       expect(result.intent).toBe(IntentType.BOOKING_CANCEL);
       expect(result.confidence).toBeGreaterThan(0.7);
@@ -109,10 +100,7 @@ describe('AIIntentService', () => {
     });
 
     it('should detect reschedule intent', async () => {
-      const result = await service.classifyIntent(
-        'I need to reschedule my booking',
-        'en',
-      );
+      const result = await service.classifyIntent('I need to reschedule my booking', 'en');
 
       expect(result.intent).toBe(IntentType.BOOKING_MODIFY);
       expect(result.confidence).toBeGreaterThan(0.7);
@@ -121,10 +109,7 @@ describe('AIIntentService', () => {
 
   describe('Inquiry Detection', () => {
     it('should detect availability inquiry', async () => {
-      const result = await service.classifyIntent(
-        'What times are available tomorrow?',
-        'en',
-      );
+      const result = await service.classifyIntent('What times are available tomorrow?', 'en');
 
       expect(result.intent).toBe(IntentType.AVAILABILITY_INQUIRY);
       expect(result.confidence).toBeGreaterThan(0.6);
@@ -132,10 +117,7 @@ describe('AIIntentService', () => {
     });
 
     it('should detect service inquiry', async () => {
-      const result = await service.classifyIntent(
-        'What services do you offer?',
-        'en',
-      );
+      const result = await service.classifyIntent('What services do you offer?', 'en');
 
       expect(result.intent).toBe(IntentType.SERVICE_INQUIRY);
       expect(result.confidence).toBeGreaterThan(0.6);
@@ -188,10 +170,7 @@ describe('AIIntentService', () => {
 
   describe('Entity Extraction', () => {
     it('should extract time references', async () => {
-      const result = await service.classifyIntent(
-        'Book for 3pm or maybe 4:30pm',
-        'en',
-      );
+      const result = await service.classifyIntent('Book for 3pm or maybe 4:30pm', 'en');
 
       expect(result.entities.timeReferences).toBeDefined();
       expect(result.entities.timeReferences?.length).toBeGreaterThan(0);
@@ -208,20 +187,14 @@ describe('AIIntentService', () => {
     });
 
     it('should extract numbers', async () => {
-      const result = await service.classifyIntent(
-        'My booking ID is 12345',
-        'en',
-      );
+      const result = await service.classifyIntent('My booking ID is 12345', 'en');
 
       expect(result.entities.numbers).toBeDefined();
       expect(result.entities.numbers).toContain('12345');
     });
 
     it('should extract emails', async () => {
-      const result = await service.classifyIntent(
-        'Send confirmation to test@example.com',
-        'en',
-      );
+      const result = await service.classifyIntent('Send confirmation to test@example.com', 'en');
 
       expect(result.entities.emails).toBeDefined();
       expect(result.entities.emails).toContain('test@example.com');
@@ -230,10 +203,7 @@ describe('AIIntentService', () => {
 
   describe('Alternative Intents', () => {
     it('should provide alternative intents', async () => {
-      const result = await service.classifyIntent(
-        'Can I book tomorrow?',
-        'en',
-      );
+      const result = await service.classifyIntent('Can I book tomorrow?', 'en');
 
       expect(result.alternativeIntents).toBeDefined();
       expect(result.alternativeIntents.length).toBeGreaterThan(0);
@@ -242,10 +212,7 @@ describe('AIIntentService', () => {
     });
 
     it('should sort alternatives by confidence', async () => {
-      const result = await service.classifyIntent(
-        'I want to schedule something',
-        'en',
-      );
+      const result = await service.classifyIntent('I want to schedule something', 'en');
 
       const confidences = result.alternativeIntents.map((alt) => alt.confidence);
       const sortedConfidences = [...confidences].sort((a, b) => b - a);
@@ -265,10 +232,7 @@ describe('AIIntentService', () => {
     });
 
     it('should mark high confidence as reliable', async () => {
-      const result = await service.classifyIntent(
-        'I need to book tomorrow',
-        'en',
-      );
+      const result = await service.classifyIntent('I need to book tomorrow', 'en');
 
       expect(result.confidence).toBeGreaterThanOrEqual(0.4);
       expect(result.isReliable).toBe(true);
@@ -352,10 +316,7 @@ describe('AIIntentService', () => {
     });
 
     it('should handle casual booking language', async () => {
-      const result = await service.classifyIntent(
-        'Can I come in tomorrow around 3?',
-        'en',
-      );
+      const result = await service.classifyIntent('Can I come in tomorrow around 3?', 'en');
 
       // This is ambiguous - could be booking or just asking
       // We accept either BOOKING_REQUEST or AVAILABILITY_INQUIRY

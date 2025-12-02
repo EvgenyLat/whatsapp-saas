@@ -28,10 +28,7 @@ export interface IConversationsRepository extends IBaseRepository<Conversation> 
    * @param phoneNumber - Phone number
    * @returns Conversation or null
    */
-  findBySalonIdAndPhoneNumber(
-    salonId: string,
-    phoneNumber: string,
-  ): Promise<Conversation | null>;
+  findBySalonIdAndPhoneNumber(salonId: string, phoneNumber: string): Promise<Conversation | null>;
 
   /**
    * Find conversations by status

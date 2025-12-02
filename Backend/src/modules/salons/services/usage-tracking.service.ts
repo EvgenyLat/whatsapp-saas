@@ -102,9 +102,7 @@ export class UsageTrackingService {
     const allowed = current < limit;
 
     if (!allowed) {
-      this.logger.warn(
-        `Salon ${salon_id} reached message limit: ${current}/${limit}`,
-      );
+      this.logger.warn(`Salon ${salon_id} reached message limit: ${current}/${limit}`);
     }
 
     return {
@@ -153,9 +151,7 @@ export class UsageTrackingService {
     const allowed = current < limit;
 
     if (!allowed) {
-      this.logger.warn(
-        `Salon ${salon_id} reached booking limit: ${current}/${limit}`,
-      );
+      this.logger.warn(`Salon ${salon_id} reached booking limit: ${current}/${limit}`);
     }
 
     return {
@@ -262,10 +258,8 @@ export class UsageTrackingService {
       messages_usage_percent: Math.round(messages_usage_percent * 100),
       bookings_usage_percent: Math.round(bookings_usage_percent * 100),
 
-      messages_limit_reached:
-        salon.usage_current_messages >= salon.usage_limit_messages,
-      bookings_limit_reached:
-        salon.usage_current_bookings >= salon.usage_limit_bookings,
+      messages_limit_reached: salon.usage_current_messages >= salon.usage_limit_messages,
+      bookings_limit_reached: salon.usage_current_bookings >= salon.usage_limit_bookings,
 
       usage_reset_at: salon.usage_reset_at,
       days_until_reset: Math.max(0, days_until_reset),

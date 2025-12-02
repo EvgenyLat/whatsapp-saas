@@ -49,8 +49,8 @@ export class ServiceMatcher {
         const queryWords = normalizedQuery.split(/\s+/);
         const nameWords = normalizedName.split(/\s+/);
 
-        const matchingWords = queryWords.filter(qWord =>
-          nameWords.some(nWord => nWord.includes(qWord) || qWord.includes(nWord))
+        const matchingWords = queryWords.filter((qWord) =>
+          nameWords.some((nWord) => nWord.includes(qWord) || qWord.includes(nWord)),
         );
 
         if (matchingWords.length > 0) {
@@ -71,22 +71,15 @@ export class ServiceMatcher {
   /**
    * Find services by category
    */
-  static filterByCategory(
-    category: ServiceCategory,
-    services: Service[]
-  ): Service[] {
-    return services.filter(s => s.category === category);
+  static filterByCategory(category: ServiceCategory, services: Service[]): Service[] {
+    return services.filter((s) => s.category === category);
   }
 
   /**
    * Find services by price range
    */
-  static filterByPriceRange(
-    minPrice: number,
-    maxPrice: number,
-    services: Service[]
-  ): Service[] {
-    return services.filter(s => {
+  static filterByPriceRange(minPrice: number, maxPrice: number, services: Service[]): Service[] {
+    return services.filter((s) => {
       const price = Number(s.price);
       return price >= minPrice && price <= maxPrice;
     });
@@ -98,21 +91,17 @@ export class ServiceMatcher {
   static filterByDuration(
     minDuration: number,
     maxDuration: number,
-    services: Service[]
+    services: Service[],
   ): Service[] {
-    return services.filter(s =>
-      s.duration_minutes >= minDuration && s.duration_minutes <= maxDuration
+    return services.filter(
+      (s) => s.duration_minutes >= minDuration && s.duration_minutes <= maxDuration,
     );
   }
 
   /**
    * Get service recommendations based on query
    */
-  static getRecommendations(
-    query: string,
-    services: Service[],
-    limit: number = 3
-  ): ServiceMatch[] {
+  static getRecommendations(query: string, services: Service[], limit: number = 3): ServiceMatch[] {
     const matches = this.fuzzyMatch(query, services);
     return matches.slice(0, limit);
   }
@@ -136,7 +125,7 @@ export class ServiceMatcher {
     };
 
     for (const [category, keywords] of Object.entries(categoryKeywords)) {
-      if (keywords.some(keyword => normalizedQuery.includes(keyword))) {
+      if (keywords.some((keyword) => normalizedQuery.includes(keyword))) {
         return category as ServiceCategory;
       }
     }
@@ -147,23 +136,22 @@ export class ServiceMatcher {
   /**
    * Format services list for AI context
    */
-  static formatForAI(
-    services: Service[],
-    language: string = 'ru',
-    currency: string = '₽'
-  ): string {
+  static formatForAI(services: Service[], language: string = 'ru', currency: string = '₽'): string {
     if (services.length === 0) {
       return language === 'ru' ? 'Нет доступных услуг' : 'No services available';
     }
 
     // Group by category
-    const grouped = services.reduce((acc, service) => {
-      if (!acc[service.category]) {
-        acc[service.category] = [];
-      }
-      acc[service.category].push(service);
-      return acc;
-    }, {} as Record<ServiceCategory, Service[]>);
+    const grouped = services.reduce(
+      (acc, service) => {
+        if (!acc[service.category]) {
+          acc[service.category] = [];
+        }
+        acc[service.category].push(service);
+        return acc;
+      },
+      {} as Record<ServiceCategory, Service[]>,
+    );
 
     // Format output
     const lines: string[] = [];
@@ -171,15 +159,12 @@ export class ServiceMatcher {
     for (const [category, categoryServices] of Object.entries(grouped)) {
       lines.push(`\n**${this.formatCategoryName(category as ServiceCategory, language)}:**`);
 
-      categoryServices.forEach(service => {
+      categoryServices.forEach((service) => {
         const price = Number(service.price);
-        const priceStr = language === 'ru'
-          ? `${price}${currency}`
-          : `${currency}${price}`;
+        const priceStr = language === 'ru' ? `${price}${currency}` : `${currency}${price}`;
 
-        const durationStr = language === 'ru'
-          ? `${service.duration_minutes} мин`
-          : `${service.duration_minutes} min`;
+        const durationStr =
+          language === 'ru' ? `${service.duration_minutes} мин` : `${service.duration_minutes} min`;
 
         lines.push(`  - ${service.name}: ${priceStr}, ${durationStr}`);
 
@@ -197,12 +182,24 @@ export class ServiceMatcher {
    */
   private static formatCategoryName(category: ServiceCategory, language: string): string {
     const translations: Record<ServiceCategory, Record<string, string>> = {
-      HAIRCUT: { ru: 'Стрижка', en: 'Haircut', es: 'Corte de pelo', pt: 'Corte de cabelo', he: 'תספורת' },
+      HAIRCUT: {
+        ru: 'Стрижка',
+        en: 'Haircut',
+        es: 'Corte de pelo',
+        pt: 'Corte de cabelo',
+        he: 'תספורת',
+      },
       MANICURE: { ru: 'Маникюр', en: 'Manicure', es: 'Manicura', pt: 'Manicure', he: 'מניקור' },
       PEDICURE: { ru: 'Педикюр', en: 'Pedicure', es: 'Pedicura', pt: 'Pedicure', he: 'פדיקור' },
       FACIAL: { ru: 'Уход за лицом', en: 'Facial', es: 'Facial', pt: 'Facial', he: 'פנים' },
       MASSAGE: { ru: 'Массаж', en: 'Massage', es: 'Masaje', pt: 'Massagem', he: 'עיסוי' },
-      COLORING: { ru: 'Окрашивание', en: 'Coloring', es: 'Coloración', pt: 'Coloração', he: 'צביעה' },
+      COLORING: {
+        ru: 'Окрашивание',
+        en: 'Coloring',
+        es: 'Coloración',
+        pt: 'Coloração',
+        he: 'צביעה',
+      },
       WAXING: { ru: 'Депиляция', en: 'Waxing', es: 'Depilación', pt: 'Depilação', he: 'הסרת שיער' },
       OTHER: { ru: 'Другое', en: 'Other', es: 'Otro', pt: 'Outro', he: 'אחר' },
     };

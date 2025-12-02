@@ -56,18 +56,24 @@ describe('API Integration Tests (e2e)', () => {
   afterAll(async () => {
     // Cleanup test data
     if (testBookingId) {
-      await prismaService.booking.deleteMany({
-        where: { id: testBookingId },
-      }).catch(() => {});
+      await prismaService.booking
+        .deleteMany({
+          where: { id: testBookingId },
+        })
+        .catch(() => {});
     }
     if (testSalonId) {
-      await prismaService.salon.deleteMany({
-        where: { id: testSalonId },
-      }).catch(() => {});
+      await prismaService.salon
+        .deleteMany({
+          where: { id: testSalonId },
+        })
+        .catch(() => {});
     }
-    await prismaService.user.deleteMany({
-      where: { email: { in: [testUser.email, adminUser.email] } },
-    }).catch(() => {});
+    await prismaService.user
+      .deleteMany({
+        where: { email: { in: [testUser.email, adminUser.email] } },
+      })
+      .catch(() => {});
 
     await app.close();
   });
@@ -90,10 +96,7 @@ describe('API Integration Tests (e2e)', () => {
     });
 
     it('should prevent duplicate registration (POST /auth/register)', async () => {
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(testUser)
-        .expect(409); // Conflict
+      await request(app.getHttpServer()).post('/auth/register').send(testUser).expect(409); // Conflict
     });
 
     it('should reject registration with invalid email', async () => {
@@ -346,9 +349,7 @@ describe('API Integration Tests (e2e)', () => {
 
   describe('Authorization & RBAC', () => {
     it('should prevent unauthorized access to protected endpoints', async () => {
-      await request(app.getHttpServer())
-        .get('/salons')
-        .expect(401);
+      await request(app.getHttpServer()).get('/salons').expect(401);
     });
 
     it('should prevent access with invalid token', async () => {
@@ -411,11 +412,13 @@ describe('API Integration Tests (e2e)', () => {
   describe('Performance & Load', () => {
     it('should handle concurrent requests efficiently', async () => {
       const concurrentRequests = 10;
-      const requests = Array(concurrentRequests).fill(null).map(() =>
-        request(app.getHttpServer())
-          .get(`/salons/${testSalonId}`)
-          .set('Authorization', `Bearer ${authTokens.accessToken}`)
-      );
+      const requests = Array(concurrentRequests)
+        .fill(null)
+        .map(() =>
+          request(app.getHttpServer())
+            .get(`/salons/${testSalonId}`)
+            .set('Authorization', `Bearer ${authTokens.accessToken}`),
+        );
 
       const responses = await Promise.all(requests);
 

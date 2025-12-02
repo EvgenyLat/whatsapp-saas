@@ -77,43 +77,47 @@ export const validationSchema = Joi.object({
   DATABASE_LOGGING: Joi.boolean().default(false),
 
   // JWT - Strict validation for production
-  JWT_SECRET: Joi.string().min(32).required()
+  JWT_SECRET: Joi.string()
+    .min(32)
+    .required()
     .when('NODE_ENV', {
       is: 'production',
-      then: Joi.string().invalid('dev-jwt-secret-change-in-production')
-        .messages({
-          'any.invalid': 'JWT_SECRET must be changed in production! Do not use default development value.',
-        }),
+      then: Joi.string().invalid('dev-jwt-secret-change-in-production').messages({
+        'any.invalid':
+          'JWT_SECRET must be changed in production! Do not use default development value.',
+      }),
     }),
   JWT_ACCESS_TOKEN_EXPIRY: Joi.string().default('15m'),
-  JWT_REFRESH_SECRET: Joi.string().min(32).required()
+  JWT_REFRESH_SECRET: Joi.string()
+    .min(32)
+    .required()
     .when('NODE_ENV', {
       is: 'production',
-      then: Joi.string().invalid('dev-refresh-secret-change-in-production')
-        .messages({
-          'any.invalid': 'JWT_REFRESH_SECRET must be changed in production! Do not use default development value.',
-        }),
+      then: Joi.string().invalid('dev-refresh-secret-change-in-production').messages({
+        'any.invalid':
+          'JWT_REFRESH_SECRET must be changed in production! Do not use default development value.',
+      }),
     }),
   JWT_REFRESH_TOKEN_EXPIRY: Joi.string().default('7d'),
 
   // WhatsApp
   WHATSAPP_API_VERSION: Joi.string().default('v18.0'),
   WHATSAPP_API_URL: Joi.string().uri().default('https://graph.facebook.com'),
-  WHATSAPP_VERIFY_TOKEN: Joi.string().required()
+  WHATSAPP_VERIFY_TOKEN: Joi.string()
+    .required()
     .when('NODE_ENV', {
       is: 'production',
-      then: Joi.string().invalid('dev-webhook-verify-token')
-        .messages({
-          'any.invalid': 'WHATSAPP_VERIFY_TOKEN must be changed in production!',
-        }),
+      then: Joi.string().invalid('dev-webhook-verify-token').messages({
+        'any.invalid': 'WHATSAPP_VERIFY_TOKEN must be changed in production!',
+      }),
     }),
-  WHATSAPP_WEBHOOK_SECRET: Joi.string().required()
+  WHATSAPP_WEBHOOK_SECRET: Joi.string()
+    .required()
     .when('NODE_ENV', {
       is: 'production',
-      then: Joi.string().invalid('dev-webhook-secret')
-        .messages({
-          'any.invalid': 'WHATSAPP_WEBHOOK_SECRET must be changed in production!',
-        }),
+      then: Joi.string().invalid('dev-webhook-secret').messages({
+        'any.invalid': 'WHATSAPP_WEBHOOK_SECRET must be changed in production!',
+      }),
     }),
 
   // Redis
@@ -128,33 +132,37 @@ export const validationSchema = Joi.object({
   RATE_LIMIT_MAX: Joi.number().integer().min(1).default(100),
 
   // Logging
-  LOG_LEVEL: Joi.string().valid('error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly').default('info'),
+  LOG_LEVEL: Joi.string()
+    .valid('error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly')
+    .default('info'),
 
   // OpenAI (Optional for AI assistant feature)
-  OPENAI_API_KEY: Joi.string().optional()
-    .messages({
-      'string.base': 'OPENAI_API_KEY must be a valid API key string. Required for AI booking assistant.',
-    }),
-  OPENAI_MODEL: Joi.string().default('gpt-4')
+  OPENAI_API_KEY: Joi.string().optional().messages({
+    'string.base':
+      'OPENAI_API_KEY must be a valid API key string. Required for AI booking assistant.',
+  }),
+  OPENAI_MODEL: Joi.string()
+    .default('gpt-4')
     .valid('gpt-4', 'gpt-4-turbo-preview', 'gpt-3.5-turbo')
     .messages({
       'any.only': 'OPENAI_MODEL must be one of: gpt-4, gpt-4-turbo-preview, gpt-3.5-turbo',
     }),
   OPENAI_MAX_TOKENS: Joi.number().integer().min(1).max(4000).default(1000),
-  OPENAI_TEMPERATURE: Joi.number().min(0).max(2).default(0.7)
-    .messages({
-      'number.min': 'OPENAI_TEMPERATURE must be between 0 and 2',
-      'number.max': 'OPENAI_TEMPERATURE must be between 0 and 2',
-    }),
+  OPENAI_TEMPERATURE: Joi.number().min(0).max(2).default(0.7).messages({
+    'number.min': 'OPENAI_TEMPERATURE must be between 0 and 2',
+    'number.max': 'OPENAI_TEMPERATURE must be between 0 and 2',
+  }),
 
   // Encryption
-  ENCRYPTION_KEY: Joi.string().length(32).required()
+  ENCRYPTION_KEY: Joi.string()
+    .length(32)
+    .required()
     .when('NODE_ENV', {
       is: 'production',
-      then: Joi.string().invalid('dev-32-char-encryption-key-12')
-        .messages({
-          'any.invalid': 'ENCRYPTION_KEY must be changed in production! Generate a secure 32-character key.',
-        }),
+      then: Joi.string().invalid('dev-32-char-encryption-key-12').messages({
+        'any.invalid':
+          'ENCRYPTION_KEY must be changed in production! Generate a secure 32-character key.',
+      }),
     }),
 
   // Feature Flags
@@ -181,7 +189,7 @@ export function validateEnvironment(config: Record<string, unknown>): Environmen
 
     throw new Error(
       `❌ Environment validation failed:\n\n${errorMessages.join('\n')}\n\n` +
-      `Please check your .env.${process.env.NODE_ENV || 'development'} file.\n`,
+        `Please check your .env.${process.env.NODE_ENV || 'development'} file.\n`,
     );
   }
 

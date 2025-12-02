@@ -462,14 +462,17 @@ export function getSystemPrompt(languageCode: string): SystemPromptConfig {
  */
 export function buildSystemPromptWithContext(
   languageCode: string,
-  context: ContextVariables
+  context: ContextVariables,
 ): string {
   const config = getSystemPrompt(languageCode);
   let prompt = config.systemPrompt;
 
   // Inject salon name if provided
   if (context.salonName) {
-    prompt = prompt.replace(/салон красоты|beauty salon|salón de belleza|salão de beleza|סלון יופי/gi, context.salonName);
+    prompt = prompt.replace(
+      /салон красоты|beauty salon|salón de belleza|salão de beleza|סלון יופי/gi,
+      context.salonName,
+    );
   }
 
   // Add services context

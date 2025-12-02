@@ -48,9 +48,7 @@ const SCORING_CONFIG = {
 export class AlternativeSuggesterService {
   private readonly logger = new Logger(AlternativeSuggesterService.name);
 
-  constructor(
-    private readonly messageBuilder: MessageBuilderService,
-  ) {}
+  constructor(private readonly messageBuilder: MessageBuilderService) {}
 
   /**
    * Rank slots by time proximity to target time
@@ -81,7 +79,7 @@ export class AlternativeSuggesterService {
       const targetMinutes = this.timeToMinutes(targetTime);
 
       // Score each slot
-      const scoredSlots = slots.map(slot => {
+      const scoredSlots = slots.map((slot) => {
         const slotMinutes = this.timeToMinutes(slot.startTime);
         const diffMinutes = slotMinutes - targetMinutes;
         const absDiffMinutes = Math.abs(diffMinutes);
@@ -138,9 +136,7 @@ export class AlternativeSuggesterService {
       });
 
       const duration = Date.now() - startTime;
-      this.logger.debug(
-        `Ranked ${slots.length} slots by time proximity in ${duration}ms`,
-      );
+      this.logger.debug(`Ranked ${slots.length} slots by time proximity in ${duration}ms`);
 
       return rankedSlots;
     } catch (error) {
@@ -188,7 +184,7 @@ export class AlternativeSuggesterService {
       const targetDay = this.getDayOfYear(target);
 
       // Score each slot
-      const scoredSlots = slots.map(slot => {
+      const scoredSlots = slots.map((slot) => {
         const slotDate = new Date(slot.date);
         const slotDay = this.getDayOfYear(slotDate);
         const dayDiff = slotDay - targetDay;
@@ -235,9 +231,7 @@ export class AlternativeSuggesterService {
       });
 
       const duration = Date.now() - startTime;
-      this.logger.debug(
-        `Ranked ${slots.length} slots by date proximity in ${duration}ms`,
-      );
+      this.logger.debug(`Ranked ${slots.length} slots by date proximity in ${duration}ms`);
 
       return rankedSlots;
     } catch (error) {
@@ -278,10 +272,7 @@ export class AlternativeSuggesterService {
 
       // Update proximity text with correct language
       if (Math.abs(diffMinutes) <= 180) {
-        slot.indicators.proximityText = this.messageBuilder.getProximityText(
-          diffMinutes,
-          language,
-        );
+        slot.indicators.proximityText = this.messageBuilder.getProximityText(diffMinutes, language);
 
         // Add localized proximity text for all languages
         slot.indicators.proximityTextLocalized = {
@@ -323,7 +314,7 @@ export class AlternativeSuggesterService {
       preferSameTime?: boolean;
     },
   ): Promise<RankedSlot[]> {
-    const scoredSlots = slots.map(slot => {
+    const scoredSlots = slots.map((slot) => {
       let score = 1000; // Base score
 
       // Time proximity scoring
@@ -478,14 +469,10 @@ export class AlternativeSuggesterService {
       });
 
       // Add visual indicators with language support
-      const slotsWithIndicators = this.addVisualIndicators(
-        rankedSlots,
-        targetTime,
-        language,
-      );
+      const slotsWithIndicators = this.addVisualIndicators(rankedSlots, targetTime, language);
 
       // Add date proximity indicators for alternatives on different days
-      const enhancedSlots = slotsWithIndicators.map(slot => {
+      const enhancedSlots = slotsWithIndicators.map((slot) => {
         const targetDateObj = new Date(targetDate);
         const slotDateObj = new Date(slot.date);
         const dayDiff = this.getDayOfYear(slotDateObj) - this.getDayOfYear(targetDateObj);
@@ -508,9 +495,7 @@ export class AlternativeSuggesterService {
       const alternatives = enhancedSlots.slice(0, maxAlternatives);
 
       const duration = Date.now() - startTime;
-      this.logger.debug(
-        `Found ${alternatives.length} nearby alternatives in ${duration}ms`,
-      );
+      this.logger.debug(`Found ${alternatives.length} nearby alternatives in ${duration}ms`);
 
       return alternatives;
     } catch (error) {

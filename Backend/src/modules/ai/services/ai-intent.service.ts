@@ -33,9 +33,7 @@ import { Language, LanguageCode } from '../../cache/enums/language.enum';
 export class AIIntentService {
   private readonly logger = new Logger(AIIntentService.name);
 
-  constructor(
-    @Optional() private readonly cacheService?: AiCacheService,
-  ) {}
+  constructor(@Optional() private readonly cacheService?: AiCacheService) {}
 
   /**
    * Minimum confidence threshold for reliable classification
@@ -104,15 +102,7 @@ export class AIIntentService {
         isStrong: true,
       },
       [IntentType.AVAILABILITY_INQUIRY]: {
-        keywords: [
-          'available',
-          'availability',
-          'free',
-          'open',
-          'slot',
-          'when',
-          'hours',
-        ],
+        keywords: ['available', 'availability', 'free', 'open', 'slot', 'when', 'hours'],
         patterns: [
           /\b(when|what time)\s+(are you|is)\s+(available|open|free)\b/i,
           /\bdo you have\s+(any)?\s*(available|free|open)\s*(time|slot)/i,
@@ -157,15 +147,7 @@ export class AIIntentService {
         weight: 0.8,
       },
       [IntentType.LOCATION_INQUIRY]: {
-        keywords: [
-          'where',
-          'location',
-          'address',
-          'directions',
-          'find',
-          'located',
-          'place',
-        ],
+        keywords: ['where', 'location', 'address', 'directions', 'find', 'located', 'place'],
         patterns: [
           /\bwhere\s+(are you|is)\s+(located|your)?\b/i,
           /\bwhat('?s| is)\s+your\s+(address|location)\b/i,
@@ -287,15 +269,7 @@ export class AIIntentService {
     // Spanish patterns
     es: {
       [IntentType.BOOKING_REQUEST]: {
-        keywords: [
-          'reservar',
-          'reserva',
-          'cita',
-          'agendar',
-          'programar',
-          'quiero',
-          'necesito',
-        ],
+        keywords: ['reservar', 'reserva', 'cita', 'agendar', 'programar', 'quiero', 'necesito'],
         patterns: [
           /\b(quiero|necesito|puedo)\s+(reservar|agendar|una cita)\b/i,
           /\ba las?\s+\d{1,2}(:\d{2})?\b/i, // time patterns
@@ -351,15 +325,7 @@ export class AIIntentService {
     // Portuguese patterns
     pt: {
       [IntentType.BOOKING_REQUEST]: {
-        keywords: [
-          'reservar',
-          'reserva',
-          'agendar',
-          'agendamento',
-          'marcar',
-          'quero',
-          'preciso',
-        ],
+        keywords: ['reservar', 'reserva', 'agendar', 'agendamento', 'marcar', 'quero', 'preciso'],
         patterns: [
           /\b(quero|preciso|posso)\s+(reservar|agendar|marcar)\b/i,
           /\bàs\s+\d{1,2}(:\d{2})?\b/i, // time patterns
@@ -415,15 +381,7 @@ export class AIIntentService {
     // Hebrew patterns
     he: {
       [IntentType.BOOKING_REQUEST]: {
-        keywords: [
-          'להזמין',
-          'הזמנה',
-          'לקבוע',
-          'תור',
-          'רוצה',
-          'צריך',
-          'אפשר',
-        ],
+        keywords: ['להזמין', 'הזמנה', 'לקבוע', 'תור', 'רוצה', 'צריך', 'אפשר'],
         patterns: [
           /\b(רוצה|צריך|אפשר)\s+(להזמין|לקבוע|תור)\b/i,
           /\bב\s*\d{1,2}(:\d{2})?\b/i, // time patterns
@@ -486,10 +444,7 @@ export class AIIntentService {
    *
    * @throws {Error} If text is empty or language is unsupported
    */
-  async classifyIntent(
-    text: string,
-    language: string,
-  ): Promise<IntentClassificationResult> {
+  async classifyIntent(text: string, language: string): Promise<IntentClassificationResult> {
     try {
       // Validate input
       if (!text || text.trim().length === 0) {
@@ -533,10 +488,7 @@ export class AIIntentService {
       );
 
       // Calculate scores for each intent type
-      const intentScores = this.calculateIntentScores(
-        normalizedText,
-        normalizedLanguage,
-      );
+      const intentScores = this.calculateIntentScores(normalizedText, normalizedLanguage);
 
       // Sort by score descending
       const sortedIntents = Object.entries(intentScores)
@@ -581,7 +533,10 @@ export class AIIntentService {
         const category = this.mapIntentToCategory(result.intent);
 
         // Normalize query for consistent cache key
-        const normalizedQuery = QueryNormalizer.normalize(text, this.mapLanguageToEnum(normalizedLanguage));
+        const normalizedQuery = QueryNormalizer.normalize(
+          text,
+          this.mapLanguageToEnum(normalizedLanguage),
+        );
 
         // Use store method with proper input structure
         await this.cacheService.store({
@@ -611,10 +566,7 @@ export class AIIntentService {
   /**
    * Calculates confidence scores for all intent types
    */
-  private calculateIntentScores(
-    text: string,
-    language: string,
-  ): Record<IntentType, number> {
+  private calculateIntentScores(text: string, language: string): Record<IntentType, number> {
     const patterns = this.intentPatterns[language];
     const scores: Partial<Record<IntentType, number>> = {};
 
@@ -667,24 +619,15 @@ export class AIIntentService {
     // Handle conflicting intents - prioritize specific intents over general booking
     if (scores[IntentType.BOOKING_CANCEL] && scores[IntentType.BOOKING_CANCEL] > 0.3) {
       // If cancel is detected, reduce booking request score significantly
-      scores[IntentType.BOOKING_REQUEST] = Math.min(
-        scores[IntentType.BOOKING_REQUEST] || 0,
-        0.3,
-      );
+      scores[IntentType.BOOKING_REQUEST] = Math.min(scores[IntentType.BOOKING_REQUEST] || 0, 0.3);
     }
     if (scores[IntentType.BOOKING_MODIFY] && scores[IntentType.BOOKING_MODIFY] > 0.3) {
       // If modify is detected, reduce booking request score
-      scores[IntentType.BOOKING_REQUEST] = Math.min(
-        scores[IntentType.BOOKING_REQUEST] || 0,
-        0.3,
-      );
+      scores[IntentType.BOOKING_REQUEST] = Math.min(scores[IntentType.BOOKING_REQUEST] || 0, 0.3);
     }
     if (scores[IntentType.AVAILABILITY_INQUIRY] && scores[IntentType.AVAILABILITY_INQUIRY] > 0.5) {
       // If availability inquiry is detected, reduce booking request score
-      scores[IntentType.BOOKING_REQUEST] = Math.min(
-        scores[IntentType.BOOKING_REQUEST] || 0,
-        0.4,
-      );
+      scores[IntentType.BOOKING_REQUEST] = Math.min(scores[IntentType.BOOKING_REQUEST] || 0, 0.4);
     }
 
     // If no strong matches found, mark as UNKNOWN (with low confidence to mark as unreliable)
@@ -772,10 +715,7 @@ export class AIIntentService {
    * Normalizes text for consistent processing
    */
   private normalizeText(text: string): string {
-    return text
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, ' '); // Normalize whitespace only
+    return text.toLowerCase().trim().replace(/\s+/g, ' '); // Normalize whitespace only
   }
 
   /**

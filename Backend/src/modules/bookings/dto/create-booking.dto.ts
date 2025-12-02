@@ -43,7 +43,8 @@ export class CreateBookingDto {
   start_ts: string;
 
   @ApiPropertyOptional({
-    description: 'Booking end time (ISO 8601). Auto-calculated from service duration if service_id is provided',
+    description:
+      'Booking end time (ISO 8601). Auto-calculated from service duration if service_id is provided',
     example: '2024-12-25T11:00:00.000Z',
   })
   @IsOptional()

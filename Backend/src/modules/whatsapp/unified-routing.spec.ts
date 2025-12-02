@@ -187,7 +187,7 @@ describe('Unified Message Router (Task 1.1)', () => {
       // Verify button click handler was called
       expect(quickBookingService.handleButtonClick).toHaveBeenCalledWith(
         'slot_2025-10-25_15:00_master_1',
-        '+79001234567'
+        '+79001234567',
       );
     });
 
@@ -205,7 +205,7 @@ describe('Unified Message Router (Task 1.1)', () => {
 
       // Verify language detection was called
       expect(languageDetectorService.detect).toHaveBeenCalledWith(
-        'Хочу записаться на стрижку завтра в 15:00'
+        'Хочу записаться на стрижку завтра в 15:00',
       );
 
       // Verify booking handler was called with detected language
@@ -251,14 +251,12 @@ describe('Unified Message Router (Task 1.1)', () => {
       await webhookService.processIncomingMessage('salon_123', message);
 
       // Verify language detection
-      expect(languageDetectorService.detect).toHaveBeenCalledWith(
-        'What are your working hours?'
-      );
+      expect(languageDetectorService.detect).toHaveBeenCalledWith('What are your working hours?');
 
       // Verify AI intent classification was called
       expect(aiIntentService.classifyIntent).toHaveBeenCalledWith(
         'What are your working hours?',
-        'en'
+        'en',
       );
 
       // Conversation messages don't trigger QuickBookingService by default
@@ -272,19 +270,17 @@ describe('Unified Message Router (Task 1.1)', () => {
         from: '+79001234567',
         type: 'text',
         text: {
-          body: 'I am thinking about it',  // Ambiguous text without booking keywords
+          body: 'I am thinking about it', // Ambiguous text without booking keywords
         },
       } as any;
 
       // Mock low confidence booking intent (below 0.7 threshold)
       (aiIntentService.classifyIntent as jest.Mock).mockResolvedValueOnce({
         intent: IntentType.BOOKING_REQUEST,
-        confidence: 0.45,  // Below 0.7 threshold
+        confidence: 0.45, // Below 0.7 threshold
         isReliable: false,
         language: 'en',
-        alternativeIntents: [
-          { intent: IntentType.SERVICE_INQUIRY, confidence: 0.35 },
-        ],
+        alternativeIntents: [{ intent: IntentType.SERVICE_INQUIRY, confidence: 0.35 }],
         entities: {
           dateReferences: [],
           timeReferences: [],
@@ -403,7 +399,7 @@ describe('Unified Message Router (Task 1.1)', () => {
           interactive: expect.objectContaining({
             type: 'button',
           }),
-        })
+        }),
       );
     });
 
@@ -429,7 +425,7 @@ describe('Unified Message Router (Task 1.1)', () => {
           salon_id: 'salon_123',
           to: '+79001234567',
           text: 'Booking confirmed!',
-        })
+        }),
       );
     });
   });
@@ -447,7 +443,7 @@ describe('Unified Message Router (Task 1.1)', () => {
 
       // Mock service to throw error
       (quickBookingService.handleBookingRequest as jest.Mock).mockRejectedValueOnce(
-        new Error('Service unavailable')
+        new Error('Service unavailable'),
       );
 
       await webhookService.processIncomingMessage('salon_123', message);
@@ -459,7 +455,7 @@ describe('Unified Message Router (Task 1.1)', () => {
           salon_id: 'salon_123',
           to: '+79001234567',
           text: expect.stringContaining('Sorry'),
-        })
+        }),
       );
     });
   });

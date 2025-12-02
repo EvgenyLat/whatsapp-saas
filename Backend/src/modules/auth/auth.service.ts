@@ -10,7 +10,11 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import { HashUtil } from '../../common/utils/hash.util';
 import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './dto';
-import { AuthResponse, JwtPayload, RefreshTokenPayload } from './interfaces/auth-response.interface';
+import {
+  AuthResponse,
+  JwtPayload,
+  RefreshTokenPayload,
+} from './interfaces/auth-response.interface';
 import { randomBytes } from 'crypto';
 import { addDays, addHours } from 'date-fns';
 
@@ -136,7 +140,9 @@ export class AuthService {
    * Refresh access token using refresh token
    * SECURITY: Implements token rotation and reuse detection
    */
-  async refreshToken(refreshTokenString: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshToken(
+    refreshTokenString: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     // Find refresh token in database
     const storedToken = await this.prisma.refreshToken.findUnique({
       where: { token: refreshTokenString },
@@ -156,7 +162,7 @@ export class AuthService {
       });
 
       throw new UnauthorizedException(
-        'Refresh token reuse detected. All sessions have been terminated for security. Please login again.'
+        'Refresh token reuse detected. All sessions have been terminated for security. Please login again.',
       );
     }
 
@@ -196,7 +202,7 @@ export class AuthService {
     if (oldUsedTokens.length > 0) {
       await this.prisma.refreshToken.deleteMany({
         where: {
-          id: { in: oldUsedTokens.map(t => t.id) },
+          id: { in: oldUsedTokens.map((t) => t.id) },
         },
       });
     }

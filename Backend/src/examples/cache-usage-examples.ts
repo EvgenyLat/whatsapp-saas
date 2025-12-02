@@ -168,10 +168,7 @@ export class CacheExamplesService {
     });
 
     // Invalidate related caches
-    await this.cacheService.invalidateDashboardStats(
-      booking.salon.owner_id,
-      booking.salon_id,
-    );
+    await this.cacheService.invalidateDashboardStats(booking.salon.owner_id, booking.salon_id);
 
     return booking;
   }
@@ -188,9 +185,7 @@ export class CacheExamplesService {
       cacheKey,
       async () => {
         // Make external API call
-        const response = await fetch(
-          `https://graph.facebook.com/v18.0/templates`,
-        );
+        const response = await fetch(`https://graph.facebook.com/v18.0/templates`);
         return response.json();
       },
       3600, // Cache for 1 hour
@@ -347,9 +342,7 @@ export class AnalyticsServiceWithCache {
 
   async getDashboardAnalytics(userId: string, salonId?: string) {
     // Build cache key
-    const cacheKey = salonId
-      ? `dashboard:${userId}:${salonId}`
-      : `dashboard:${userId}`;
+    const cacheKey = salonId ? `dashboard:${userId}:${salonId}` : `dashboard:${userId}`;
 
     // Try cache first
     const cached = await this.cacheService.get(cacheKey);
@@ -392,9 +385,7 @@ export class AnalyticsServiceWithCache {
   }
 
   async invalidateUserDashboard(userId: string, salonId?: string) {
-    const cacheKey = salonId
-      ? `dashboard:${userId}:${salonId}`
-      : `dashboard:${userId}`;
+    const cacheKey = salonId ? `dashboard:${userId}:${salonId}` : `dashboard:${userId}`;
 
     await this.cacheService.del(cacheKey);
     this.logger.debug(`Invalidated cache for ${cacheKey}`);

@@ -5,11 +5,7 @@ import { redisStore } from 'cache-manager-redis-store';
 import type { RedisClientOptions } from 'redis';
 import cacheConfig from '@config/cache.config';
 import { CacheService } from './cache.service';
-import {
-  RedisConnectionService,
-  RedisHealthService,
-  AiCacheService,
-} from './services';
+import { RedisConnectionService, RedisHealthService, AiCacheService } from './services';
 
 @Global()
 @Module({
@@ -39,12 +35,7 @@ import {
       },
     }),
   ],
-  providers: [
-    CacheService,
-    RedisConnectionService,
-    RedisHealthService,
-    AiCacheService,
-  ],
+  providers: [CacheService, RedisConnectionService, RedisHealthService, AiCacheService],
   exports: [
     CacheService,
     NestCacheModule,

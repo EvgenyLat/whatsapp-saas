@@ -14,11 +14,7 @@ import {
   CustomerPreferences,
   InteractiveMessagePayload,
 } from './types/booking-intent.types';
-import {
-  ChoiceType,
-  BookingContext,
-  RankedSlot,
-} from './types/choice.types';
+import { ChoiceType, BookingContext, RankedSlot } from './types/choice.types';
 
 /**
  * Quick Booking Service
@@ -100,24 +96,15 @@ export class QuickBookingService {
     const startTime = Date.now();
     const sessionId = this.generateSessionId();
 
-    this.logger.log(
-      `Handling booking request from ${request.customerPhone}: "${request.text}"`,
-    );
+    this.logger.log(`Handling booking request from ${request.customerPhone}: "${request.text}"`);
 
     try {
       // Step 1: Check if returning customer (Phase 9)
       // TODO: Implement in Phase 9 - "Book Your Usual" shortcut
-      const customerId = await this.getOrCreateCustomerId(
-        request.customerPhone,
-        request.salonId,
-      );
+      const customerId = await this.getOrCreateCustomerId(request.customerPhone, request.salonId);
 
       // Initialize analytics session
-      await this.analytics.initializeSession(
-        sessionId,
-        request.salonId,
-        customerId,
-      );
+      await this.analytics.initializeSession(sessionId, request.salonId, customerId);
 
       // Track: booking_request_received
       await this.analytics.trackEvent({
@@ -142,14 +129,9 @@ export class QuickBookingService {
       }
 
       // Step 2: Parse intent with AI
-      const intent = await this.intentParser.parseIntent(
-        request.text,
-        request.salonId,
-      );
+      const intent = await this.intentParser.parseIntent(request.text, request.salonId);
 
-      this.logger.debug(
-        `Parsed intent: ${JSON.stringify(intent)}`,
-      );
+      this.logger.debug(`Parsed intent: ${JSON.stringify(intent)}`);
 
       // Track: intent_parsed
       const intentComplete = this.isIntentComplete(intent);
@@ -227,7 +209,7 @@ export class QuickBookingService {
           success: false,
           messageType: 'text',
           payload: {
-            text: 'Sorry, I couldn\'t determine which service you\'d like to book. Please specify the service name.',
+            text: "Sorry, I couldn't determine which service you'd like to book. Please specify the service name.",
           },
           sessionId,
         };
@@ -277,14 +259,14 @@ export class QuickBookingService {
             intent.preferredDate,
             intent.preferredTime,
             10, // Show up to 10 alternatives
-            request.language as any || 'en',
+            (request.language as any) || 'en',
           );
 
           if (alternatives.length > 0) {
             // Build message and card for alternatives
             const message = this.messageBuilder.buildAlternativeSlotsMessage(
               alternatives,
-              request.language as any || 'en',
+              (request.language as any) || 'en',
             );
 
             const card = this.cardBuilder.buildAlternativeSlotsCard(
@@ -367,10 +349,7 @@ export class QuickBookingService {
         sessionId,
         timestamp: new Date(),
         metadata: {
-          cardType:
-            card.type === 'button'
-              ? 'reply_buttons'
-              : 'list_message',
+          cardType: card.type === 'button' ? 'reply_buttons' : 'list_message',
           tapCount: 0, // No taps yet
           typingCount: 1, // Customer typed initial message
           durationMs: Date.now() - startTime,
@@ -390,13 +369,13 @@ export class QuickBookingService {
         sessionId,
       };
     } catch (error) {
-      this.logger.error(`Error handling booking request: ${(error as Error).message}`, (error as Error).stack);
+      this.logger.error(
+        `Error handling booking request: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
 
       // Track: error_occurred
-      const customerId = await this.getOrCreateCustomerId(
-        request.customerPhone,
-        request.salonId,
-      );
+      const customerId = await this.getOrCreateCustomerId(request.customerPhone, request.salonId);
       await this.analytics.trackEvent({
         eventType: 'error_occurred',
         salonId: request.salonId,
@@ -483,18 +462,11 @@ export class QuickBookingService {
           return await this.handleSlotSelection(parsed.slotId!, session, customerPhone);
 
         case 'booking_confirmation':
-          return await this.handleBookingConfirmation(
-            parsed.bookingId!,
-            session,
-            customerPhone,
-          );
+          return await this.handleBookingConfirmation(parsed.bookingId!, session, customerPhone);
 
         case 'choice_selection':
           // Handle choice navigation (same_day_diff_time or diff_day_same_time)
-          return await this.handleChoice(
-            parsed.choiceId as ChoiceType,
-            customerPhone,
-          );
+          return await this.handleChoice(parsed.choiceId as ChoiceType, customerPhone);
 
         case 'waitlist_action':
           // TODO Phase 11: Implement waitlist handler
@@ -519,7 +491,10 @@ export class QuickBookingService {
           throw new BadRequestException(`Unknown button type: ${parsed.type}`);
       }
     } catch (error) {
-      this.logger.error(`Error handling button click: ${(error as Error).message}`, (error as Error).stack);
+      this.logger.error(
+        `Error handling button click: ${(error as Error).message}`,
+        (error as Error).stack,
+      );
 
       return {
         success: false,
@@ -558,9 +533,7 @@ export class QuickBookingService {
   }> {
     const startTime = Date.now();
 
-    this.logger.log(
-      `Handling slot conflict: ${originalDate} ${originalTime} in salon ${salonId}`,
-    );
+    this.logger.log(`Handling slot conflict: ${originalDate} ${originalTime} in salon ${salonId}`);
 
     try {
       // Step 1: Find all available slots
@@ -609,11 +582,7 @@ export class QuickBookingService {
         language as any,
       );
 
-      const card = this.cardBuilder.buildAlternativeSlotsCard(
-        alternatives,
-        language,
-        message,
-      );
+      const card = this.cardBuilder.buildAlternativeSlotsCard(alternatives, language, message);
 
       const duration = Date.now() - startTime;
       this.logger.log(
@@ -658,9 +627,7 @@ export class QuickBookingService {
     }
 
     // Get session metrics
-    const sessionMetrics = await this.analytics.getSessionMetrics(
-      session.sessionId,
-    );
+    const sessionMetrics = await this.analytics.getSessionMetrics(session.sessionId);
     const tapCount = (sessionMetrics?.tapCount || 0) + 1;
     const durationMs = Date.now() - (sessionMetrics?.startTime || Date.now());
 
@@ -683,10 +650,7 @@ export class QuickBookingService {
     await this.storeSession(customerPhone, session);
 
     // Build confirmation card
-    const card = this.cardBuilder.buildConfirmationCard(
-      slot,
-      session.language || 'en',
-    );
+    const card = this.cardBuilder.buildConfirmationCard(slot, session.language || 'en');
 
     // Track: confirmation_shown
     await this.analytics.trackEvent({
@@ -724,9 +688,7 @@ export class QuickBookingService {
     }
 
     // Get session metrics
-    const sessionMetrics = await this.analytics.getSessionMetrics(
-      session.sessionId,
-    );
+    const sessionMetrics = await this.analytics.getSessionMetrics(session.sessionId);
     const tapCount = (sessionMetrics?.tapCount || 0) + 1; // Second tap
     const typingCount = sessionMetrics?.typingCount || 1;
     const durationMs = Date.now() - (sessionMetrics?.startTime || Date.now());
@@ -746,12 +708,7 @@ export class QuickBookingService {
     });
 
     // Create booking in database
-    const booking = await this.createBooking(
-      customerPhone,
-      slot,
-      session.intent,
-      session.salonId,
-    );
+    const booking = await this.createBooking(customerPhone, slot, session.intent, session.salonId);
 
     // Track: booking_completed with final metrics
     await this.analytics.trackEvent({
@@ -949,15 +906,10 @@ export class QuickBookingService {
         );
 
         // Build message
-        message = this.messageBuilder.getMessage(
-          'SAME_DAY_OPTIONS',
-          context.language,
-          {
-            day: this.formatDate(context.originalIntent.date!, context.language),
-            time: context.originalIntent.time,
-          },
-        );
-
+        message = this.messageBuilder.getMessage('SAME_DAY_OPTIONS', context.language, {
+          day: this.formatDate(context.originalIntent.date!, context.language),
+          time: context.originalIntent.time,
+        });
       } else if (choiceId === 'diff_day_same_time') {
         // Customer chose: "Different day, but same time"
 
@@ -981,13 +933,9 @@ export class QuickBookingService {
         );
 
         // Build message
-        message = this.messageBuilder.getMessage(
-          'DIFF_DAY_OPTIONS',
-          context.language,
-          {
-            time: context.originalIntent.time,
-          },
-        );
+        message = this.messageBuilder.getMessage('DIFF_DAY_OPTIONS', context.language, {
+          time: context.originalIntent.time,
+        });
       } else {
         // Unknown choice type
         return {
@@ -1005,10 +953,7 @@ export class QuickBookingService {
           success: true,
           messageType: 'text',
           payload: {
-            text: this.messageBuilder.getMessage(
-              'NO_ALTERNATIVES',
-              context.language,
-            ),
+            text: this.messageBuilder.getMessage('NO_ALTERNATIVES', context.language),
           },
         };
       }
@@ -1057,7 +1002,6 @@ export class QuickBookingService {
         messageType: 'interactive_card',
         payload: card,
       };
-
     } catch (error) {
       this.logger.error(
         `Error handling choice: ${(error as Error).message}`,
@@ -1078,7 +1022,6 @@ export class QuickBookingService {
   // PRIVATE HELPER METHODS
   // ============================================================================
 
-
   /**
    * Create booking in database
    */
@@ -1088,7 +1031,9 @@ export class QuickBookingService {
     intent: BookingIntent,
     salonId: string,
   ): Promise<any> {
-    this.logger.log(`Creating booking for ${customerPhone} - ${slot.serviceName} on ${slot.date} at ${slot.startTime}`);
+    this.logger.log(
+      `Creating booking for ${customerPhone} - ${slot.serviceName} on ${slot.date} at ${slot.startTime}`,
+    );
 
     // Extract customer name from phone or use default
     const customerName = 'Customer'; // TODO: Get from customer profile when available
@@ -1124,10 +1069,7 @@ export class QuickBookingService {
   /**
    * Get customer ID from phone number
    */
-  private async getCustomerId(
-    phone: string,
-    salonId: string,
-  ): Promise<string | null> {
+  private async getCustomerId(phone: string, salonId: string): Promise<string | null> {
     // TODO Phase 9: Implement customer lookup
     // Query bookings table for this phone + salon
     // Return customer ID if found
@@ -1139,10 +1081,7 @@ export class QuickBookingService {
    * Get or create customer ID from phone number
    * For analytics purposes, we need a stable customer ID
    */
-  private async getOrCreateCustomerId(
-    phone: string,
-    salonId: string,
-  ): Promise<string> {
+  private async getOrCreateCustomerId(phone: string, salonId: string): Promise<string> {
     const existingCustomerId = await this.getCustomerId(phone, salonId);
     if (existingCustomerId) {
       return existingCustomerId;
@@ -1157,11 +1096,7 @@ export class QuickBookingService {
    * Check if intent has all required information
    */
   private isIntentComplete(intent: BookingIntent): boolean {
-    return !!(
-      intent.serviceName &&
-      intent.preferredDate &&
-      intent.preferredTime
-    );
+    return !!(intent.serviceName && intent.preferredDate && intent.preferredTime);
   }
 
   /**
@@ -1271,9 +1206,7 @@ export class QuickBookingService {
       this.logger.debug(`Session retrieved for ${customerPhone}`);
       return migratedContext;
     } catch (error) {
-      this.logger.error(
-        `Failed to get session for ${customerPhone}: ${(error as Error).message}`,
-      );
+      this.logger.error(`Failed to get session for ${customerPhone}: ${(error as Error).message}`);
       return null; // Graceful degradation
     }
   }
@@ -1304,18 +1237,13 @@ export class QuickBookingService {
    * @param language - New language code
    * @private
    */
-  private async updateSessionLanguage(
-    customerPhone: string,
-    language: string,
-  ): Promise<void> {
+  private async updateSessionLanguage(customerPhone: string, language: string): Promise<void> {
     try {
       const session = await this.getSession(customerPhone);
       if (session) {
         session.language = language;
         await this.storeSession(customerPhone, session);
-        this.logger.debug(
-          `Language updated to '${language}' for ${customerPhone}`,
-        );
+        this.logger.debug(`Language updated to '${language}' for ${customerPhone}`);
       }
     } catch (error) {
       this.logger.error(

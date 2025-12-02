@@ -1,11 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsString,
-  IsDate,
-  IsEnum,
-  IsNumber,
-  IsOptional,
-} from 'class-validator';
+import { IsString, IsDate, IsEnum, IsNumber, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ReminderStatus, ReminderAction } from '../entities/reminder.entity';
 

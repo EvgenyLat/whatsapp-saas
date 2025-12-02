@@ -4,7 +4,11 @@ import { ConversationsService } from './conversations.service';
 
 describe('ConversationsController', () => {
   let controller: ConversationsController;
-  const mockConversationsService = { findAll: jest.fn(), findOne: jest.fn(), updateStatus: jest.fn() };
+  const mockConversationsService = {
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    updateStatus: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

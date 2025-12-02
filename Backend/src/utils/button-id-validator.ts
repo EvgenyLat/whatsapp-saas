@@ -41,7 +41,13 @@ export const MAX_LIST_ROW_ID_LENGTH = 200;
 /**
  * Valid button ID type prefixes
  */
-export const VALID_BUTTON_TYPES: readonly ButtonIdType[] = ['slot', 'confirm', 'waitlist', 'action', 'nav'] as const;
+export const VALID_BUTTON_TYPES: readonly ButtonIdType[] = [
+  'slot',
+  'confirm',
+  'waitlist',
+  'action',
+  'nav',
+] as const;
 
 /**
  * Validates a button ID against the standardized schema
@@ -123,7 +129,7 @@ export function parseButtonId(id: string): ParsedButtonId | null {
  */
 export function validateAndParseButtonId(
   id: string,
-  maxLength: number = MAX_BUTTON_ID_LENGTH
+  maxLength: number = MAX_BUTTON_ID_LENGTH,
 ): ParsedButtonId | null {
   if (!validateButtonId(id, maxLength)) {
     return null;
@@ -182,7 +188,7 @@ export function buildButtonId(type: ButtonIdType, context: string): string {
   const contextRegex = /^[a-zA-Z0-9_:-]+$/;
   if (!contextRegex.test(context)) {
     throw new Error(
-      `Invalid context format: "${context}". Must contain only alphanumeric characters, underscores, colons, and hyphens.`
+      `Invalid context format: "${context}". Must contain only alphanumeric characters, underscores, colons, and hyphens.`,
     );
   }
 
@@ -275,7 +281,10 @@ export function isValidButtonType(type: string): type is ButtonIdType {
  * truncateButtonId(longId, 20); // Returns: "slot_xxxxxxxxxxxxxxx" (20 chars)
  * ```
  */
-export function truncateButtonId(id: string, maxLength: number = MAX_BUTTON_ID_LENGTH): string | null {
+export function truncateButtonId(
+  id: string,
+  maxLength: number = MAX_BUTTON_ID_LENGTH,
+): string | null {
   const parsed = parseButtonId(id);
   if (!parsed) {
     return null;

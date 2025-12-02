@@ -46,9 +46,24 @@ export class CacheService {
 
   // Normalization config
   private readonly NOISE_WORDS = [
-    'пожалуйста', 'please', 'спасибо', 'thanks', 'thank you',
-    'здравствуйте', 'привет', 'hello', 'hi', 'hey',
-    '!', '?', '.', ',', '😊', '🙏', '👍', '❤️',
+    'пожалуйста',
+    'please',
+    'спасибо',
+    'thanks',
+    'thank you',
+    'здравствуйте',
+    'привет',
+    'hello',
+    'hi',
+    'hey',
+    '!',
+    '?',
+    '.',
+    ',',
+    '😊',
+    '🙏',
+    '👍',
+    '❤️',
   ];
 
   constructor(private readonly prisma: PrismaService) {}
@@ -71,8 +86,8 @@ export class CacheService {
     let normalized = query.toLowerCase().trim();
 
     // Remove noise words (escape regex special characters)
-    const escapedWords = this.NOISE_WORDS.map(word =>
-      word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const escapedWords = this.NOISE_WORDS.map((word) =>
+      word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
     );
     const regex = new RegExp(`\\b(${escapedWords.join('|')})\\b`, 'gi');
     normalized = normalized.replace(regex, '');
@@ -95,10 +110,7 @@ export class CacheService {
    * - Consistent 64-character output
    */
   hashQuery(normalizedQuery: string): string {
-    return crypto
-      .createHash('sha256')
-      .update(normalizedQuery, 'utf8')
-      .digest('hex');
+    return crypto.createHash('sha256').update(normalizedQuery, 'utf8').digest('hex');
   }
 
   /**
@@ -111,10 +123,7 @@ export class CacheService {
    *
    * @returns CachedResponse or null if not found/invalid
    */
-  async get(
-    queryHash: string,
-    minConfidence: number = 0.85,
-  ): Promise<CachedResponse | null> {
+  async get(queryHash: string, minConfidence: number = 0.85): Promise<CachedResponse | null> {
     try {
       const cached = await this.prisma.aIResponseCache.findUnique({
         where: { query_hash: queryHash },
@@ -137,9 +146,7 @@ export class CacheService {
 
       // Check confidence threshold
       if (cached.confidence_score < minConfidence) {
-        this.logger.debug(
-          `Cache LOW CONFIDENCE: ${queryHash} (score: ${cached.confidence_score})`,
-        );
+        this.logger.debug(`Cache LOW CONFIDENCE: ${queryHash} (score: ${cached.confidence_score})`);
         return null;
       }
 
@@ -179,17 +186,10 @@ export class CacheService {
     response: string,
     options: CacheSetOptions = {},
   ): Promise<void> {
-    const {
-      language = 'auto',
-      salon_id = null,
-      confidence_score = 0.9,
-      ttl_days = null,
-    } = options;
+    const { language = 'auto', salon_id = null, confidence_score = 0.9, ttl_days = null } = options;
 
     try {
-      const expires_at = ttl_days
-        ? new Date(Date.now() + ttl_days * 24 * 60 * 60 * 1000)
-        : null;
+      const expires_at = ttl_days ? new Date(Date.now() + ttl_days * 24 * 60 * 60 * 1000) : null;
 
       await this.prisma.aIResponseCache.upsert({
         where: { query_hash: queryHash },
@@ -441,9 +441,7 @@ export class CacheService {
 
         warmed++;
       } catch (error) {
-        this.logger.error(
-          `Cache warm error for query "${entry.query}": ${error.message}`,
-        );
+        this.logger.error(`Cache warm error for query "${entry.query}": ${error.message}`);
       }
     }
 

@@ -48,7 +48,10 @@ export class MastersController {
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - User does not own the salon' })
-  async create(@Req() req: any, @Body() createMasterDto: CreateMasterDto): Promise<MasterResponseDto> {
+  async create(
+    @Req() req: any,
+    @Body() createMasterDto: CreateMasterDto,
+  ): Promise<MasterResponseDto> {
     return this.mastersService.create(req.user.id, createMasterDto);
   }
 

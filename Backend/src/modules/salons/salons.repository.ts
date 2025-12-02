@@ -9,10 +9,7 @@ import { ISalonsRepository } from './salons.repository.interface';
  * Handles all database operations for Salon entities
  */
 @Injectable()
-export class SalonsRepository
-  extends BaseRepository<Salon>
-  implements ISalonsRepository
-{
+export class SalonsRepository extends BaseRepository<Salon> implements ISalonsRepository {
   constructor(protected readonly prisma: PrismaService) {
     super(prisma, 'salon');
   }
@@ -41,10 +38,7 @@ export class SalonsRepository
   /**
    * Check if phone number ID is already in use
    */
-  async isPhoneNumberIdInUse(
-    phoneNumberId: string,
-    excludeSalonId?: string,
-  ): Promise<boolean> {
+  async isPhoneNumberIdInUse(phoneNumberId: string, excludeSalonId?: string): Promise<boolean> {
     const where: any = { phone_number_id: phoneNumberId };
 
     if (excludeSalonId) {

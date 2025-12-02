@@ -96,10 +96,9 @@ describe('SlotFinderService', () => {
       jest.spyOn(prismaService.service, 'findUnique').mockResolvedValue(mockService);
 
       // Mock masters lookup
-      jest.spyOn(prismaService.master, 'findMany').mockResolvedValue([
-        mockMaster1 as any,
-        mockMaster2 as any,
-      ]);
+      jest
+        .spyOn(prismaService.master, 'findMany')
+        .mockResolvedValue([mockMaster1 as any, mockMaster2 as any]);
 
       // Mock empty bookings (all slots available)
       jest.spyOn(prismaService.booking, 'findMany').mockResolvedValue([]);
@@ -119,10 +118,9 @@ describe('SlotFinderService', () => {
     it('should rank preferred master slots higher', async () => {
       jest.spyOn(prismaService.service, 'findUnique').mockResolvedValue(mockService);
 
-      jest.spyOn(prismaService.master, 'findMany').mockResolvedValue([
-        mockMaster1 as any,
-        mockMaster2 as any,
-      ]);
+      jest
+        .spyOn(prismaService.master, 'findMany')
+        .mockResolvedValue([mockMaster1 as any, mockMaster2 as any]);
 
       jest.spyOn(prismaService.booking, 'findMany').mockResolvedValue([]);
 
@@ -151,9 +149,7 @@ describe('SlotFinderService', () => {
     it('should exclude slots that conflict with bookings', async () => {
       jest.spyOn(prismaService.service, 'findUnique').mockResolvedValue(mockService);
 
-      jest.spyOn(prismaService.master, 'findMany').mockResolvedValue([
-        mockMaster1 as any,
-      ]);
+      jest.spyOn(prismaService.master, 'findMany').mockResolvedValue([mockMaster1 as any]);
 
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -182,9 +178,7 @@ describe('SlotFinderService', () => {
 
       // Check that 14:00 slot is NOT in results
       const conflictingSlot = result.slots.find(
-        (slot) =>
-          slot.date === tomorrow.toISOString().split('T')[0] &&
-          slot.startTime === '14:00',
+        (slot) => slot.date === tomorrow.toISOString().split('T')[0] && slot.startTime === '14:00',
       );
 
       expect(conflictingSlot).toBeUndefined();
@@ -193,9 +187,7 @@ describe('SlotFinderService', () => {
     it('should not include slots outside working hours', async () => {
       jest.spyOn(prismaService.service, 'findUnique').mockResolvedValue(mockService);
 
-      jest.spyOn(prismaService.master, 'findMany').mockResolvedValue([
-        mockMaster1 as any,
-      ]);
+      jest.spyOn(prismaService.master, 'findMany').mockResolvedValue([mockMaster1 as any]);
 
       jest.spyOn(prismaService.booking, 'findMany').mockResolvedValue([]);
 
@@ -248,10 +240,9 @@ describe('SlotFinderService', () => {
     it('should limit results to specified limit', async () => {
       jest.spyOn(prismaService.service, 'findUnique').mockResolvedValue(mockService);
 
-      jest.spyOn(prismaService.master, 'findMany').mockResolvedValue([
-        mockMaster1 as any,
-        mockMaster2 as any,
-      ]);
+      jest
+        .spyOn(prismaService.master, 'findMany')
+        .mockResolvedValue([mockMaster1 as any, mockMaster2 as any]);
 
       jest.spyOn(prismaService.booking, 'findMany').mockResolvedValue([]);
 
@@ -271,9 +262,7 @@ describe('SlotFinderService', () => {
     it('should include slot metadata (duration, price, names)', async () => {
       jest.spyOn(prismaService.service, 'findUnique').mockResolvedValue(mockService);
 
-      jest.spyOn(prismaService.master, 'findMany').mockResolvedValue([
-        mockMaster1 as any,
-      ]);
+      jest.spyOn(prismaService.master, 'findMany').mockResolvedValue([mockMaster1 as any]);
 
       jest.spyOn(prismaService.booking, 'findMany').mockResolvedValue([]);
 

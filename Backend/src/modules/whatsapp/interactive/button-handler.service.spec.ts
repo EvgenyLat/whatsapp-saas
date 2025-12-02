@@ -17,6 +17,7 @@ import { ButtonHandlerService } from './button-handler.service';
 import { PrismaService } from '../../../database/prisma.service';
 import { InteractiveCardBuilder } from './interactive-message.builder';
 import { ButtonParserService } from './button-parser.service';
+import { Prisma, ServiceCategory } from '@prisma/client';
 
 describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
   let service: ButtonHandlerService;
@@ -34,16 +35,35 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
     id: mockMasterId,
     name: 'John Doe',
     salon_id: mockSalonId,
+    user_id: null,
+    phone: '+1234567890',
+    email: 'john.doe@example.com',
+    specialization: ['Haircut', 'Styling'],
+    working_hours: {
+      monday: { start: '09:00', end: '18:00' },
+      tuesday: { start: '09:00', end: '18:00' },
+      wednesday: { start: '09:00', end: '18:00' },
+      thursday: { start: '09:00', end: '18:00' },
+      friday: { start: '09:00', end: '18:00' },
+      saturday: { start: '10:00', end: '16:00' },
+      sunday: { start: '10:00', end: '16:00' },
+    },
     is_active: true,
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
   };
 
   const mockService = {
     id: mockServiceId,
     name: 'Haircut',
     salon_id: mockSalonId,
+    description: 'Professional haircut service',
     duration_minutes: 60,
-    price: 5000, // $50.00
+    price: new Prisma.Decimal(50.0),
+    category: ServiceCategory.HAIRCUT,
     is_active: true,
+    created_at: new Date('2024-01-01T00:00:00Z'),
+    updated_at: new Date('2024-01-01T00:00:00Z'),
   };
 
   const mockBooking = {
@@ -60,6 +80,10 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
     service_id: mockServiceId,
     created_at: new Date(),
     updated_at: new Date(),
+    metadata: null,
+    reminder_sent: false,
+    reminder_response: null,
+    reminder_response_at: null,
   };
 
   beforeEach(async () => {
@@ -194,7 +218,7 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
 
       // Mock transaction that simulates conflict detection
       let bookingCount = 0;
-      jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback) => {
+      jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback: any) => {
         bookingCount++;
 
         // First request succeeds
@@ -202,16 +226,16 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
           return callback({
             master: {
               findUnique: jest.fn().mockResolvedValue(mockMaster),
-            },
+            } as any,
             $executeRaw: jest.fn().mockResolvedValue([]),
             booking: {
               findMany: jest.fn().mockResolvedValue([]), // No conflicts
               findFirst: jest.fn().mockResolvedValue(null),
               create: jest.fn().mockResolvedValue(mockBooking),
-            },
+            } as any,
             salon: {
               update: jest.fn().mockResolvedValue({}),
-            },
+            } as any,
           });
         }
 
@@ -219,16 +243,16 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
         return callback({
           master: {
             findUnique: jest.fn().mockResolvedValue(mockMaster),
-          },
+          } as any,
           $executeRaw: jest.fn().mockResolvedValue([]),
           booking: {
             findMany: jest.fn().mockResolvedValue([mockBooking]), // Conflict!
             findFirst: jest.fn().mockResolvedValue(null),
             create: jest.fn(),
-          },
+          } as any,
           salon: {
             update: jest.fn(),
-          },
+          } as any,
         });
       });
 
@@ -290,20 +314,20 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
         timestamp: Date.now(),
       };
 
-      jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback) => {
+      jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback: any) => {
         return callback({
           master: {
             findUnique: jest.fn().mockResolvedValue(mockMaster),
-          },
+          } as any,
           $executeRaw: jest.fn().mockResolvedValue([]),
           booking: {
             findMany: jest.fn().mockResolvedValue([existingBooking]), // Overlap detected
             findFirst: jest.fn().mockResolvedValue(null),
             create: jest.fn(),
-          },
+          } as any,
           salon: {
             update: jest.fn(),
-          },
+          } as any,
         });
       });
 
@@ -537,7 +561,7 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
       const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
       const dateStr = futureDate.toISOString().split('T')[0];
 
-      jest.spyOn(prismaService.booking, 'findFirst').mockResolvedValue(mockBooking);
+      jest.spyOn(prismaService.booking, 'findFirst').mockResolvedValue(mockBooking as any);
 
       const result = await service.validateSlotAvailability(
         mockMasterId,
@@ -580,8 +604,8 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
       } as any);
 
       // Mock slot is already taken
-      jest.spyOn(prismaService.booking, 'findFirst').mockResolvedValue(mockBooking);
-      jest.spyOn(prismaService.master, 'findUnique').mockResolvedValue(mockMaster);
+      jest.spyOn(prismaService.booking, 'findFirst').mockResolvedValue(mockBooking as any);
+      jest.spyOn(prismaService.master, 'findUnique').mockResolvedValue(mockMaster as any);
       jest.spyOn(cardBuilder, 'buildSlotSelectionCard').mockReturnValue({
         messaging_product: 'whatsapp',
         to: mockCustomerPhone,
@@ -616,7 +640,7 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
       };
 
       let attemptCount = 0;
-      jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback) => {
+      jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback: any) => {
         attemptCount++;
 
         // First 2 attempts fail with transient error
@@ -628,16 +652,16 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
         return callback({
           master: {
             findUnique: jest.fn().mockResolvedValue(mockMaster),
-          },
+          } as any,
           $executeRaw: jest.fn().mockResolvedValue([]),
           booking: {
             findMany: jest.fn().mockResolvedValue([]),
             findFirst: jest.fn().mockResolvedValue(null),
             create: jest.fn().mockResolvedValue(mockBooking),
-          },
+          } as any,
           salon: {
             update: jest.fn().mockResolvedValue({}),
-          },
+          } as any,
         });
       });
 
@@ -674,7 +698,7 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
       };
 
       const attemptTimestamps: number[] = [];
-      jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback) => {
+      jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback: any) => {
         attemptTimestamps.push(Date.now());
 
         if (attemptTimestamps.length < 3) {
@@ -684,16 +708,16 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
         return callback({
           master: {
             findUnique: jest.fn().mockResolvedValue(mockMaster),
-          },
+          } as any,
           $executeRaw: jest.fn().mockResolvedValue([]),
           booking: {
             findMany: jest.fn().mockResolvedValue([]),
             findFirst: jest.fn().mockResolvedValue(null),
             create: jest.fn().mockResolvedValue(mockBooking),
-          },
+          } as any,
           salon: {
             update: jest.fn().mockResolvedValue({}),
-          },
+          } as any,
         });
       });
 
@@ -811,8 +835,8 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
       } as any);
 
       jest.spyOn(prismaService.booking, 'findFirst').mockResolvedValue(null); // Available
-      jest.spyOn(prismaService.master, 'findUnique').mockResolvedValue(mockMaster);
-      jest.spyOn(prismaService.service, 'findFirst').mockResolvedValue(mockService);
+      jest.spyOn(prismaService.master, 'findUnique').mockResolvedValue(mockMaster as any);
+      jest.spyOn(prismaService.service, 'findFirst').mockResolvedValue(mockService as any);
       jest.spyOn(cardBuilder, 'buildConfirmationCard').mockReturnValue({
         messaging_product: 'whatsapp',
         to: mockCustomerPhone,
@@ -834,20 +858,20 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
         entityId: 'temp-session',
       } as any);
 
-      jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback) => {
+      jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback: any) => {
         return callback({
           master: {
             findUnique: jest.fn().mockResolvedValue(mockMaster),
-          },
+          } as any,
           $executeRaw: jest.fn().mockResolvedValue([]),
           booking: {
             findMany: jest.fn().mockResolvedValue([]),
             findFirst: jest.fn().mockResolvedValue(null),
             create: jest.fn().mockResolvedValue(mockBooking),
-          },
+          } as any,
           salon: {
             update: jest.fn().mockResolvedValue({}),
-          },
+          } as any,
         });
       });
 
@@ -889,12 +913,7 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
       });
 
       await expect(
-        service.handleSlotSelection(
-          'invalid_button_id',
-          mockCustomerPhone,
-          mockSalonId,
-          'en',
-        ),
+        service.handleSlotSelection('invalid_button_id', mockCustomerPhone, mockSalonId, 'en'),
       ).rejects.toThrow(BadRequestException);
     });
 

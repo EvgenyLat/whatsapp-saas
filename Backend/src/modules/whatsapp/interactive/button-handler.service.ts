@@ -20,7 +20,13 @@
  * @module modules/whatsapp/interactive
  */
 
-import { Injectable, Logger, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../../database/prisma.service';
 import { InteractiveCardBuilder, TimeSlot } from './interactive-message.builder';
 import { ButtonParserService } from './button-parser.service';
@@ -243,12 +249,7 @@ export class ButtonHandlerService {
     const { date, time, masterId } = parsedSlot;
 
     // Step 2: Check slot availability
-    const availabilityResult = await this.validateSlotAvailability(
-      masterId,
-      date,
-      time,
-      salonId,
-    );
+    const availabilityResult = await this.validateSlotAvailability(masterId, date, time, salonId);
 
     // Step 3: Handle slot unavailable
     if (!availabilityResult.available) {
@@ -322,9 +323,7 @@ export class ButtonHandlerService {
     // Step 7: Track analytics
     await this.trackButtonClick('slot_selection', buttonId, customerPhone, salonId);
 
-    this.logger.log(
-      `Slot selection successful: ${date} ${time} with ${master.name}`,
-    );
+    this.logger.log(`Slot selection successful: ${date} ${time} with ${master.name}`);
 
     return {
       success: true,
@@ -397,12 +396,8 @@ export class ButtonHandlerService {
     const session = this.getSession(customerPhone, salonId);
 
     if (!session) {
-      this.logger.warn(
-        `Session not found or expired for ${customerPhone} in salon ${salonId}`,
-      );
-      throw new BadRequestException(
-        'Session expired. Please select a time slot again.',
-      );
+      this.logger.warn(`Session not found or expired for ${customerPhone} in salon ${salonId}`);
+      throw new BadRequestException('Session expired. Please select a time slot again.');
     }
 
     const { selectedSlot, customerName } = session;
@@ -443,9 +438,7 @@ export class ButtonHandlerService {
       bookingId = result.id;
       bookingCode = result.booking_code;
 
-      this.logger.log(
-        `Booking created successfully: ${bookingCode} (${bookingId})`,
-      );
+      this.logger.log(`Booking created successfully: ${bookingCode} (${bookingId})`);
     } catch (error) {
       this.logger.error(`Failed to create booking after retries:`, error);
 
@@ -458,11 +451,7 @@ export class ButtonHandlerService {
     }
 
     // Step 5: Build confirmation message
-    const confirmationMessage = this.buildConfirmationMessage(
-      selectedSlot,
-      bookingCode,
-      language,
-    );
+    const confirmationMessage = this.buildConfirmationMessage(selectedSlot, bookingCode, language);
 
     // Step 6: Clear session
     this.clearSession(customerPhone, salonId);
@@ -470,9 +459,7 @@ export class ButtonHandlerService {
     // Step 7: Track analytics
     await this.trackButtonClick('booking_confirmation', buttonId, customerPhone, salonId);
 
-    this.logger.log(
-      `Booking confirmation successful: ${bookingCode} for ${customerPhone}`,
-    );
+    this.logger.log(`Booking confirmation successful: ${bookingCode} for ${customerPhone}`);
 
     // Note: The confirmation message is sent by the webhook service (webhook.service.ts:319-326)
     // after this method returns. We return the message for the webhook to send.
@@ -599,7 +586,15 @@ export class ButtonHandlerService {
     // Step 3: Validate master working hours for the requested day/time
     try {
       const requestedDate = new Date(`${date}T00:00:00`);
-      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayNames = [
+        'sunday',
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+      ];
       dayName = dayNames[requestedDate.getDay()];
 
       workingHours = master.working_hours as Record<string, any>;
@@ -608,9 +603,7 @@ export class ButtonHandlerService {
         const daySchedule = workingHours[dayName];
 
         if (!daySchedule || !daySchedule.start || !daySchedule.end) {
-          this.logger.warn(
-            `Master ${master.name} doesn't work on ${dayName}`,
-          );
+          this.logger.warn(`Master ${master.name} doesn't work on ${dayName}`);
           return {
             available: false,
             reason: `This staff member is not available on ${dayName}s`,
@@ -653,7 +646,12 @@ export class ButtonHandlerService {
     // Note: We need to get service info from the session or context
     // For now, we'll do a best-effort check using the master's working hours
     try {
-      if (workingHours && typeof workingHours === 'object' && dayName && typeof dayName === 'string') {
+      if (
+        workingHours &&
+        typeof workingHours === 'object' &&
+        dayName &&
+        typeof dayName === 'string'
+      ) {
         const daySchedule = workingHours[dayName as string];
 
         if (daySchedule && daySchedule.end) {
@@ -735,9 +733,7 @@ export class ButtonHandlerService {
     });
 
     if (existingBooking) {
-      this.logger.debug(
-        `Slot unavailable: existing booking ${existingBooking.booking_code}`,
-      );
+      this.logger.debug(`Slot unavailable: existing booking ${existingBooking.booking_code}`);
 
       return {
         available: false,
@@ -780,24 +776,15 @@ export class ButtonHandlerService {
 
     for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
       try {
-        this.logger.debug(
-          `Creating booking (attempt ${attempt}/${MAX_RETRY_ATTEMPTS})`,
-        );
+        this.logger.debug(`Creating booking (attempt ${attempt}/${MAX_RETRY_ATTEMPTS})`);
 
-        const booking = await this.createBooking(
-          customerPhone,
-          customerName,
-          salonId,
-          slot,
-        );
+        const booking = await this.createBooking(customerPhone, customerName, salonId, slot);
 
         this.logger.log(`Booking created on attempt ${attempt}`);
         return booking;
       } catch (error) {
         lastError = error as Error;
-        this.logger.warn(
-          `Booking creation failed on attempt ${attempt}: ${lastError.message}`,
-        );
+        this.logger.warn(`Booking creation failed on attempt ${attempt}: ${lastError.message}`);
 
         // Don't retry on validation errors
         if (error instanceof BadRequestException || error instanceof ConflictException) {
@@ -843,7 +830,9 @@ export class ButtonHandlerService {
       this.logger.error(
         `Attempted to book past slot: ${slot.date} ${slot.time} (slot: ${slotDateTime.toISOString()}, now: ${now.toISOString()})`,
       );
-      throw new BadRequestException('Cannot book time slots in the past. Please choose a future time.');
+      throw new BadRequestException(
+        'Cannot book time slots in the past. Please choose a future time.',
+      );
     }
 
     return await this.prisma.$transaction(async (tx) => {
@@ -1011,12 +1000,7 @@ export class ButtonHandlerService {
     reason?: string,
   ): Promise<SlotSelectionResponse> {
     // Fetch alternative slots (next 3 available slots for same master)
-    const alternativeSlots = await this.fetchAlternativeSlots(
-      masterId,
-      salonId,
-      date,
-      3,
-    );
+    const alternativeSlots = await this.fetchAlternativeSlots(masterId, salonId, date, 3);
 
     if (alternativeSlots.length === 0) {
       // No alternatives available
@@ -1134,9 +1118,7 @@ export class ButtonHandlerService {
 
     this.sessions.set(sessionKey, sessionContext);
 
-    this.logger.debug(
-      `Session stored for ${customerPhone}: ${JSON.stringify(slotData)}`,
-    );
+    this.logger.debug(`Session stored for ${customerPhone}: ${JSON.stringify(slotData)}`);
   }
 
   /**
@@ -1146,10 +1128,7 @@ export class ButtonHandlerService {
    * @param salonId - Salon ID
    * @returns Session context or null if expired/not found
    */
-  private getSession(
-    customerPhone: string,
-    salonId: string,
-  ): SessionContext | null {
+  private getSession(customerPhone: string, salonId: string): SessionContext | null {
     const sessionKey = this.getSessionKey(customerPhone, salonId);
     const session = this.sessions.get(sessionKey);
 
@@ -1198,22 +1177,25 @@ export class ButtonHandlerService {
    * Runs every 5 minutes to remove expired sessions.
    */
   private startSessionCleanup(): void {
-    setInterval(() => {
-      const now = Date.now();
-      let expiredCount = 0;
+    setInterval(
+      () => {
+        const now = Date.now();
+        let expiredCount = 0;
 
-      for (const [key, session] of this.sessions.entries()) {
-        const age = now - session.timestamp;
-        if (age > SESSION_EXPIRATION_MS) {
-          this.sessions.delete(key);
-          expiredCount++;
+        for (const [key, session] of this.sessions.entries()) {
+          const age = now - session.timestamp;
+          if (age > SESSION_EXPIRATION_MS) {
+            this.sessions.delete(key);
+            expiredCount++;
+          }
         }
-      }
 
-      if (expiredCount > 0) {
-        this.logger.debug(`Cleaned up ${expiredCount} expired sessions`);
-      }
-    }, 5 * 60 * 1000); // Every 5 minutes
+        if (expiredCount > 0) {
+          this.logger.debug(`Cleaned up ${expiredCount} expired sessions`);
+        }
+      },
+      5 * 60 * 1000,
+    ); // Every 5 minutes
   }
 
   // ==========================================================================
@@ -1262,11 +1244,7 @@ export class ButtonHandlerService {
    * @param language - Language preference (currently English only)
    * @returns Formatted confirmation message
    */
-  private buildConfirmationMessage(
-    slot: SlotData,
-    bookingCode: string,
-    language: string,
-  ): string {
+  private buildConfirmationMessage(slot: SlotData, bookingCode: string, language: string): string {
     // Format date
     const dateObj = new Date(`${slot.date}T00:00:00`);
     const formattedDate = dateObj.toLocaleDateString('en-US', {

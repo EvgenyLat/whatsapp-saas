@@ -229,16 +229,10 @@ describe('WhatsApp Integration Tests (e2e)', () => {
       };
 
       // Send first time
-      await request(app.getHttpServer())
-        .post('/whatsapp/webhook')
-        .send(webhookPayload)
-        .expect(200);
+      await request(app.getHttpServer()).post('/whatsapp/webhook').send(webhookPayload).expect(200);
 
       // Send duplicate
-      await request(app.getHttpServer())
-        .post('/whatsapp/webhook')
-        .send(webhookPayload)
-        .expect(200);
+      await request(app.getHttpServer()).post('/whatsapp/webhook').send(webhookPayload).expect(200);
 
       // Verify only one message exists
       const messageCount = await prisma.message.count({
@@ -284,10 +278,7 @@ describe('WhatsApp Integration Tests (e2e)', () => {
         ],
       };
 
-      await request(app.getHttpServer())
-        .post('/whatsapp/webhook')
-        .send(webhookPayload)
-        .expect(200);
+      await request(app.getHttpServer()).post('/whatsapp/webhook').send(webhookPayload).expect(200);
 
       const message = await prisma.message.findFirst({
         where: {
@@ -350,10 +341,7 @@ describe('WhatsApp Integration Tests (e2e)', () => {
         ],
       };
 
-      await request(app.getHttpServer())
-        .post('/whatsapp/webhook')
-        .send(webhookPayload)
-        .expect(200);
+      await request(app.getHttpServer()).post('/whatsapp/webhook').send(webhookPayload).expect(200);
 
       // Verify status updated
       const updatedMessage = await prisma.message.findFirst({
@@ -393,10 +381,7 @@ describe('WhatsApp Integration Tests (e2e)', () => {
         ],
       };
 
-      await request(app.getHttpServer())
-        .post('/whatsapp/webhook')
-        .send(webhookPayload)
-        .expect(200);
+      await request(app.getHttpServer()).post('/whatsapp/webhook').send(webhookPayload).expect(200);
 
       const updatedMessage = await prisma.message.findFirst({
         where: { whatsapp_id: testOutboundMessageId },
@@ -436,10 +421,7 @@ describe('WhatsApp Integration Tests (e2e)', () => {
         ],
       };
 
-      await request(app.getHttpServer())
-        .post('/whatsapp/webhook')
-        .send(webhookPayload)
-        .expect(200);
+      await request(app.getHttpServer()).post('/whatsapp/webhook').send(webhookPayload).expect(200);
 
       // Verify status is still READ
       const message = await prisma.message.findFirst({
@@ -642,10 +624,7 @@ describe('WhatsApp Integration Tests (e2e)', () => {
 
       const startTime = Date.now();
 
-      await request(app.getHttpServer())
-        .post('/whatsapp/webhook')
-        .send(webhookPayload)
-        .expect(200);
+      await request(app.getHttpServer()).post('/whatsapp/webhook').send(webhookPayload).expect(200);
 
       const duration = Date.now() - startTime;
 
@@ -691,8 +670,8 @@ describe('WhatsApp Integration Tests (e2e)', () => {
 
       const responses = await Promise.all(
         webhookRequests.map((payload) =>
-          request(app.getHttpServer()).post('/whatsapp/webhook').send(payload)
-        )
+          request(app.getHttpServer()).post('/whatsapp/webhook').send(payload),
+        ),
       );
 
       const duration = Date.now() - startTime;

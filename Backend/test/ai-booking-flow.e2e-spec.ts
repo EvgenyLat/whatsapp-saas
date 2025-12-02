@@ -174,8 +174,8 @@ describe('AI Booking Flow Integration Tests (e2e)', () => {
       const aiResponse = response.body.response.toLowerCase();
       expect(
         aiResponse.includes('manicure') ||
-        aiResponse.includes('service') ||
-        aiResponse.includes('offer')
+          aiResponse.includes('service') ||
+          aiResponse.includes('offer'),
       ).toBe(true);
     });
 
@@ -387,8 +387,8 @@ describe('AI Booking Flow Integration Tests (e2e)', () => {
       const aiResponse = response.body.response.toLowerCase();
       expect(
         aiResponse.includes('занято') ||
-        aiResponse.includes('доступные варианты') ||
-        aiResponse.includes('альтернатив')
+          aiResponse.includes('доступные варианты') ||
+          aiResponse.includes('альтернатив'),
       ).toBe(true);
 
       // Verify no booking created at conflicting time
@@ -425,8 +425,8 @@ describe('AI Booking Flow Integration Tests (e2e)', () => {
       const aiResponse = response.body.response.toLowerCase();
       expect(
         aiResponse.includes('прошлом') ||
-        aiResponse.includes('нельзя') ||
-        aiResponse.includes('невозможно')
+          aiResponse.includes('нельзя') ||
+          aiResponse.includes('невозможно'),
       ).toBe(true);
 
       // Verify no booking created

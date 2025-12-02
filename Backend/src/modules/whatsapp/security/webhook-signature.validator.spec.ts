@@ -10,7 +10,7 @@ describe('WebhookSignatureValidator', () => {
   const mockAppSecret = 'test-app-secret-for-hmac-validation';
   const testPayload = JSON.stringify({
     object: 'whatsapp_business_account',
-    entry: [{ id: '123', changes: [] }]
+    entry: [{ id: '123', changes: [] }],
   });
 
   beforeEach(async () => {

@@ -3,10 +3,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '@database/prisma.service';
 import { WhatsAppService } from '../whatsapp/whatsapp.service';
-import {
-  ReminderResponseDto,
-  ReminderStatsDto,
-} from './dto';
+import { ReminderResponseDto, ReminderStatsDto } from './dto';
 import { ReminderAction } from './entities/reminder.entity';
 
 /**
@@ -49,9 +46,7 @@ export class RemindersService {
 
     // Don't schedule if appointment is less than 24h away
     if (reminderTime <= new Date()) {
-      this.logger.warn(
-        `Booking ${bookingId} is too soon (${booking.start_ts}), skipping reminder`,
-      );
+      this.logger.warn(`Booking ${bookingId} is too soon (${booking.start_ts}), skipping reminder`);
       return;
     }
 
@@ -141,9 +136,7 @@ export class RemindersService {
           this.logger.debug(`Removed job ${reminder.job_id} from queue`);
         }
       } catch (error) {
-        this.logger.warn(
-          `Failed to remove job ${reminder.job_id}: ${error.message}`,
-        );
+        this.logger.warn(`Failed to remove job ${reminder.job_id}: ${error.message}`);
         // Continue with cancellation even if job removal fails
       }
     }
@@ -191,14 +184,11 @@ export class RemindersService {
       const message = this.generateReminderMessage(reminder.booking);
 
       // Send WhatsApp message
-      const result = await this.whatsappService.sendTextMessage(
-        reminder.booking.salon.owner_id,
-        {
-          salon_id: reminder.salon_id,
-          to: reminder.booking.customer_phone,
-          text: message,
-        },
-      );
+      const result = await this.whatsappService.sendTextMessage(reminder.booking.salon.owner_id, {
+        salon_id: reminder.salon_id,
+        to: reminder.booking.customer_phone,
+        text: message,
+      });
 
       // Update reminder as sent
       await this.prisma.reminder.update({
@@ -223,10 +213,7 @@ export class RemindersService {
         `Reminder ${reminderId} sent successfully to ${reminder.booking.customer_phone}`,
       );
     } catch (error) {
-      this.logger.error(
-        `Failed to send reminder ${reminderId}: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Failed to send reminder ${reminderId}: ${error.message}`, error.stack);
 
       // Update reminder as failed
       await this.prisma.reminder.update({
@@ -250,10 +237,7 @@ export class RemindersService {
    * @param responseText - The customer's response text
    * @throws NotFoundException if booking or reminder not found
    */
-  async processResponse(
-    bookingId: string,
-    responseText: string,
-  ): Promise<void> {
+  async processResponse(bookingId: string, responseText: string): Promise<void> {
     this.logger.log(`Processing response for booking: ${bookingId}`);
 
     // Find reminder that was sent
@@ -322,7 +306,8 @@ export class RemindersService {
           where: { id: bookingId },
           data: { status: 'CANCELLED' },
         });
-        confirmationMessage = '❌ Your appointment has been cancelled. We hope to see you another time!';
+        confirmationMessage =
+          '❌ Your appointment has been cancelled. We hope to see you another time!';
         this.logger.log(`Booking ${bookingId} cancelled by customer`);
         break;
 
@@ -335,28 +320,21 @@ export class RemindersService {
       case ReminderAction.UNKNOWN:
       default:
         confirmationMessage =
-          'Sorry, we didn\'t understand your response. Please reply:\n1 - Confirm\n2 - Cancel\n3 - Reschedule';
-        this.logger.warn(
-          `Unknown response for booking ${bookingId}: "${responseText}"`,
-        );
+          "Sorry, we didn't understand your response. Please reply:\n1 - Confirm\n2 - Cancel\n3 - Reschedule";
+        this.logger.warn(`Unknown response for booking ${bookingId}: "${responseText}"`);
         break;
     }
 
     // Send confirmation to customer
     try {
-      await this.whatsappService.sendTextMessage(
-        reminder.booking.salon.owner_id,
-        {
-          salon_id: reminder.salon_id,
-          to: phone,
-          text: confirmationMessage,
-        },
-      );
+      await this.whatsappService.sendTextMessage(reminder.booking.salon.owner_id, {
+        salon_id: reminder.salon_id,
+        to: phone,
+        text: confirmationMessage,
+      });
       this.logger.debug(`Sent confirmation message to ${phone}`);
     } catch (error) {
-      this.logger.error(
-        `Failed to send confirmation to ${phone}: ${error.message}`,
-      );
+      this.logger.error(`Failed to send confirmation to ${phone}: ${error.message}`);
       // Don't throw - response was processed successfully
     }
   }
@@ -377,21 +355,14 @@ export class RemindersService {
     });
 
     const total = reminders.length;
-    const sent = reminders.filter(
-      (r) => r.status === 'SENT' || r.status === 'DELIVERED',
-    ).length;
-    const confirmed = reminders.filter(
-      (r) => r.response_action === 'CONFIRM',
-    ).length;
-    const cancelled = reminders.filter(
-      (r) => r.response_action === 'CANCEL',
-    ).length;
+    const sent = reminders.filter((r) => r.status === 'SENT' || r.status === 'DELIVERED').length;
+    const confirmed = reminders.filter((r) => r.response_action === 'CONFIRM').length;
+    const cancelled = reminders.filter((r) => r.response_action === 'CANCEL').length;
     const failed = reminders.filter((r) => r.status === 'FAILED').length;
 
     // Calculate rates
     const delivery_rate = total > 0 ? ((sent / total) * 100).toFixed(1) : '0.0';
-    const response_rate =
-      sent > 0 ? (((confirmed + cancelled) / sent) * 100).toFixed(1) : '0.0';
+    const response_rate = sent > 0 ? (((confirmed + cancelled) / sent) * 100).toFixed(1) : '0.0';
 
     return {
       total,
@@ -411,9 +382,7 @@ export class RemindersService {
    * @param bookingId - The booking ID to get reminders for
    * @returns Array of ReminderResponseDto
    */
-  async getBookingReminders(
-    bookingId: string,
-  ): Promise<ReminderResponseDto[]> {
+  async getBookingReminders(bookingId: string): Promise<ReminderResponseDto[]> {
     this.logger.log(`Getting reminders for booking: ${bookingId}`);
 
     const reminders = await this.prisma.reminder.findMany({

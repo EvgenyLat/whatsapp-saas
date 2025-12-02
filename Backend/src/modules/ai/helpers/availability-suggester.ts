@@ -30,7 +30,7 @@ export class AvailabilitySuggester {
     durationMinutes: number,
     masters: Master[],
     existingBookings: Map<string, Date[]>, // master_id -> occupied times
-    count: number = 3
+    count: number = 3,
   ): TimeSlot[] {
     const slots: TimeSlot[] = [];
     const workingHours = { start: 10, end: 20 }; // Default 10:00 - 20:00
@@ -57,7 +57,7 @@ export class AvailabilitySuggester {
             candidate,
             durationMinutes,
             masters,
-            existingBookings
+            existingBookings,
           );
 
           if (availableMaster) {
@@ -82,7 +82,7 @@ export class AvailabilitySuggester {
     datetime: Date,
     durationMinutes: number,
     masters: Master[],
-    existingBookings: Map<string, Date[]>
+    existingBookings: Map<string, Date[]>,
   ): Master | null {
     const slotEnd = new Date(datetime.getTime() + durationMinutes * 60 * 1000);
 
@@ -111,7 +111,7 @@ export class AvailabilitySuggester {
 
       // Check for booking conflicts
       const masterBookings = existingBookings.get(master.id) || [];
-      const hasConflict = masterBookings.some(bookingTime => {
+      const hasConflict = masterBookings.some((bookingTime) => {
         const bookingEnd = new Date(bookingTime.getTime() + 60 * 60 * 1000); // Assume 1hr default
         return datetime < bookingEnd && slotEnd > bookingTime;
       });
@@ -132,9 +132,9 @@ export class AvailabilitySuggester {
     masters: Master[],
     datetime: Date,
     durationMinutes: number,
-    existingBookings: Map<string, Date[]>
+    existingBookings: Map<string, Date[]>,
   ): Master[] {
-    const preferredMaster = masters.find(m => m.id === preferredMasterId);
+    const preferredMaster = masters.find((m) => m.id === preferredMasterId);
     if (!preferredMaster) {
       return [];
     }
@@ -148,8 +148,8 @@ export class AvailabilitySuggester {
       }
 
       // Check if has overlapping specialization
-      const hasOverlap = master.specialization.some(spec =>
-        preferredMaster.specialization.includes(spec)
+      const hasOverlap = master.specialization.some((spec) =>
+        preferredMaster.specialization.includes(spec),
       );
 
       if (!hasOverlap) {
@@ -161,7 +161,7 @@ export class AvailabilitySuggester {
         datetime,
         durationMinutes,
         [master],
-        existingBookings
+        existingBookings,
       );
 
       if (isAvailable) {
@@ -175,17 +175,23 @@ export class AvailabilitySuggester {
   /**
    * Format time slot for display
    */
-  static formatTimeSlot(
-    slot: TimeSlot,
-    language: string = 'ru',
-    timezone: string = 'UTC'
-  ): string {
+  static formatTimeSlot(slot: TimeSlot, language: string = 'ru', timezone: string = 'UTC'): string {
     const date = slot.datetime;
 
     if (language === 'ru') {
       const months = [
-        'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-        'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+        'января',
+        'февраля',
+        'марта',
+        'апреля',
+        'мая',
+        'июня',
+        'июля',
+        'августа',
+        'сентября',
+        'октября',
+        'ноября',
+        'декабря',
       ];
       const day = date.getDate();
       const month = months[date.getMonth()];
@@ -222,8 +228,18 @@ export class AvailabilitySuggester {
       return `${formatted} (com ${slot.master_name})`;
     } else if (language === 'he') {
       const months = [
-        'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
-        'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+        'ינואר',
+        'פברואר',
+        'מרץ',
+        'אפריל',
+        'מאי',
+        'יוני',
+        'יולי',
+        'אוגוסט',
+        'ספטמבר',
+        'אוקטובר',
+        'נובמבר',
+        'דצמבר',
       ];
       const day = date.getDate();
       const month = months[date.getMonth()];
@@ -239,10 +255,7 @@ export class AvailabilitySuggester {
   /**
    * Check if time is during working hours
    */
-  static isWithinWorkingHours(
-    datetime: Date,
-    master: Master
-  ): boolean {
+  static isWithinWorkingHours(datetime: Date, master: Master): boolean {
     const dayOfWeek = this.getDayOfWeek(datetime);
     const workingHours = (master.working_hours as any)?.[dayOfWeek];
 
@@ -263,10 +276,7 @@ export class AvailabilitySuggester {
   /**
    * Check if time is during break
    */
-  static isDuringBreak(
-    datetime: Date,
-    master: Master
-  ): boolean {
+  static isDuringBreak(datetime: Date, master: Master): boolean {
     const dayOfWeek = this.getDayOfWeek(datetime);
     const workingHours = (master.working_hours as any)?.[dayOfWeek];
 

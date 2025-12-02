@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { ConflictException, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../../database/prisma.service';
 import { HashUtil } from '../../common/utils/hash.util';

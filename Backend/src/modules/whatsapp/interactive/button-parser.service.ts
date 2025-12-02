@@ -66,7 +66,7 @@ export class ButtonParserService {
 
     if (!parsed || parsed.type !== 'slot') {
       throw new BadRequestException(
-        `Invalid slot button ID: "${id}". Expected format: slot_YYYY-MM-DD_HH:MM_mXXX`
+        `Invalid slot button ID: "${id}". Expected format: slot_YYYY-MM-DD_HH:MM_mXXX`,
       );
     }
 
@@ -75,7 +75,7 @@ export class ButtonParserService {
 
     if (parts.length !== 3) {
       throw new BadRequestException(
-        `Invalid slot button context: "${parsed.context}". Expected format: YYYY-MM-DD_HH:MM_mXXX`
+        `Invalid slot button context: "${parsed.context}". Expected format: YYYY-MM-DD_HH:MM_mXXX`,
       );
     }
 
@@ -84,21 +84,21 @@ export class ButtonParserService {
     // Validate date format (YYYY-MM-DD)
     if (!this.isValidDateFormat(date)) {
       throw new BadRequestException(
-        `Invalid date format in slot button: "${date}". Expected YYYY-MM-DD`
+        `Invalid date format in slot button: "${date}". Expected YYYY-MM-DD`,
       );
     }
 
     // Validate time format (HH:MM)
     if (!this.isValidTimeFormat(time)) {
       throw new BadRequestException(
-        `Invalid time format in slot button: "${time}". Expected HH:MM`
+        `Invalid time format in slot button: "${time}". Expected HH:MM`,
       );
     }
 
     // Validate master ID (starts with 'm' or is numeric)
     if (!this.isValidMasterId(masterId)) {
       throw new BadRequestException(
-        `Invalid master ID in slot button: "${masterId}". Expected format: mXXX or numeric ID`
+        `Invalid master ID in slot button: "${masterId}". Expected format: mXXX or numeric ID`,
       );
     }
 
@@ -132,7 +132,7 @@ export class ButtonParserService {
 
     if (!parsed || parsed.type !== 'action') {
       throw new BadRequestException(
-        `Invalid action button ID: "${id}". Expected format: action_<action_name>`
+        `Invalid action button ID: "${id}". Expected format: action_<action_name>`,
       );
     }
 
@@ -140,9 +140,7 @@ export class ButtonParserService {
     const action = parsed.context;
 
     if (!action || action.length === 0) {
-      throw new BadRequestException(
-        `Invalid action button: action name cannot be empty`
-      );
+      throw new BadRequestException(`Invalid action button: action name cannot be empty`);
     }
 
     return { action };
@@ -179,7 +177,7 @@ export class ButtonParserService {
 
     if (!parsed || parsed.type !== 'nav') {
       throw new BadRequestException(
-        `Invalid navigation button ID: "${id}". Expected format: nav_<direction> or nav_<direction>_<page>`
+        `Invalid navigation button ID: "${id}". Expected format: nav_<direction> or nav_<direction>_<page>`,
       );
     }
 
@@ -189,9 +187,7 @@ export class ButtonParserService {
     const page = parts.length > 1 ? parts.slice(1).join('_') : undefined;
 
     if (!direction || direction.length === 0) {
-      throw new BadRequestException(
-        `Invalid navigation button: direction cannot be empty`
-      );
+      throw new BadRequestException(`Invalid navigation button: direction cannot be empty`);
     }
 
     return { direction, page };
@@ -225,7 +221,7 @@ export class ButtonParserService {
 
     if (!parsed || parsed.type !== 'confirm') {
       throw new BadRequestException(
-        `Invalid confirm button ID: "${id}". Expected format: confirm_<action>_<entity_id>`
+        `Invalid confirm button ID: "${id}". Expected format: confirm_<action>_<entity_id>`,
       );
     }
 
@@ -234,7 +230,7 @@ export class ButtonParserService {
 
     if (underscoreIndex === -1) {
       throw new BadRequestException(
-        `Invalid confirm button context: "${parsed.context}". Expected format: <action>_<entity_id>`
+        `Invalid confirm button context: "${parsed.context}". Expected format: <action>_<entity_id>`,
       );
     }
 
@@ -242,15 +238,11 @@ export class ButtonParserService {
     const entityId = parsed.context.substring(underscoreIndex + 1);
 
     if (!action || action.length === 0) {
-      throw new BadRequestException(
-        `Invalid confirm button: action cannot be empty`
-      );
+      throw new BadRequestException(`Invalid confirm button: action cannot be empty`);
     }
 
     if (!entityId || entityId.length === 0) {
-      throw new BadRequestException(
-        `Invalid confirm button: entity ID cannot be empty`
-      );
+      throw new BadRequestException(`Invalid confirm button: entity ID cannot be empty`);
     }
 
     return { action, entityId };
@@ -284,7 +276,7 @@ export class ButtonParserService {
 
     if (!parsed || parsed.type !== 'waitlist') {
       throw new BadRequestException(
-        `Invalid waitlist button ID: "${id}". Expected format: waitlist_<action>_<waitlist_id>`
+        `Invalid waitlist button ID: "${id}". Expected format: waitlist_<action>_<waitlist_id>`,
       );
     }
 
@@ -296,9 +288,7 @@ export class ButtonParserService {
       const action = parsed.context;
 
       if (!action || action.length === 0) {
-        throw new BadRequestException(
-          `Invalid waitlist button: action cannot be empty`
-        );
+        throw new BadRequestException(`Invalid waitlist button: action cannot be empty`);
       }
 
       return { action, waitlistId: '' };
@@ -308,15 +298,11 @@ export class ButtonParserService {
     const waitlistId = parsed.context.substring(underscoreIndex + 1);
 
     if (!action || action.length === 0) {
-      throw new BadRequestException(
-        `Invalid waitlist button: action cannot be empty`
-      );
+      throw new BadRequestException(`Invalid waitlist button: action cannot be empty`);
     }
 
     if (!waitlistId || waitlistId.length === 0) {
-      throw new BadRequestException(
-        `Invalid waitlist button: waitlist ID cannot be empty`
-      );
+      throw new BadRequestException(`Invalid waitlist button: waitlist ID cannot be empty`);
     }
 
     return { action, waitlistId };
@@ -342,14 +328,17 @@ export class ButtonParserService {
    */
   parse(id: string): {
     type: ButtonIdType;
-    data: ParsedSlotButton | ParsedActionButton | ParsedNavigationButton | ParsedConfirmButton | ParsedWaitlistButton;
+    data:
+      | ParsedSlotButton
+      | ParsedActionButton
+      | ParsedNavigationButton
+      | ParsedConfirmButton
+      | ParsedWaitlistButton;
   } {
     const parsed = parseButtonId(id);
 
     if (!parsed) {
-      throw new BadRequestException(
-        `Invalid button ID format: "${id}"`
-      );
+      throw new BadRequestException(`Invalid button ID format: "${id}"`);
     }
 
     switch (parsed.type) {
@@ -364,9 +353,7 @@ export class ButtonParserService {
       case 'waitlist':
         return { type: 'waitlist', data: this.parseWaitlistButton(id) };
       default:
-        throw new BadRequestException(
-          `Unknown button type: "${parsed.type}"`
-        );
+        throw new BadRequestException(`Unknown button type: "${parsed.type}"`);
     }
   }
 

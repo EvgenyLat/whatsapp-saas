@@ -290,7 +290,13 @@ describe('InteractiveCardBuilder', () => {
   describe('buildListMessageCard', () => {
     const fourSlots: TimeSlot[] = [
       { date: '2024-10-25', time: '14:00', masterId: 'm123', masterName: 'Sarah' },
-      { date: '2024-10-25', time: '15:00', masterId: 'm123', masterName: 'Sarah', isPreferred: true },
+      {
+        date: '2024-10-25',
+        time: '15:00',
+        masterId: 'm123',
+        masterName: 'Sarah',
+        isPreferred: true,
+      },
       { date: '2024-10-26', time: '10:00', masterId: 'm456', masterName: 'Alex' },
       { date: '2024-10-26', time: '14:00', masterId: 'm123', masterName: 'Sarah' },
     ];

@@ -102,7 +102,7 @@ export default registerAs(
     maxSlotSearchDays: parseInteger(
       process.env.MAX_SLOT_SEARCH_DAYS,
       30, // default
-      1,  // min: at least 1 day
+      1, // min: at least 1 day
       90, // max: no more than 3 months
     ),
     waitlistEnabled: parseBoolean(process.env.WAITLIST_ENABLED, true),

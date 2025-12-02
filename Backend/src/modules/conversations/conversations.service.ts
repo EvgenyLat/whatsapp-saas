@@ -11,7 +11,11 @@ export class ConversationsService {
     private readonly salonsService: SalonsService,
   ) {}
 
-  async findAll(userId: string, userRole: string, salonId?: string): Promise<ConversationResponseDto[]> {
+  async findAll(
+    userId: string,
+    userRole: string,
+    salonId?: string,
+  ): Promise<ConversationResponseDto[]> {
     let conversations;
 
     if (salonId) {
@@ -24,7 +28,10 @@ export class ConversationsService {
       const salonIds = userSalons.map((s) => s.id);
       conversations = await this.conversationsRepository.findByMultipleSalonIds(salonIds);
     } else {
-      conversations = await this.conversationsRepository.findAll({}, { orderBy: { last_message_at: 'desc' } });
+      conversations = await this.conversationsRepository.findAll(
+        {},
+        { orderBy: { last_message_at: 'desc' } },
+      );
     }
 
     return conversations.map((c) => new ConversationResponseDto(c));
@@ -44,10 +51,18 @@ export class ConversationsService {
     return new ConversationResponseDto(conversation);
   }
 
-  async updateStatus(id: string, userId: string, userRole: string, updateStatusDto: UpdateConversationStatusDto): Promise<ConversationResponseDto> {
+  async updateStatus(
+    id: string,
+    userId: string,
+    userRole: string,
+    updateStatusDto: UpdateConversationStatusDto,
+  ): Promise<ConversationResponseDto> {
     await this.findOne(id, userId, userRole);
 
-    const updatedConversation = await this.conversationsRepository.updateStatus(id, updateStatusDto.status);
+    const updatedConversation = await this.conversationsRepository.updateStatus(
+      id,
+      updateStatusDto.status,
+    );
 
     return new ConversationResponseDto(updatedConversation);
   }

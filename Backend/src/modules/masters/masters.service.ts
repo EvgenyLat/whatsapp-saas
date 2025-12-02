@@ -141,7 +141,9 @@ export class MastersService {
     // Update master
     const updated = await this.mastersRepository.update(id, {
       ...(updateMasterDto.user_id !== undefined && {
-        user: updateMasterDto.user_id ? { connect: { id: updateMasterDto.user_id } } : { disconnect: true },
+        user: updateMasterDto.user_id
+          ? { connect: { id: updateMasterDto.user_id } }
+          : { disconnect: true },
       }),
       ...(updateMasterDto.name && { name: updateMasterDto.name }),
       ...(updateMasterDto.phone !== undefined && { phone: updateMasterDto.phone }),

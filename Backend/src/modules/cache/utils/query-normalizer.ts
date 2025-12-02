@@ -86,7 +86,7 @@ export class QueryNormalizer {
 
     const tokens = text.split(' ');
     const stopWordsArray = Array.from(stopWords) as string[];
-    const filtered = tokens.filter(token => !stopWordsArray.includes(token));
+    const filtered = tokens.filter((token) => !stopWordsArray.includes(token));
 
     return filtered.join(' ');
   }
@@ -95,7 +95,7 @@ export class QueryNormalizer {
    * Sort tokens alphabetically for consistent ordering
    */
   private static sortTokens(text: string): string {
-    const tokens = text.split(' ').filter(t => t.length > 0);
+    const tokens = text.split(' ').filter((t) => t.length > 0);
     return tokens.sort().join(' ');
   }
 
@@ -104,7 +104,7 @@ export class QueryNormalizer {
    */
   static extractKeyTerms(query: string, language: LanguageCode): string[] {
     const normalized = this.normalize(query, language);
-    return normalized.split(' ').filter(term => term.length > 2);
+    return normalized.split(' ').filter((term) => term.length > 2);
   }
 
   /**
@@ -125,7 +125,7 @@ export class QueryNormalizer {
     const terms2Set = new Set(terms2);
 
     // Calculate intersection
-    const intersection = terms1.filter(x => terms2Set.has(x));
+    const intersection = terms1.filter((x) => terms2Set.has(x));
 
     // Calculate union size
     const unionSize = terms1Set.size + terms2Set.size - intersection.length;

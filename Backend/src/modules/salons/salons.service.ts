@@ -87,7 +87,10 @@ export class SalonsService {
     const salon = await this.findOne(id, userId, userRole);
 
     // If updating phone_number_id, check for conflicts
-    if (updateSalonDto.phone_number_id && updateSalonDto.phone_number_id !== salon.phone_number_id) {
+    if (
+      updateSalonDto.phone_number_id &&
+      updateSalonDto.phone_number_id !== salon.phone_number_id
+    ) {
       const isInUse = await this.salonsRepository.isPhoneNumberIdInUse(
         updateSalonDto.phone_number_id,
         id,
@@ -105,9 +108,15 @@ export class SalonsService {
       ...(updateSalonDto.phone_number_id && { phone_number_id: updateSalonDto.phone_number_id }),
       ...(updateSalonDto.access_token && { access_token: updateSalonDto.access_token }),
       ...(updateSalonDto.is_active !== undefined && { is_active: updateSalonDto.is_active }),
-      ...(updateSalonDto.working_hours_start !== undefined && { working_hours_start: updateSalonDto.working_hours_start }),
-      ...(updateSalonDto.working_hours_end !== undefined && { working_hours_end: updateSalonDto.working_hours_end }),
-      ...(updateSalonDto.slot_duration_minutes !== undefined && { slot_duration_minutes: updateSalonDto.slot_duration_minutes }),
+      ...(updateSalonDto.working_hours_start !== undefined && {
+        working_hours_start: updateSalonDto.working_hours_start,
+      }),
+      ...(updateSalonDto.working_hours_end !== undefined && {
+        working_hours_end: updateSalonDto.working_hours_end,
+      }),
+      ...(updateSalonDto.slot_duration_minutes !== undefined && {
+        slot_duration_minutes: updateSalonDto.slot_duration_minutes,
+      }),
     });
 
     return new SalonResponseDto(updatedSalon);

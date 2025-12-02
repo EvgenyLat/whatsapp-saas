@@ -22,7 +22,10 @@ export class WebhookSignatureValidator {
 
   constructor(private readonly configService: ConfigService) {
     this.appSecret = this.configService.get<string>('whatsapp.webhookSecret') || '';
-    this.validationDisabled = this.configService.get<boolean>('whatsapp.disableWebhookValidation', false);
+    this.validationDisabled = this.configService.get<boolean>(
+      'whatsapp.disableWebhookValidation',
+      false,
+    );
     this.environment = this.configService.get<string>('app.environment', 'development');
 
     // SECURITY: Log warning if validation is disabled
@@ -34,14 +37,18 @@ export class WebhookSignatureValidator {
 
     // SECURITY: Fail fast if app secret is not configured in production
     if (!this.appSecret && this.environment === 'production' && !this.validationDisabled) {
-      this.logger.error('❌ CRITICAL SECURITY ERROR: WHATSAPP_APP_SECRET not configured in production');
+      this.logger.error(
+        '❌ CRITICAL SECURITY ERROR: WHATSAPP_APP_SECRET not configured in production',
+      );
       this.logger.error('❌ Webhook signature validation requires WHATSAPP_APP_SECRET');
       throw new Error('WHATSAPP_APP_SECRET must be configured in production');
     }
 
     if (!this.appSecret && !this.validationDisabled) {
       this.logger.error('❌ WHATSAPP_APP_SECRET not configured');
-      this.logger.error('❌ Set WHATSAPP_APP_SECRET environment variable or DISABLE_WEBHOOK_VALIDATION=true for dev/testing');
+      this.logger.error(
+        '❌ Set WHATSAPP_APP_SECRET environment variable or DISABLE_WEBHOOK_VALIDATION=true for dev/testing',
+      );
     }
   }
 
@@ -100,7 +107,7 @@ export class WebhookSignatureValidator {
       // SECURITY: Constant-time comparison to prevent timing attacks
       const isValid = crypto.timingSafeEqual(
         Buffer.from(expectedHash, 'hex'),
-        Buffer.from(signatureHash, 'hex')
+        Buffer.from(signatureHash, 'hex'),
       );
 
       if (!isValid) {
@@ -117,7 +124,7 @@ export class WebhookSignatureValidator {
     } catch (error) {
       this.logger.error(
         `❌ Signature validation failed with exception: ${(error as Error).message}`,
-        (error as Error).stack
+        (error as Error).stack,
       );
       return false;
     }
@@ -135,9 +142,7 @@ export class WebhookSignatureValidator {
     }
 
     // Handle both "sha256=<hash>" and "<hash>" formats
-    const hash = signature.startsWith('sha256=')
-      ? signature.substring(7)
-      : signature;
+    const hash = signature.startsWith('sha256=') ? signature.substring(7) : signature;
 
     // Validate hash length (SHA256 produces 64 hex characters)
     if (hash.length !== 64) {

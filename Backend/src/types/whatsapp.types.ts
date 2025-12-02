@@ -572,20 +572,26 @@ export function isWhatsAppError(obj: unknown): obj is WhatsAppError {
 /**
  * Type guard to check if message is interactive
  */
-export function isInteractiveMessage(message: Message): message is Message & { interactive: Interactive } {
+export function isInteractiveMessage(
+  message: Message,
+): message is Message & { interactive: Interactive } {
   return message.type === 'interactive' && message.interactive !== undefined;
 }
 
 /**
  * Type guard to check if interactive response is button reply
  */
-export function isButtonReply(interactive: Interactive): interactive is Interactive & { button_reply: ButtonReply } {
+export function isButtonReply(
+  interactive: Interactive,
+): interactive is Interactive & { button_reply: ButtonReply } {
   return interactive.type === 'button_reply' && interactive.button_reply !== undefined;
 }
 
 /**
  * Type guard to check if interactive response is list reply
  */
-export function isListReply(interactive: Interactive): interactive is Interactive & { list_reply: ListReply } {
+export function isListReply(
+  interactive: Interactive,
+): interactive is Interactive & { list_reply: ListReply } {
   return interactive.type === 'list_reply' && interactive.list_reply !== undefined;
 }

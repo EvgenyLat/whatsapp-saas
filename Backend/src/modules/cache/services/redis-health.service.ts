@@ -10,9 +10,7 @@ import { RedisConnectionService } from './redis-connection.service';
 export class RedisHealthService {
   private readonly logger = new Logger(RedisHealthService.name);
 
-  constructor(
-    private readonly redisConnection: RedisConnectionService,
-  ) {}
+  constructor(private readonly redisConnection: RedisConnectionService) {}
 
   /**
    * Comprehensive health check
@@ -95,10 +93,7 @@ export class RedisHealthService {
 
       const usedMemory = this.parseInfoValue(info, 'used_memory');
       const peakMemory = this.parseInfoValue(info, 'used_memory_peak');
-      const fragmentation = this.parseInfoValue(
-        info,
-        'mem_fragmentation_ratio',
-      );
+      const fragmentation = this.parseInfoValue(info, 'mem_fragmentation_ratio');
 
       return {
         used: usedMemory,

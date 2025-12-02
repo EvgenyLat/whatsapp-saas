@@ -142,11 +142,14 @@ export class ServicesRepository {
     });
 
     // Group by category
-    const categoryMap = new Map<ServiceCategory, {
-      services: Service[];
-      bookings: number;
-      revenue: number;
-    }>();
+    const categoryMap = new Map<
+      ServiceCategory,
+      {
+        services: Service[];
+        bookings: number;
+        revenue: number;
+      }
+    >();
 
     services.forEach((service) => {
       const category = service.category;
@@ -173,7 +176,8 @@ export class ServicesRepository {
     let totalRevenue = 0;
 
     categoryMap.forEach((data, category) => {
-      const avgPrice = data.services.reduce((sum, s) => sum + Number(s.price), 0) / data.services.length;
+      const avgPrice =
+        data.services.reduce((sum, s) => sum + Number(s.price), 0) / data.services.length;
 
       categories.push({
         category,

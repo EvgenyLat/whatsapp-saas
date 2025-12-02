@@ -22,12 +22,11 @@ export class CsrfGuard implements CanActivate {
   ) {
     // Use a dedicated CSRF secret or derive from JWT secret
     const csrfSecret =
-      this.configService.get<string>('CSRF_SECRET') ||
-      this.configService.get<string>('jwt.secret');
+      this.configService.get<string>('CSRF_SECRET') || this.configService.get<string>('jwt.secret');
 
     if (!csrfSecret) {
       throw new Error(
-        'SECURITY ERROR: CSRF_SECRET not configured. Either set CSRF_SECRET or ensure JWT_SECRET is set.'
+        'SECURITY ERROR: CSRF_SECRET not configured. Either set CSRF_SECRET or ensure JWT_SECRET is set.',
       );
     }
 
