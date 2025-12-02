@@ -28,6 +28,7 @@ describe('AuthService', () => {
     last_login_at: null,
     created_at: new Date(),
     updated_at: new Date(),
+    salons: [],
   };
 
   const mockPrismaService = {
@@ -39,6 +40,7 @@ describe('AuthService', () => {
     refreshToken: {
       create: jest.fn(),
       findUnique: jest.fn(),
+      update: jest.fn(),
       delete: jest.fn(),
       deleteMany: jest.fn(),
     },

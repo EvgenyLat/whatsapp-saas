@@ -1,12 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConversationsService } from './conversations.service';
-import { PrismaService } from '@database/prisma.service';
+import { ConversationsRepository } from './conversations.repository';
 import { SalonsService } from '../salons/salons.service';
 
 describe('ConversationsService', () => {
   let service: ConversationsService;
-  const mockPrismaService = {
-    conversation: { findUnique: jest.fn(), findMany: jest.fn(), update: jest.fn() },
+  const mockConversationsRepository = {
+    findById: jest.fn(),
+    findBySalonId: jest.fn(),
+    findByMultipleSalonIds: jest.fn(),
+    findAll: jest.fn(),
+    update: jest.fn(),
   };
   const mockSalonsService = { verifySalonOwnership: jest.fn(), findAll: jest.fn() };
 
@@ -14,7 +18,7 @@ describe('ConversationsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ConversationsService,
-        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: ConversationsRepository, useValue: mockConversationsRepository },
         { provide: SalonsService, useValue: mockSalonsService },
       ],
     }).compile();
