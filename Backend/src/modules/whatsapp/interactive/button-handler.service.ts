@@ -510,8 +510,8 @@ export class ButtonHandlerService {
       `Validating slot availability: master=${masterId}, date=${date}, time=${time}`,
     );
 
-    // Build datetime for query
-    const startTs = new Date(`${date}T${time}:00Z`);
+    // Build datetime for query (using local timezone for consistent comparison)
+    const startTs = new Date(`${date}T${time}:00`);
 
     // Check if the slot is in the past
     const now = new Date();
@@ -824,7 +824,7 @@ export class ButtonHandlerService {
     slot: SlotData,
   ): Promise<Booking> {
     // Validate that slot is not in the past BEFORE starting transaction
-    const slotDateTime = new Date(`${slot.date}T${slot.time}:00Z`);
+    const slotDateTime = new Date(`${slot.date}T${slot.time}:00`);
     const now = new Date();
     if (slotDateTime < now) {
       this.logger.error(
@@ -854,7 +854,7 @@ export class ButtonHandlerService {
       `;
 
       // Step 2: Check for time overlap conflicts (now race-condition free)
-      const startTs = new Date(`${slot.date}T${slot.time}:00Z`);
+      const startTs = new Date(`${slot.date}T${slot.time}:00`);
       const endTs = new Date(startTs.getTime() + slot.duration * 60 * 1000);
 
       // Check for ANY overlap: new booking overlaps with existing bookings

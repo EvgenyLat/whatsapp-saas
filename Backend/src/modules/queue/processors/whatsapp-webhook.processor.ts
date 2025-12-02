@@ -198,7 +198,29 @@ export class WhatsappWebhookProcessor extends WorkerHost {
             }
           } catch (aiError) {
             this.logger.error(`❌ AI processing failed: ${aiError.message}`);
-            // Continue without AI response - message is still logged
+
+            // Send user-friendly error message to customer
+            try {
+              const salon = await this.prisma.salon.findUnique({
+                where: { id: salonId },
+                select: {
+                  phone_number_id: true,
+                  access_token: true,
+                },
+              });
+
+              if (salon?.phone_number_id && salon?.access_token) {
+                await this.whatsappService.sendTextMessage('system', {
+                  salon_id: salonId,
+                  to: customerPhone,
+                  text: "Sorry, I'm having trouble processing your message right now. Please try again in a moment, or contact our support team for assistance.",
+                });
+
+                this.logger.log(`📤 Sent error message to ${customerPhone} due to AI failure`);
+              }
+            } catch (sendError) {
+              this.logger.error(`Failed to send error message to customer: ${sendError.message}`);
+            }
           }
         }
       } catch (error) {

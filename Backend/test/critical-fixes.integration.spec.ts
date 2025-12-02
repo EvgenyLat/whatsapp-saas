@@ -142,8 +142,8 @@ describe('Phase 1 Critical Fixes - Integration Tests', () => {
               create: jest.fn().mockResolvedValue({
                 id: 'booking-1',
                 booking_code: 'BK111111',
-                start_ts: new Date(`${dateStr}T${timeStr}:00Z`),
-                end_ts: new Date(`${dateStr}T16:00:00Z`),
+                start_ts: new Date(`${dateStr}T${timeStr}:00`),
+                end_ts: new Date(`${dateStr}T16:00:00`),
                 status: 'CONFIRMED',
               }),
             },
@@ -160,8 +160,8 @@ describe('Phase 1 Critical Fixes - Integration Tests', () => {
                 {
                   id: 'booking-1',
                   booking_code: 'BK111111',
-                  start_ts: new Date(`${dateStr}T${timeStr}:00Z`),
-                  end_ts: new Date(`${dateStr}T16:00:00Z`),
+                  start_ts: new Date(`${dateStr}T${timeStr}:00`),
+                  end_ts: new Date(`${dateStr}T16:00:00`),
                   status: 'CONFIRMED',
                 },
               ]),

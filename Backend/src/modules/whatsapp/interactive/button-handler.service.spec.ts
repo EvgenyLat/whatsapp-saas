@@ -394,6 +394,8 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
       const dateStr = futureDate.toISOString().split('T')[0];
       const timeStr = '15:00';
 
+      // Mock master findUnique to return active master with working hours
+      jest.spyOn(prismaService.master, 'findUnique').mockResolvedValue(mockMaster as any);
       jest.spyOn(prismaService.booking, 'findFirst').mockResolvedValue(null);
 
       const result = await service.validateSlotAvailability(
@@ -540,6 +542,8 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
       const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
       const dateStr = futureDate.toISOString().split('T')[0];
 
+      // Mock master findUnique to return active master with working hours
+      jest.spyOn(prismaService.master, 'findUnique').mockResolvedValue(mockMaster as any);
       jest.spyOn(prismaService.booking, 'findFirst').mockResolvedValue(null);
 
       const result = await service.validateSlotAvailability(
@@ -566,6 +570,8 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
       const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
       const dateStr = futureDate.toISOString().split('T')[0];
 
+      // Mock master findUnique to return active master with working hours
+      jest.spyOn(prismaService.master, 'findUnique').mockResolvedValue(mockMaster as any);
       jest.spyOn(prismaService.booking, 'findFirst').mockResolvedValue(mockBooking as any);
 
       const result = await service.validateSlotAvailability(
@@ -584,6 +590,8 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
       const futureDate = new Date(Date.now() + 24 * 60 * 60 * 1000);
       const dateStr = futureDate.toISOString().split('T')[0];
 
+      // Mock master findUnique to return active master with working hours
+      jest.spyOn(prismaService.master, 'findUnique').mockResolvedValue(mockMaster as any);
       jest.spyOn(prismaService.booking, 'findFirst').mockResolvedValue(null);
 
       await service.validateSlotAvailability(mockMasterId, dateStr, '15:00', mockSalonId);

@@ -108,7 +108,8 @@ export class WebhookService {
 
       // 3. Store message in database (for all message types)
       let content = '';
-      let messageType = message.type.toUpperCase();
+      // Defensive check: handle malformed messages without a type field
+      let messageType = message.type ? message.type.toUpperCase() : 'UNKNOWN';
 
       switch (message.type) {
         case 'text':
@@ -131,7 +132,8 @@ export class WebhookService {
           content = await this.handleInteractiveMessage(salonId, message as Message);
           break;
         default:
-          content = `${message.type.toUpperCase()}: ${message.id}`;
+          // Defensive check: handle malformed messages without a type field
+          content = `${message.type ? message.type.toUpperCase() : 'UNKNOWN'}: ${message.id}`;
       }
 
       const conversation = await this.getOrCreateConversation(salonId, message.from);
@@ -684,7 +686,11 @@ export class WebhookService {
 
       this.logger.log(`Handling button click: ${buttonId} from ${message.from}`);
 
-      const response = await this.quickBookingService.handleButtonClick(buttonId, message.from);
+      const response = await this.quickBookingService.handleButtonClick(
+        buttonId,
+        message.from,
+        language,
+      );
 
       if (response.messageType === 'interactive_card') {
         await this.whatsappService.sendInteractiveMessage('system', {
@@ -760,6 +766,17 @@ export class WebhookService {
         `Failed to handle conversation: ${(error as Error).message}`,
         (error as Error).stack,
       );
+
+      // Send error message to customer
+      try {
+        await this.whatsappService.sendTextMessage('system', {
+          salon_id: salonId,
+          to: message.from,
+          text: 'Sorry, I encountered an error processing your message. Please try again or contact support.',
+        });
+      } catch (sendError) {
+        this.logger.error(`Failed to send error message: ${(sendError as Error).message}`);
+      }
     }
   }
 
