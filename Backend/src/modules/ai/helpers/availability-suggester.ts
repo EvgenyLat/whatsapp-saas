@@ -175,7 +175,11 @@ export class AvailabilitySuggester {
   /**
    * Format time slot for display
    */
-  static formatTimeSlot(slot: TimeSlot, language: string = 'ru', timezone: string = 'UTC'): string {
+  static formatTimeSlot(
+    slot: TimeSlot,
+    language: string = 'ru',
+    _timezone: string = 'UTC',
+  ): string {
     const date = slot.datetime;
 
     if (language === 'ru') {

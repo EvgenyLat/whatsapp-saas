@@ -168,7 +168,7 @@ export class IntentParserService {
    * // }
    * ```
    */
-  async parseIntent(text: string, salonId: string): Promise<BookingIntent> {
+  async parseIntent(text: string, _salonId: string): Promise<BookingIntent> {
     const startTime = Date.now();
 
     // Validate input
@@ -668,14 +668,6 @@ Now parse the customer's message:`;
   isIntentComplete(intent: BookingIntent): boolean {
     // Minimum requirements: service name OR service ID
     const hasService = !!(intent.serviceName || intent.serviceId);
-
-    // Optional but helpful: some time preference
-    const hasTimePreference = !!(
-      intent.preferredDate ||
-      intent.preferredTime ||
-      intent.preferredDayOfWeek ||
-      intent.preferredTimeOfDay
-    );
 
     return hasService;
   }

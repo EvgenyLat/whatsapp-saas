@@ -1,5 +1,3 @@
-import { Service, Master } from '@prisma/client';
-
 /**
  * Confirmation Formatter Helper
  *

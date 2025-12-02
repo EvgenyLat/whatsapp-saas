@@ -266,7 +266,7 @@ export class AlternativeSuggesterService {
   ): RankedSlot[] {
     const targetMinutes = this.timeToMinutes(targetTime);
 
-    return rankedSlots.map((slot, index) => {
+    return rankedSlots.map((slot) => {
       const slotMinutes = this.timeToMinutes(slot.startTime);
       const diffMinutes = slotMinutes - targetMinutes;
 

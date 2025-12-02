@@ -22,7 +22,6 @@ describe('Usage Limits & Freemium Model Tests (e2e)', () => {
   let authToken: string;
   let testSalonId: string;
   let testConversationId: string;
-  let testUserId: string;
 
   const testUser = {
     email: `usage-test-${Date.now()}@example.com`,
@@ -49,7 +48,6 @@ describe('Usage Limits & Freemium Model Tests (e2e)', () => {
       .send(testUser);
 
     authToken = registerResponse.body.accessToken;
-    testUserId = registerResponse.body.user.id;
 
     // Create test salon with custom limits for faster testing
     const salonResponse = await request(app.getHttpServer())

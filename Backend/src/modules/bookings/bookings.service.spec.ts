@@ -3,12 +3,10 @@ import { BadRequestException, NotFoundException, UnauthorizedException } from '@
 import { BookingsService } from './bookings.service';
 import { PrismaService } from '@database/prisma.service';
 import { SalonsService } from '../salons/salons.service';
-import { CreateBookingDto, UpdateBookingDto, UpdateBookingStatusDto, BookingStatus } from './dto';
+import { CreateBookingDto, UpdateBookingStatusDto, BookingStatus } from './dto';
 
 describe('BookingsService', () => {
   let service: BookingsService;
-  let prisma: PrismaService;
-  let salonsService: SalonsService;
 
   const mockUserId = '123e4567-e89b-12d3-a456-426614174000';
   const mockSalonId = '223e4567-e89b-12d3-a456-426614174000';
@@ -53,8 +51,6 @@ describe('BookingsService', () => {
     }).compile();
 
     service = module.get<BookingsService>(BookingsService);
-    prisma = module.get<PrismaService>(PrismaService);
-    salonsService = module.get<SalonsService>(SalonsService);
 
     jest.clearAllMocks();
   });

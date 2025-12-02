@@ -3,11 +3,11 @@ import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { CsrfGuard, SKIP_CSRF_KEY } from './csrf.guard';
+import { createHash } from 'crypto';
 
 describe('CsrfGuard', () => {
   let guard: CsrfGuard;
   let reflector: Reflector;
-  let configService: ConfigService;
 
   const mockReflector = {
     getAllAndOverride: jest.fn(),
@@ -51,7 +51,6 @@ describe('CsrfGuard', () => {
 
     guard = module.get<CsrfGuard>(CsrfGuard);
     reflector = module.get<Reflector>(Reflector);
-    configService = module.get<ConfigService>(ConfigService);
 
     jest.clearAllMocks();
   });
@@ -142,7 +141,6 @@ describe('CsrfGuard', () => {
 
     it('should use sessionID when user is not authenticated', () => {
       mockReflector.getAllAndOverride.mockReturnValue(false);
-      const context = createMockExecutionContext('POST', { 'x-csrf-token': 'test-token' }, null);
       const sessionId = 'test-session-id';
       const validToken = guard.generateCsrfToken(sessionId);
 
@@ -239,8 +237,7 @@ describe('CsrfGuard', () => {
 
       // Create token with timestamp 25 hours in the past (beyond 24h limit)
       const expiredTimestamp = Date.now() - 25 * 60 * 60 * 1000;
-      const hash = require('crypto')
-        .createHash('sha256')
+      const hash = createHash('sha256')
         .update(`${user.id}:${expiredTimestamp}:test-csrf-secret-12345`)
         .digest('hex');
       const expiredToken = Buffer.from(`${expiredTimestamp}:${hash}`).toString('base64');
@@ -256,8 +253,7 @@ describe('CsrfGuard', () => {
 
       // Create token with timestamp in the future
       const futureTimestamp = Date.now() + 60 * 60 * 1000;
-      const hash = require('crypto')
-        .createHash('sha256')
+      const hash = createHash('sha256')
         .update(`${user.id}:${futureTimestamp}:test-csrf-secret-12345`)
         .digest('hex');
       const futureToken = Buffer.from(`${futureTimestamp}:${hash}`).toString('base64');
@@ -316,7 +312,9 @@ describe('CsrfGuard', () => {
       try {
         const context = createMockExecutionContext('POST', { 'x-csrf-token': validToken }, user);
         guard.canActivate(context);
-      } catch (e) {}
+      } catch {
+        // Empty catch intentional for timing test
+      }
       const end1 = process.hrtime.bigint();
       const time1 = end1 - start1;
 
@@ -326,7 +324,9 @@ describe('CsrfGuard', () => {
       try {
         const context = createMockExecutionContext('POST', { 'x-csrf-token': invalidToken }, user);
         guard.canActivate(context);
-      } catch (e) {}
+      } catch {
+        // Empty catch intentional for timing test
+      }
       const end2 = process.hrtime.bigint();
       const time2 = end2 - start2;
 

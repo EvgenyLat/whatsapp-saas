@@ -297,7 +297,7 @@ export class CacheExamplesService {
   }
 
   // Helper methods
-  private async calculateDashboardStats(userId: string, salonId?: string) {
+  private async calculateDashboardStats(_userId: string, _salonId?: string) {
     // Complex database queries...
     return {
       totalBookings: 150,

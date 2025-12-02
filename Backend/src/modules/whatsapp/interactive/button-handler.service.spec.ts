@@ -12,7 +12,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { ButtonHandlerService } from './button-handler.service';
 import { PrismaService } from '../../../database/prisma.service';
 import { InteractiveCardBuilder } from './interactive-message.builder';

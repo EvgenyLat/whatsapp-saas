@@ -16,11 +16,7 @@ import {
   ConfirmationParams,
   BookingDetails,
 } from './interactive-message.builder';
-import {
-  InteractiveMessagePayload,
-  InteractiveButtons,
-  InteractiveList,
-} from '../../../types/whatsapp.types';
+import { InteractiveButtons, InteractiveList } from '../../../types/whatsapp.types';
 
 describe('InteractiveCardBuilder', () => {
   let service: InteractiveCardBuilder;

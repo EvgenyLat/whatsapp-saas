@@ -1,19 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
+import { BadRequestException, HttpException } from '@nestjs/common';
 import { of, throwError } from 'rxjs';
 import { AxiosError, AxiosResponse } from 'axios';
 import { WhatsAppService } from './whatsapp.service';
 import { PrismaService } from '@database/prisma.service';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationsService } from '../conversations/conversations.service';
+import crypto from 'crypto';
 
 describe('WhatsAppService', () => {
   let service: WhatsAppService;
-  let httpService: HttpService;
-  let prismaService: PrismaService;
-  let configService: ConfigService;
 
   const mockHttpService = {
     post: jest.fn(),
@@ -67,9 +65,6 @@ describe('WhatsAppService', () => {
     }).compile();
 
     service = module.get<WhatsAppService>(WhatsAppService);
-    httpService = module.get<HttpService>(HttpService);
-    prismaService = module.get<PrismaService>(PrismaService);
-    configService = module.get<ConfigService>(ConfigService);
 
     jest.clearAllMocks();
   });
@@ -521,7 +516,6 @@ describe('WhatsAppService', () => {
   describe('verifyWebhookSignature', () => {
     it('should verify valid signature', () => {
       const payload = JSON.stringify({ test: 'data' });
-      const crypto = require('crypto');
       const signature = crypto.createHmac('sha256', 'test-secret').update(payload).digest('hex');
 
       const result = service.verifyWebhookSignature(payload, `sha256=${signature}`);
@@ -531,7 +525,6 @@ describe('WhatsAppService', () => {
 
     it('should reject invalid signature', () => {
       const payload = JSON.stringify({ test: 'data' });
-      const crypto = require('crypto');
       const validSignature = crypto
         .createHmac('sha256', 'test-secret')
         .update(payload)
@@ -545,7 +538,6 @@ describe('WhatsAppService', () => {
 
     it('should handle signature without sha256 prefix', () => {
       const payload = JSON.stringify({ test: 'data' });
-      const crypto = require('crypto');
       const signature = crypto.createHmac('sha256', 'test-secret').update(payload).digest('hex');
 
       const result = service.verifyWebhookSignature(payload, signature);

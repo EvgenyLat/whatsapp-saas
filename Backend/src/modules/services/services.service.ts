@@ -116,7 +116,7 @@ export class ServicesService {
     updateServiceDto: UpdateServiceDto,
   ): Promise<ServiceResponseDto> {
     // Verify service exists and user has access
-    const existingService = await this.findOne(id, userId, userRole);
+    await this.findOne(id, userId, userRole);
 
     // Update service
     const updated = await this.servicesRepository.update(id, {

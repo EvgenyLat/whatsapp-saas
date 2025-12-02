@@ -214,7 +214,7 @@ export class SessionContextService {
         this.redis.expire(key, SESSION_CONFIG.TTL_SECONDS),
         SESSION_CONFIG.OPERATION_TIMEOUT_MS,
       );
-    } catch (error) {
+    } catch {
       // Silent failure - non-critical operation
       this.logger.debug(`Failed to extend TTL for ${key}`);
     }

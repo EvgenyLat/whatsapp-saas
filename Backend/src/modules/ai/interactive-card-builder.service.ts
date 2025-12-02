@@ -301,7 +301,7 @@ export class InteractiveCardBuilderService {
   /**
    * Format slot title for list row (max 24 chars)
    */
-  private formatSlotTitle(slot: SlotSuggestion, language: string): string {
+  private formatSlotTitle(slot: SlotSuggestion, _language: string): string {
     return `${slot.startTime} - ${slot.masterName}`;
   }
 
@@ -353,7 +353,7 @@ export class InteractiveCardBuilderService {
   /**
    * Format duration
    */
-  private formatDuration(minutes: number, language: string): string {
+  private formatDuration(minutes: number, _language: string): string {
     if (minutes < 60) {
       return `${minutes}min`;
     }

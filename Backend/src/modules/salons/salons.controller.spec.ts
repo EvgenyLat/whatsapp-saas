@@ -5,7 +5,6 @@ import { CreateSalonDto, UpdateSalonDto, SalonResponseDto } from './dto';
 
 describe('SalonsController', () => {
   let controller: SalonsController;
-  let service: SalonsService;
 
   const mockUserId = '123e4567-e89b-12d3-a456-426614174000';
   const mockSalonId = '223e4567-e89b-12d3-a456-426614174000';
@@ -38,7 +37,6 @@ describe('SalonsController', () => {
     }).compile();
 
     controller = module.get<SalonsController>(SalonsController);
-    service = module.get<SalonsService>(SalonsService);
 
     jest.clearAllMocks();
   });

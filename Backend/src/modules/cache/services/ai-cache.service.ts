@@ -11,12 +11,7 @@ import {
   CacheLookupResult,
 } from '../interfaces';
 import { ResponseCategory, LanguageCode } from '../enums';
-import {
-  CACHE_TTL,
-  CONFIDENCE_THRESHOLD,
-  CIRCUIT_BREAKER,
-  PERFORMANCE_THRESHOLD,
-} from '../constants';
+import { CACHE_TTL, CONFIDENCE_THRESHOLD, CIRCUIT_BREAKER } from '../constants';
 
 /**
  * AI Cache Service
@@ -327,7 +322,7 @@ export class AiCacheService {
 
       const ttl = await this.getTtlRemaining(key);
       await this.set(key, cached, ttl);
-    } catch (error) {
+    } catch {
       // Non-critical error, just log it
       this.logger.warn(`Failed to increment hit count for ${key}`);
     }

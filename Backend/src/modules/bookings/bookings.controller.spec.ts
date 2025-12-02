@@ -4,7 +4,6 @@ import { BookingsService } from './bookings.service';
 
 describe('BookingsController', () => {
   let controller: BookingsController;
-  let service: BookingsService;
 
   const mockBookingsService = {
     create: jest.fn(),
@@ -22,7 +21,6 @@ describe('BookingsController', () => {
     }).compile();
 
     controller = module.get<BookingsController>(BookingsController);
-    service = module.get<BookingsService>(BookingsService);
 
     jest.clearAllMocks();
   });

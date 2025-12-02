@@ -13,10 +13,8 @@
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import * as request from 'supertest';
 import { PrismaService } from '../src/database/prisma.service';
 import { ButtonHandlerService } from '../src/modules/whatsapp/interactive/button-handler.service';
-import { WhatsappWebhookService } from '../src/modules/whatsapp/webhook.service';
 import { ConfigService } from '@nestjs/config';
 import { InteractiveCardBuilder } from '../src/modules/whatsapp/interactive/interactive-message.builder';
 import { ButtonParserService } from '../src/modules/whatsapp/interactive/button-parser.service';

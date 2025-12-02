@@ -10,7 +10,6 @@ import { SlotFinderService } from './services/slot-finder.service';
 import { AlternativeSuggesterService } from './services/alternative-suggester.service';
 import { MessageBuilderService } from './services/message-builder.service';
 import { SessionContextService } from './services/session-context.service';
-import { BadRequestException } from '@nestjs/common';
 
 /**
  * QuickBookingService Unit Tests

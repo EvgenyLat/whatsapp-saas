@@ -5,11 +5,10 @@ import { WhatsAppController } from './whatsapp.controller';
 import { WhatsAppService } from './whatsapp.service';
 import { WebhookService } from './webhook.service';
 import { SendTextDto, SendTemplateDto, SendMediaDto, WebhookVerifyDto } from './dto';
+import { WebhookSignatureValidator } from './security/webhook-signature.validator';
 
 describe('WhatsAppController', () => {
   let controller: WhatsAppController;
-  let whatsappService: WhatsAppService;
-  let webhookService: WebhookService;
 
   const mockWhatsAppService = {
     sendTextMessage: jest.fn(),
@@ -27,7 +26,25 @@ describe('WhatsAppController', () => {
       if (key === 'whatsapp.webhookVerifyToken') {
         return 'test-verify-token';
       }
+      if (key === 'whatsapp.webhookSecret') {
+        return 'test-webhook-secret';
+      }
+      if (key === 'whatsapp.disableWebhookValidation') {
+        return false;
+      }
+      if (key === 'app.environment') {
+        return 'test';
+      }
       return null;
+    }),
+  };
+
+  const mockWebhookSignatureValidator = {
+    validateSignature: jest.fn().mockReturnValue(true),
+    getValidationStatus: jest.fn().mockReturnValue({
+      enabled: true,
+      configured: true,
+      environment: 'test',
     }),
   };
 
@@ -38,12 +55,11 @@ describe('WhatsAppController', () => {
         { provide: WhatsAppService, useValue: mockWhatsAppService },
         { provide: WebhookService, useValue: mockWebhookService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: WebhookSignatureValidator, useValue: mockWebhookSignatureValidator },
       ],
     }).compile();
 
     controller = module.get<WhatsAppController>(WhatsAppController);
-    whatsappService = module.get<WhatsAppService>(WhatsAppService);
-    webhookService = module.get<WebhookService>(WebhookService);
 
     jest.clearAllMocks();
   });

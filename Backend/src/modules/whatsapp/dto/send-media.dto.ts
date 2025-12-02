@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, Matches, IsOptional, IsUrl, IsUUID, IsIn } from 'class-validator';
+import { IsString, IsNotEmpty, Matches, IsOptional, IsUUID, IsIn } from 'class-validator';
 
 export class SendMediaDto {
   @ApiProperty({

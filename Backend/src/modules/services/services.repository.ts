@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@database/prisma.service';
 import { Service, Prisma, ServiceCategory } from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
 
 export interface ServiceWithStats extends Service {
   total_bookings?: number;

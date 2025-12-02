@@ -1,7 +1,7 @@
 import { IsOptional, IsString, IsEnum, IsDateString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationDto } from '@common/dto/pagination.dto';
-import { MessageDirection, MessageType } from './send-message.dto';
+import { MessageDirection } from './send-message.dto';
 
 export enum MessageStatus {
   SENT = 'SENT',

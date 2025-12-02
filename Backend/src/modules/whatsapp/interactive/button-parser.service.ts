@@ -16,7 +16,7 @@ import {
   ParsedWaitlistButton,
   ButtonIdType,
 } from '../../../types/whatsapp.types';
-import { parseButtonId, isButtonIdOfType } from '../../../utils/button-id-validator';
+import { parseButtonId } from '../../../utils/button-id-validator';
 
 /**
  * Service for parsing WhatsApp button IDs into structured data

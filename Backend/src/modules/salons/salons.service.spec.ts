@@ -6,7 +6,6 @@ import { CreateSalonDto, UpdateSalonDto } from './dto';
 
 describe('SalonsService', () => {
   let service: SalonsService;
-  let prisma: PrismaService;
 
   const mockUserId = '123e4567-e89b-12d3-a456-426614174000';
   const mockSalonId = '223e4567-e89b-12d3-a456-426614174000';
@@ -38,7 +37,6 @@ describe('SalonsService', () => {
     }).compile();
 
     service = module.get<SalonsService>(SalonsService);
-    prisma = module.get<PrismaService>(PrismaService);
 
     jest.clearAllMocks();
   });

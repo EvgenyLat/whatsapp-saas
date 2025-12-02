@@ -4,14 +4,12 @@ import {
   IntentClassificationResult,
   ConfidenceLevel,
   ExtractedEntities,
-  IntentPattern,
-  LanguageIntentPatterns,
   MultiLanguageIntentPatterns,
 } from '../types/intent.types';
 import { AiCacheService } from '../../cache/services/ai-cache.service';
 import { ResponseCategory } from '../../cache/enums/response-category.enum';
 import { QueryNormalizer } from '../../cache/utils/query-normalizer';
-import { Language, LanguageCode } from '../../cache/enums/language.enum';
+import { LanguageCode } from '../../cache/enums/language.enum';
 
 /**
  * AI Intent Classification Service
@@ -642,7 +640,7 @@ export class AIIntentService {
   /**
    * Extracts entities (dates, times, services, etc.) from text
    */
-  private extractEntities(text: string, language: string): ExtractedEntities {
+  private extractEntities(text: string, _language: string): ExtractedEntities {
     // Build entities object with optional properties
     const entitiesBuilder: {
       dateReferences?: string[];

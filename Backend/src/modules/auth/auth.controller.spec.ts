@@ -6,7 +6,6 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 describe('AuthController', () => {
   let app: INestApplication;
-  let authService: AuthService;
 
   const mockAuthService = {
     register: jest.fn(),
@@ -58,8 +57,6 @@ describe('AuthController', () => {
       }),
     );
     await app.init();
-
-    authService = module.get<AuthService>(AuthService);
   });
 
   afterEach(async () => {
@@ -87,12 +84,6 @@ describe('AuthController', () => {
 
     it('should validate required fields', async () => {
       const controller = app.get<AuthController>(AuthController);
-
-      // Missing required fields should fail validation
-      const invalidDto = {
-        email: 'invalid-email',
-        password: '123', // Too short
-      };
 
       // This would typically be tested with supertest in E2E tests
       // Here we're just ensuring the service is called with valid DTOs

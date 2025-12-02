@@ -13,9 +13,6 @@ import { HashUtil } from '../../common/utils/hash.util';
 
 describe('AuthService', () => {
   let service: AuthService;
-  let prisma: PrismaService;
-  let jwtService: JwtService;
-  let configService: ConfigService;
 
   const mockUser = {
     id: '123e4567-e89b-12d3-a456-426614174000',
@@ -88,9 +85,6 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    prisma = module.get<PrismaService>(PrismaService);
-    jwtService = module.get<JwtService>(JwtService);
-    configService = module.get<ConfigService>(ConfigService);
 
     // Clear all mocks before each test
     jest.clearAllMocks();

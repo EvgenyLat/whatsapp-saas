@@ -290,7 +290,7 @@ export class MessageBuilderService {
    * @param language - Target language (for future localization)
    * @returns Formatted time string
    */
-  formatTime(time: string, language: Language = 'en'): string {
+  formatTime(time: string, _language: Language = 'en'): string {
     // Currently just returns the time as-is
     // Could be extended for 12/24 hour format based on locale
     return time;

@@ -14,7 +14,6 @@ import {
   MasterFilterDto,
   MasterScheduleDto,
   DaySchedule,
-  BookingSlot,
   MasterAvailabilityDto,
 } from './dto';
 import { PaginatedResult } from '@common/dto/pagination.dto';
@@ -131,7 +130,7 @@ export class MastersService {
     updateMasterDto: UpdateMasterDto,
   ): Promise<MasterResponseDto> {
     // Verify master exists and user has access
-    const existingMaster = await this.findOne(id, userId, userRole);
+    await this.findOne(id, userId, userRole);
 
     // Validate working hours if provided
     if (updateMasterDto.working_hours) {

@@ -434,7 +434,6 @@ export class QuickBookingService {
     messageType: 'interactive_card' | 'text' | 'booking_confirmed';
     payload: InteractiveMessagePayload | { text: string } | { bookingId: string };
   }> {
-    const startTime = Date.now();
     this.logger.log(`Handling button click: ${buttonId} from ${customerPhone}`);
 
     try {
@@ -447,9 +446,6 @@ export class QuickBookingService {
       if (!session) {
         throw new BadRequestException('Session expired. Please start a new booking.');
       }
-
-      // Step 3: Determine language (priority: parameter > session > default)
-      const lang = language || session?.language || 'en';
 
       // Store language in session if it was overridden
       if (language && language !== session.language) {
@@ -769,12 +765,12 @@ export class QuickBookingService {
   private async handleGenericAction(
     action: string,
     session: any,
-    customerPhone: string,
+    _customerPhone: string,
   ): Promise<any> {
     this.logger.debug(`Handling generic action: ${action}`);
 
     switch (action) {
-      case 'change_slot':
+      case 'change_slot': {
         // Show slots again
         const card = this.cardBuilder.buildSlotSelectionCard(
           session.slots.slice(0, 10),
@@ -786,6 +782,7 @@ export class QuickBookingService {
           messageType: 'interactive_card',
           payload: card,
         };
+      }
 
       default:
         throw new BadRequestException(`Unknown action: ${action}`);
@@ -802,7 +799,7 @@ export class QuickBookingService {
    * @param customerId - Customer ID
    * @returns True if eligible
    */
-  async isReturningCustomer(customerId: string): Promise<boolean> {
+  async isReturningCustomer(_customerId: string): Promise<boolean> {
     // TODO Phase 9: Implement actual logic
     // Count bookings for this customer
     // Return true if >= 3 bookings
@@ -819,7 +816,7 @@ export class QuickBookingService {
    * @param customerId - Customer ID
    * @returns Preferences or null if <3 bookings
    */
-  async getUsualPreferences(customerId: string): Promise<CustomerPreferences | null> {
+  async getUsualPreferences(_customerId: string): Promise<CustomerPreferences | null> {
     // TODO Phase 9: Implement actual logic
     // Query most frequently booked service, master, day, time
     // Calculate from last 10 bookings
@@ -1069,7 +1066,7 @@ export class QuickBookingService {
   /**
    * Get customer ID from phone number
    */
-  private async getCustomerId(phone: string, salonId: string): Promise<string | null> {
+  private async getCustomerId(_phone: string, _salonId: string): Promise<string | null> {
     // TODO Phase 9: Implement customer lookup
     // Query bookings table for this phone + salon
     // Return customer ID if found

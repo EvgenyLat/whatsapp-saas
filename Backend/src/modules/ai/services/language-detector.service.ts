@@ -217,7 +217,7 @@ export class LanguageDetectorService {
     uk: {
       name: 'Ukrainian',
       unicodeRanges: [
-        /[ґєії́]/gi, // Ukrainian-specific Cyrillic
+        /[ґєії]/gi, // Ukrainian-specific Cyrillic (removed combined character)
       ],
       commonWords: ['привіт', 'дякую', 'будь', 'ласка', 'запис', 'салон'],
       threshold: 0.2,
@@ -420,8 +420,6 @@ If the language is not in the list, return "en" as default.`,
    * @returns Array of LanguageDetectionResult
    */
   async detectBatch(texts: string[]): Promise<LanguageDetectionResult[]> {
-    const results: LanguageDetectionResult[] = [];
-
     // Try pattern detection for all texts first
     const patternResults = texts.map((text) => ({
       text,

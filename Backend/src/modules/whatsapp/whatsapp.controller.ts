@@ -7,11 +7,8 @@ import {
   UseGuards,
   HttpStatus,
   HttpCode,
-  Headers,
   UnauthorizedException,
   Logger,
-  RawBodyRequest,
-  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -34,7 +31,6 @@ import {
 import { JwtAuthGuard } from '@common/guards/jwt-auth.guard';
 import { WebhookSignatureGuard } from './guards/webhook-signature.guard';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
-import { Request } from 'express';
 
 @ApiTags('whatsapp')
 @Controller('whatsapp')

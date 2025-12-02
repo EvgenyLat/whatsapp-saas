@@ -26,7 +26,6 @@ import {
 import {
   SupportedLanguage,
   getTranslations,
-  interpolate,
   formatDate,
   formatTime,
   getDayName,
@@ -275,7 +274,8 @@ function formatTimeString(time: string, language: SupportedLanguage): string {
 /**
  * Formats full date according to language preference
  */
-function formatDateString(dateStr: string, language: SupportedLanguage): string {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function __formatDateString(dateStr: string, language: SupportedLanguage): string {
   const date = new Date(dateStr + 'T00:00:00');
   return formatDate(date, language);
 }
@@ -358,7 +358,7 @@ function buildReplyButtonsTemplate(
     );
   }
 
-  const t = getTranslations(language);
+  getTranslations(language);
 
   // Build body text
   const firstSlot = slots[0];

@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, Inject, ConflictException } from '@nestjs/common';
+import { Injectable, Logger, Inject, ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { PrismaService } from '@database/prisma.service';
@@ -17,19 +17,12 @@ import {
   buildSystemPromptWithContext,
   ContextVariables,
 } from './prompts/system-prompts';
-import { ServiceMatcher, AvailabilitySuggester, ConfirmationFormatter } from './helpers';
-import {
-  ProcessMessageDto,
-  AIResponseDto,
-  BookingExtractionDto,
-  AvailabilityResultDto,
-} from './dto';
+import { ServiceMatcher, AvailabilitySuggester } from './helpers';
+import { ProcessMessageDto, AIResponseDto, BookingExtractionDto } from './dto';
 import {
   OpenAIMessage,
   OpenAIFunction,
-  CheckAvailabilityArgs,
   CheckAvailabilityResult,
-  CreateBookingArgs,
   CreateBookingResult,
 } from './interfaces';
 
@@ -93,7 +86,7 @@ export class AIService {
 
     try {
       // 1. Find or create conversation
-      const conversation = await this.aiConversationRepository.findOrCreate(
+      await this.aiConversationRepository.findOrCreate(
         dto.salon_id,
         dto.phone_number,
         dto.conversation_id,
@@ -763,7 +756,7 @@ export class AIService {
             },
           },
           // Pessimistic write lock - prevents concurrent bookings
-          // @ts-ignore - Prisma types don't include lock parameter
+          // @ts-expect-error - Prisma types don't include lock parameter
           lock: { mode: 'pessimistic_write' },
         });
 

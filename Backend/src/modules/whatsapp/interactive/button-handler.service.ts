@@ -997,7 +997,7 @@ export class ButtonHandlerService {
     salonId: string,
     customerPhone: string,
     language: string,
-    reason?: string,
+    _reason?: string,
   ): Promise<SlotSelectionResponse> {
     // Fetch alternative slots (next 3 available slots for same master)
     const alternativeSlots = await this.fetchAlternativeSlots(masterId, salonId, date, 3);
@@ -1244,7 +1244,7 @@ export class ButtonHandlerService {
    * @param language - Language preference (currently English only)
    * @returns Formatted confirmation message
    */
-  private buildConfirmationMessage(slot: SlotData, bookingCode: string, language: string): string {
+  private buildConfirmationMessage(slot: SlotData, bookingCode: string, _language: string): string {
     // Format date
     const dateObj = new Date(`${slot.date}T00:00:00`);
     const formattedDate = dateObj.toLocaleDateString('en-US', {

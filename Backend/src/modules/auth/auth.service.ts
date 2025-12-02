@@ -10,11 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service';
 import { HashUtil } from '../../common/utils/hash.util';
 import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './dto';
-import {
-  AuthResponse,
-  JwtPayload,
-  RefreshTokenPayload,
-} from './interfaces/auth-response.interface';
+import { AuthResponse, JwtPayload } from './interfaces/auth-response.interface';
 import { randomBytes } from 'crypto';
 import { addDays, addHours } from 'date-fns';
 
@@ -261,7 +257,7 @@ export class AuthService {
     await this.prisma.emailVerification.deleteMany({ where: { user_id: userId } });
 
     // Create new verification token
-    const verificationToken = await this.createEmailVerificationToken(userId);
+    await this.createEmailVerificationToken(userId);
 
     // TODO: In production, send email with verification link
     // For now, we'll just return a success message

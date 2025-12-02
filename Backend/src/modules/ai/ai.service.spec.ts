@@ -8,10 +8,6 @@ import { AIMessageRepository } from './repositories/ai-message.repository';
 
 describe('AIService', () => {
   let service: AIService;
-  let bookingsService: BookingsService;
-  let bookingsRepository: BookingsRepository;
-  let aiConversationRepository: AIConversationRepository;
-  let aiMessageRepository: AIMessageRepository;
 
   const mockConfigService = {
     get: jest.fn((key: string, defaultValue?: any) => {
@@ -74,10 +70,6 @@ describe('AIService', () => {
     }).compile();
 
     service = module.get<AIService>(AIService);
-    bookingsService = module.get<BookingsService>(BookingsService);
-    bookingsRepository = module.get<BookingsRepository>(BookingsRepository);
-    aiConversationRepository = module.get<AIConversationRepository>(AIConversationRepository);
-    aiMessageRepository = module.get<AIMessageRepository>(AIMessageRepository);
 
     // Reset mocks before each test
     jest.clearAllMocks();

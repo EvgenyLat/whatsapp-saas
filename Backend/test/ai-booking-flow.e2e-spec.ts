@@ -23,7 +23,6 @@ describe('AI Booking Flow Integration Tests (e2e)', () => {
   let authToken: string;
   let testSalonId: string;
   let testConversationId: string;
-  let testUserId: string;
 
   const testUser = {
     email: `ai-test-${Date.now()}@example.com`,
@@ -50,7 +49,6 @@ describe('AI Booking Flow Integration Tests (e2e)', () => {
       .send(testUser);
 
     authToken = registerResponse.body.accessToken;
-    testUserId = registerResponse.body.user.id;
 
     // Create test salon
     const salonResponse = await request(app.getHttpServer())

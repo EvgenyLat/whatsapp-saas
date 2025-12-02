@@ -79,9 +79,6 @@ export class AnalyticsService {
     // Process bookings in memory (much faster than multiple DB queries)
     const todayBookings = allBookings.filter((b) => b.created_at >= todayStart);
     const last7DaysBookings = allBookings.filter((b) => b.created_at >= last7DaysStart);
-    const previous7DaysBookings = allBookings.filter(
-      (b) => b.created_at >= last14DaysStart && b.created_at < last7DaysStart,
-    );
     const last30DaysBookings = allBookings.filter((b) => b.created_at >= last30DaysStart);
     const previous30DaysBookings = allBookings.filter(
       (b) => b.created_at >= last60DaysStart && b.created_at < last30DaysStart,

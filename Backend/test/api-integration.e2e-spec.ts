@@ -19,7 +19,6 @@ describe('API Integration Tests (e2e)', () => {
   let app: INestApplication;
   let prismaService: PrismaService;
   let authTokens: { accessToken: string; refreshToken: string };
-  let adminTokens: { accessToken: string; refreshToken: string };
   let testSalonId: string;
   let testBookingId: string;
 

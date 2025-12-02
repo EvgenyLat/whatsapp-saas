@@ -25,7 +25,7 @@ export class WhatsappWebhookProcessor extends WorkerHost {
   }
 
   async process(job: Job<WebhookJobData>): Promise<any> {
-    const { salonId, payload, receivedAt } = job.data;
+    const { salonId, payload } = job.data;
 
     this.logger.debug(`Processing webhook for salon ${salonId} (Job ${job.id})`);
 

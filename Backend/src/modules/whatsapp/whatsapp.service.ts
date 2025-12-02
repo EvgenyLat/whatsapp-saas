@@ -15,12 +15,7 @@ import { AxiosError } from 'axios';
 import * as crypto from 'crypto';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationsService } from '../conversations/conversations.service';
-import {
-  MessageResponse,
-  MediaUrlResponse,
-  WhatsAppApiError,
-  InteractiveMessagePayload,
-} from './interfaces';
+import { MessageResponse, MediaUrlResponse, WhatsAppApiError } from './interfaces';
 import {
   SendTextDto,
   SendTemplateDto,

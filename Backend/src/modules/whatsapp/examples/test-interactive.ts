@@ -12,7 +12,8 @@ function testValidation() {
   console.log('=== Testing Validation ===\n');
 
   // Test 1: Valid button message
-  const validButton: SendInteractiveDto = {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const __validButton: SendInteractiveDto = {
     salon_id: '123e4567-e89b-12d3-a456-426614174000',
     to: '+1234567890',
     interactive: {
@@ -43,7 +44,8 @@ function testValidation() {
   console.log('✓ Valid button message created');
 
   // Test 2: Valid list message
-  const validList: SendInteractiveDto = {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const __validList: SendInteractiveDto = {
     salon_id: '123e4567-e89b-12d3-a456-426614174000',
     to: '+1234567890',
     interactive: {

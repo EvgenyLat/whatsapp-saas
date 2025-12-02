@@ -115,7 +115,10 @@ export class WhatsAppWebhookProcessor {
    * Get customer name from database
    * Looks up previous bookings or contact information
    */
-  private async getCustomerName(phoneNumber: string, salonId: string): Promise<string | undefined> {
+  private async getCustomerName(
+    _phoneNumber: string,
+    _salonId: string,
+  ): Promise<string | undefined> {
     // TODO: Implement lookup in your database
     // Example:
     // const booking = await this.bookingsRepository.findFirst({
@@ -130,7 +133,7 @@ export class WhatsAppWebhookProcessor {
   /**
    * Get salon by phone_number_id
    */
-  private async getSalonByPhoneNumberId(phoneNumberId: string): Promise<any> {
+  private async getSalonByPhoneNumberId(_phoneNumberId: string): Promise<any> {
     // TODO: Implement salon lookup
     // Example:
     // return this.prisma.salon.findUnique({
@@ -143,7 +146,7 @@ export class WhatsAppWebhookProcessor {
   /**
    * Track AI interaction for analytics
    */
-  private async trackAIInteraction(salonId: string, phoneNumber: string, aiResponse: any) {
+  private async trackAIInteraction(_salonId: string, _phoneNumber: string, _aiResponse: any) {
     // TODO: Implement analytics tracking
     // Example:
     // await this.analyticsService.trackEvent({
@@ -160,9 +163,9 @@ export class WhatsAppWebhookProcessor {
    * Send booking confirmation template (optional)
    */
   private async sendBookingConfirmationTemplate(
-    phoneNumber: string,
-    bookingCode: string,
-    salon: any,
+    _phoneNumber: string,
+    _bookingCode: string,
+    _salon: any,
   ) {
     // TODO: Implement template sending
     // Example:
@@ -181,7 +184,7 @@ export class WhatsAppWebhookProcessor {
   /**
    * Schedule booking reminders (optional)
    */
-  private async scheduleBookingReminders(bookingCode: string) {
+  private async scheduleBookingReminders(_bookingCode: string) {
     // TODO: Implement reminder scheduling
     // Example:
     // await this.queueService.scheduleBookingReminder({
@@ -321,7 +324,7 @@ export class AICostMonitor {
    * Get cost breakdown by conversation
    */
   async getCostBreakdown(salonId: string): Promise<any[]> {
-    const conversations = await this.aiService.getConversationStats(salonId);
+    await this.aiService.getConversationStats(salonId);
     // TODO: Implement detailed breakdown
     return [];
   }

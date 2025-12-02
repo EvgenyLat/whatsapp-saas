@@ -124,7 +124,7 @@ export class BookingReminderProcessor extends WorkerHost {
     reminderType: string,
   ): string {
     const date = new Date(serviceDate);
-    const dateStr = date.toLocaleDateString('en-US', {
+    date.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',

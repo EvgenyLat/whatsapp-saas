@@ -5,7 +5,6 @@ import { WebhookSignatureValidator } from '../security/webhook-signature.validat
 
 describe('WebhookSignatureGuard', () => {
   let guard: WebhookSignatureGuard;
-  let validator: WebhookSignatureValidator;
 
   const mockValidator = {
     validateSignature: jest.fn(),
@@ -23,7 +22,6 @@ describe('WebhookSignatureGuard', () => {
     }).compile();
 
     guard = module.get<WebhookSignatureGuard>(WebhookSignatureGuard);
-    validator = module.get<WebhookSignatureValidator>(WebhookSignatureValidator);
 
     // Reset mocks
     mockValidator.validateSignature.mockClear();

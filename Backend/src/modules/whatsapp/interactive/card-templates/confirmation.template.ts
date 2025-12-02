@@ -22,7 +22,6 @@ import {
 import {
   SupportedLanguage,
   getTranslations,
-  interpolate,
   formatDate,
   formatTime,
   getDayName,
@@ -139,7 +138,8 @@ function formatTimeString(time: string, language: SupportedLanguage): string {
 /**
  * Formats date string according to language preference
  */
-function formatDateString(dateStr: string, language: SupportedLanguage): string {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function __formatDateString(dateStr: string, language: SupportedLanguage): string {
   const date = new Date(dateStr + 'T00:00:00');
   return formatDate(date, language);
 }
@@ -277,7 +277,7 @@ export function buildConfirmationTemplate(
   bookingId: string,
   language: SupportedLanguage,
 ): InteractiveMessagePayload {
-  const t = getTranslations(language);
+  getTranslations(language);
 
   // Format date and time
   const formattedDate = formatDateWithDay(slot.date, language);

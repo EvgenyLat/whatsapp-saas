@@ -54,8 +54,8 @@ export class RemindersController {
   })
   async getStats(
     @Query('salon_id') salonId: string,
-    @CurrentUser('id') userId: string,
-    @CurrentUser('role') userRole: string,
+    @CurrentUser('id') _userId: string,
+    @CurrentUser('role') _userRole: string,
   ): Promise<ReminderStatsDto> {
     // TODO: Add salon ownership verification
     // - Check if user owns the salon or is SUPER_ADMIN
@@ -97,8 +97,8 @@ export class RemindersController {
   })
   async getBookingReminders(
     @Param('bookingId') bookingId: string,
-    @CurrentUser('id') userId: string,
-    @CurrentUser('role') userRole: string,
+    @CurrentUser('id') _userId: string,
+    @CurrentUser('role') _userRole: string,
   ): Promise<ReminderResponseDto[]> {
     // TODO: Add booking ownership verification
     // - Fetch booking and verify user owns the salon or is SUPER_ADMIN

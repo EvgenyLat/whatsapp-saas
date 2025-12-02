@@ -3,7 +3,6 @@ import {
   NotFoundException,
   ConflictException,
   UnauthorizedException,
-  BadRequestException,
 } from '@nestjs/common';
 import { CreateSalonDto, UpdateSalonDto, SalonResponseDto } from './dto';
 import { SalonsRepository } from './salons.repository';

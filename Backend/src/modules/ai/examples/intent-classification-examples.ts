@@ -6,7 +6,7 @@
  */
 
 import { AIIntentService } from '../services/ai-intent.service';
-import { IntentType, ConfidenceLevel } from '../types/intent.types';
+import { IntentType } from '../types/intent.types';
 
 /**
  * Example 1: Basic Booking Intent Detection

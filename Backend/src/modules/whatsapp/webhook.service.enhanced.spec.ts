@@ -3,11 +3,16 @@ import { WebhookService } from './webhook.service';
 import { PrismaService } from '@database/prisma.service';
 import { WhatsAppService } from './whatsapp.service';
 import { WhatsAppWebhookPayload, WhatsAppMessage, WhatsAppStatus } from './interfaces';
+import { RemindersService } from '../reminders/reminders.service';
+import { ButtonParserService } from './interactive/button-parser.service';
+import { ButtonHandlerService } from './interactive/button-handler.service';
+import { QuickBookingService } from '../ai/quick-booking.service';
+import { LanguageDetectorService } from '../ai/services/language-detector.service';
+import { AIIntentService } from '../ai/services/ai-intent.service';
 
 describe('WebhookService - Enhanced', () => {
   let service: WebhookService;
   let prismaService: PrismaService;
-  let whatsappService: WhatsAppService;
 
   const mockSalon = {
     id: 'salon-123',
@@ -57,7 +62,40 @@ describe('WebhookService - Enhanced', () => {
     },
   };
 
-  const mockWhatsAppService = {};
+  const mockWhatsAppService = {
+    sendTextMessage: jest.fn(),
+  };
+
+  const mockRemindersService = {
+    createReminder: jest.fn(),
+    cancelReminder: jest.fn(),
+    updateReminder: jest.fn(),
+  };
+
+  const mockButtonParserService = {
+    parseButtonReply: jest.fn(),
+    parseListReply: jest.fn(),
+  };
+
+  const mockButtonHandlerService = {
+    handleButtonReply: jest.fn(),
+    handleListReply: jest.fn(),
+  };
+
+  const mockQuickBookingService = {
+    handleBookingRequest: jest.fn(),
+    handleChoice: jest.fn(),
+  };
+
+  const mockLanguageDetectorService = {
+    detect: jest.fn().mockResolvedValue({ language: 'en', confidence: 0.99 }),
+  };
+
+  const mockAIIntentService = {
+    detectIntent: jest
+      .fn()
+      .mockResolvedValue({ intent: 'UNKNOWN', confidence: 0.5, isReliable: false }),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -65,12 +103,17 @@ describe('WebhookService - Enhanced', () => {
         WebhookService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: WhatsAppService, useValue: mockWhatsAppService },
+        { provide: RemindersService, useValue: mockRemindersService },
+        { provide: ButtonParserService, useValue: mockButtonParserService },
+        { provide: ButtonHandlerService, useValue: mockButtonHandlerService },
+        { provide: QuickBookingService, useValue: mockQuickBookingService },
+        { provide: LanguageDetectorService, useValue: mockLanguageDetectorService },
+        { provide: AIIntentService, useValue: mockAIIntentService },
       ],
     }).compile();
 
     service = module.get<WebhookService>(WebhookService);
     prismaService = module.get<PrismaService>(PrismaService);
-    whatsappService = module.get<WhatsAppService>(WhatsAppService);
 
     jest.clearAllMocks();
   });
