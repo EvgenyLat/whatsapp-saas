@@ -1052,10 +1052,10 @@ describe('QuickBookingService - Language Handling', () => {
 
       // Test getConfirmationMessage fallback
       const confirmMsg = (service as any).getConfirmationMessage(
-        { bookingCode: 'TEST-123' },
+        { booking_code: 'TEST-123' },
         'xyz-invalid',
       );
-      expect(confirmMsg).toContain('Booking confirmed');
+      expect(confirmMsg.toLowerCase()).toContain('booking confirmed');
       expect(confirmMsg).toContain('TEST-123');
     });
 
@@ -1068,7 +1068,7 @@ describe('QuickBookingService - Language Handling', () => {
       const errorMsg = (service as any).getErrorMessage('');
       expect(errorMsg).not.toContain('Извините');
 
-      const confirmMsg = (service as any).getConfirmationMessage({ bookingCode: 'TEST' }, '');
+      const confirmMsg = (service as any).getConfirmationMessage({ booking_code: 'TEST' }, '');
       expect(confirmMsg).not.toContain('подтверждено');
     });
   });

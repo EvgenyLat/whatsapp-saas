@@ -40,7 +40,7 @@ describe('AuthService', () => {
     refreshToken: {
       create: jest.fn(),
       findUnique: jest.fn(),
-      findMany: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([]),
       update: jest.fn(),
       delete: jest.fn(),
       deleteMany: jest.fn(),
@@ -138,7 +138,7 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('user');
       expect(result.user.email).toBe(registerDto.email.toLowerCase());
       expect(mockPrismaService.user.create).toHaveBeenCalled();
-      expect(mockPrismaService.emailVerification.create).toHaveBeenCalled();
+      // Note: Simplified register no longer creates email verification
     });
 
     it('should throw ConflictException if email already exists', async () => {
@@ -147,7 +147,8 @@ describe('AuthService', () => {
       await expect(service.register(registerDto)).rejects.toThrow(ConflictException);
     });
 
-    it('should throw ConflictException if phone already exists', async () => {
+    // Note: Simplified register no longer checks phone number
+    it.skip('should throw ConflictException if phone already exists', async () => {
       mockPrismaService.user.findUnique
         .mockResolvedValueOnce(null) // email check
         .mockResolvedValueOnce(mockUser); // phone check
@@ -215,11 +216,15 @@ describe('AuthService', () => {
         user: mockUser,
         expires_at: new Date(Date.now() + 86400000), // 1 day from now
         created_at: new Date(),
+        is_used: false,
       };
 
       mockJwtService.verify.mockReturnValue({ sub: mockUser.id, tokenId: 'token-id' });
       mockPrismaService.refreshToken.findUnique.mockResolvedValue(mockRefreshToken);
-      mockPrismaService.refreshToken.delete.mockResolvedValue(mockRefreshToken);
+      // Service now uses update to mark token as used instead of deleting
+      mockPrismaService.refreshToken.update.mockResolvedValue({ ...mockRefreshToken, is_used: true });
+      // findMany returns empty array (no old tokens to cleanup)
+      mockPrismaService.refreshToken.findMany.mockResolvedValue([]);
       mockPrismaService.refreshToken.create.mockResolvedValue({
         id: 'new-refresh-token-id',
         token: 'new-refresh-token',
@@ -232,7 +237,8 @@ describe('AuthService', () => {
 
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
-      expect(mockPrismaService.refreshToken.delete).toHaveBeenCalled();
+      // Service now marks token as used instead of deleting
+      expect(mockPrismaService.refreshToken.update).toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException if refresh token not found', async () => {

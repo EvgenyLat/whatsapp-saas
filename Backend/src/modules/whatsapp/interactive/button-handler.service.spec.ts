@@ -106,6 +106,11 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
               findFirst: jest.fn(),
             },
             salon: {
+              findUnique: jest.fn().mockResolvedValue({
+                id: mockSalonId,
+                working_hours_start: '09:00',
+                working_hours_end: '18:00',
+              }),
               update: jest.fn(),
             },
             $transaction: jest.fn(),

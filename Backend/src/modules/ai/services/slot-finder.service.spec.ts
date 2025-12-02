@@ -67,6 +67,14 @@ describe('SlotFinderService', () => {
         {
           provide: PrismaService,
           useValue: {
+            salon: {
+              findUnique: jest.fn().mockResolvedValue({
+                id: 'salon-1',
+                working_hours_start: '09:00',
+                working_hours_end: '18:00',
+                slot_duration_minutes: 60,
+              }),
+            },
             service: {
               findUnique: jest.fn(),
             },
