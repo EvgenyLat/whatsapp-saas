@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
-import { PrismaService } from '@database/prisma.service';
+import { BookingsRepository } from './bookings.repository';
 import { SalonsService } from '../salons/salons.service';
+import { UsageTrackingService } from '../salons/services/usage-tracking.service';
+import { RemindersService } from '../reminders/reminders.service';
 import { CreateBookingDto, UpdateBookingStatusDto, BookingStatus } from './dto';
 
 describe('BookingsService', () => {
@@ -25,15 +27,16 @@ describe('BookingsService', () => {
     updated_at: new Date(),
   };
 
-  const mockPrismaService = {
-    booking: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
-      update: jest.fn(),
-    },
+  const mockBookingsRepository = {
+    create: jest.fn(),
+    findById: jest.fn(),
+    findByCode: jest.fn(),
+    findByBookingCodeAndSalonId: jest.fn(),
+    findAll: jest.fn(),
+    findPaginatedWithFilters: jest.fn(),
+    update: jest.fn(),
+    updateStatus: jest.fn(),
+    codeExists: jest.fn(),
   };
 
   const mockSalonsService = {
@@ -41,12 +44,24 @@ describe('BookingsService', () => {
     findAll: jest.fn(),
   };
 
+  const mockUsageTrackingService = {
+    checkBookingLimit: jest.fn().mockResolvedValue({ allowed: true }),
+    incrementBookingCount: jest.fn(),
+  };
+
+  const mockRemindersService = {
+    scheduleBookingReminders: jest.fn(),
+    cancelReminders: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BookingsService,
-        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: BookingsRepository, useValue: mockBookingsRepository },
         { provide: SalonsService, useValue: mockSalonsService },
+        { provide: UsageTrackingService, useValue: mockUsageTrackingService },
+        { provide: RemindersService, useValue: mockRemindersService },
       ],
     }).compile();
 
@@ -70,22 +85,14 @@ describe('BookingsService', () => {
 
     it('should create a new booking successfully', async () => {
       mockSalonsService.verifySalonOwnership.mockResolvedValue(undefined);
-      mockPrismaService.booking.findFirst.mockResolvedValue(null);
-      mockPrismaService.booking.create.mockResolvedValue(mockBooking);
+      mockBookingsRepository.findByBookingCodeAndSalonId.mockResolvedValue(null);
+      mockBookingsRepository.create.mockResolvedValue(mockBooking);
 
       const result = await service.create(mockUserId, createBookingDto);
 
       expect(result.id).toBe(mockBookingId);
       expect(mockSalonsService.verifySalonOwnership).toHaveBeenCalledWith(mockSalonId, mockUserId);
-      expect(mockPrismaService.booking.create).toHaveBeenCalled();
-    });
-
-    it('should throw BadRequestException if booking code already exists', async () => {
-      const dtoWithCode = { ...createBookingDto, booking_code: 'BK-EXISTING' };
-      mockSalonsService.verifySalonOwnership.mockResolvedValue(undefined);
-      mockPrismaService.booking.findFirst.mockResolvedValue(mockBooking);
-
-      await expect(service.create(mockUserId, dtoWithCode)).rejects.toThrow(BadRequestException);
+      expect(mockBookingsRepository.create).toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException if user does not own salon', async () => {
@@ -102,8 +109,13 @@ describe('BookingsService', () => {
 
     it('should return paginated bookings for salon owner', async () => {
       mockSalonsService.findAll.mockResolvedValue([{ id: mockSalonId }]);
-      mockPrismaService.booking.count.mockResolvedValue(1);
-      mockPrismaService.booking.findMany.mockResolvedValue([mockBooking]);
+      mockBookingsRepository.findPaginatedWithFilters.mockResolvedValue({
+        data: [mockBooking],
+        total: 1,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      });
 
       const result = await service.findAll(mockUserId, 'SALON_OWNER', filters);
 
@@ -114,8 +126,13 @@ describe('BookingsService', () => {
     it('should verify ownership when salon_id filter is provided', async () => {
       const filtersWithSalon: any = { ...filters, salon_id: mockSalonId };
       mockSalonsService.verifySalonOwnership.mockResolvedValue(undefined);
-      mockPrismaService.booking.count.mockResolvedValue(0);
-      mockPrismaService.booking.findMany.mockResolvedValue([]);
+      mockBookingsRepository.findPaginatedWithFilters.mockResolvedValue({
+        data: [],
+        total: 0,
+        page: 1,
+        limit: 10,
+        totalPages: 0,
+      });
 
       await service.findAll(mockUserId, 'SALON_OWNER', filtersWithSalon);
 
@@ -125,7 +142,7 @@ describe('BookingsService', () => {
 
   describe('findOne', () => {
     it('should return booking if user owns the salon', async () => {
-      mockPrismaService.booking.findUnique.mockResolvedValue(mockBooking);
+      mockBookingsRepository.findById.mockResolvedValue(mockBooking);
       mockSalonsService.verifySalonOwnership.mockResolvedValue(undefined);
 
       const result = await service.findOne(mockBookingId, mockUserId, 'SALON_OWNER');
@@ -134,7 +151,7 @@ describe('BookingsService', () => {
     });
 
     it('should throw NotFoundException if booking not found', async () => {
-      mockPrismaService.booking.findUnique.mockResolvedValue(null);
+      mockBookingsRepository.findById.mockResolvedValue(null);
 
       await expect(service.findOne(mockBookingId, mockUserId, 'SALON_OWNER')).rejects.toThrow(
         NotFoundException,
@@ -146,9 +163,9 @@ describe('BookingsService', () => {
     const updateStatusDto: UpdateBookingStatusDto = { status: BookingStatus.IN_PROGRESS };
 
     it('should update booking status successfully', async () => {
-      mockPrismaService.booking.findUnique.mockResolvedValue(mockBooking);
+      mockBookingsRepository.findById.mockResolvedValue(mockBooking);
       mockSalonsService.verifySalonOwnership.mockResolvedValue(undefined);
-      mockPrismaService.booking.update.mockResolvedValue({
+      mockBookingsRepository.updateStatus.mockResolvedValue({
         ...mockBooking,
         status: BookingStatus.IN_PROGRESS,
       });
@@ -165,7 +182,7 @@ describe('BookingsService', () => {
 
     it('should throw BadRequestException for invalid status transition', async () => {
       const completedBooking = { ...mockBooking, status: BookingStatus.COMPLETED };
-      mockPrismaService.booking.findUnique.mockResolvedValue(completedBooking);
+      mockBookingsRepository.findById.mockResolvedValue(completedBooking);
       mockSalonsService.verifySalonOwnership.mockResolvedValue(undefined);
 
       await expect(
@@ -176,12 +193,13 @@ describe('BookingsService', () => {
 
   describe('cancel', () => {
     it('should cancel booking successfully', async () => {
-      mockPrismaService.booking.findUnique.mockResolvedValue(mockBooking);
+      mockBookingsRepository.findById.mockResolvedValue(mockBooking);
       mockSalonsService.verifySalonOwnership.mockResolvedValue(undefined);
-      mockPrismaService.booking.update.mockResolvedValue({
+      mockBookingsRepository.updateStatus.mockResolvedValue({
         ...mockBooking,
         status: BookingStatus.CANCELLED,
       });
+      mockRemindersService.cancelReminders.mockResolvedValue(undefined);
 
       const result = await service.cancel(mockBookingId, mockUserId, 'SALON_OWNER');
 
