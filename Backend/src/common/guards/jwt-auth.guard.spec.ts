@@ -94,13 +94,21 @@ describe('JwtAuthGuard', () => {
     });
 
     it('should throw UnauthorizedException when user is null', () => {
-      expect(() => guard.handleRequest(null, null, null, mockContext)).toThrow(UnauthorizedException);
-      expect(() => guard.handleRequest(null, null, null, mockContext)).toThrow('Invalid or expired token');
+      expect(() => guard.handleRequest(null, null, null, mockContext)).toThrow(
+        UnauthorizedException,
+      );
+      expect(() => guard.handleRequest(null, null, null, mockContext)).toThrow(
+        'Invalid or expired token',
+      );
     });
 
     it('should throw UnauthorizedException when user is undefined', () => {
-      expect(() => guard.handleRequest(null, undefined, null, mockContext)).toThrow(UnauthorizedException);
-      expect(() => guard.handleRequest(null, undefined, null, mockContext)).toThrow('Invalid or expired token');
+      expect(() => guard.handleRequest(null, undefined, null, mockContext)).toThrow(
+        UnauthorizedException,
+      );
+      expect(() => guard.handleRequest(null, undefined, null, mockContext)).toThrow(
+        'Invalid or expired token',
+      );
     });
 
     it('should throw existing error when error is provided', () => {
@@ -119,15 +127,22 @@ describe('JwtAuthGuard', () => {
     it('should handle expired JWT tokens', () => {
       const error = new Error('TokenExpiredError');
 
-      expect(() => guard.handleRequest(error, null, { name: 'TokenExpiredError' }, mockContext)).toThrow(error);
+      expect(() =>
+        guard.handleRequest(error, null, { name: 'TokenExpiredError' }, mockContext),
+      ).toThrow(error);
     });
 
     it('should handle invalid JWT tokens', () => {
       expect(() =>
-        guard.handleRequest(null, null, {
-          name: 'JsonWebTokenError',
-          message: 'invalid signature',
-        }, mockContext),
+        guard.handleRequest(
+          null,
+          null,
+          {
+            name: 'JsonWebTokenError',
+            message: 'invalid signature',
+          },
+          mockContext,
+        ),
       ).toThrow(UnauthorizedException);
     });
 

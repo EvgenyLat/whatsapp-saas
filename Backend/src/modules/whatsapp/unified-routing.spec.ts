@@ -184,10 +184,11 @@ describe('Unified Message Router (Task 1.1)', () => {
       // Verify language detection was called
       expect(languageDetectorService.detect).toHaveBeenCalled();
 
-      // Verify button click handler was called
+      // Verify button click handler was called (with language parameter)
       expect(quickBookingService.handleButtonClick).toHaveBeenCalledWith(
         'slot_2025-10-25_15:00_master_1',
         '+79001234567',
+        'ru',
       );
     });
 

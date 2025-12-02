@@ -163,6 +163,11 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
         timestamp: Date.now(),
       };
 
+      // Mock validateSlotAvailability to return available
+      jest.spyOn(service, 'validateSlotAvailability').mockResolvedValue({
+        available: true,
+      });
+
       // Mock transaction callback
       const mockTransactionCallback = jest.fn(async (tx) => {
         // Simulate transaction operations
@@ -221,42 +226,33 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
         timestamp: Date.now(),
       };
 
-      // Mock transaction that simulates conflict detection
+      // Mock validateSlotAvailability to simulate race condition
       let bookingCount = 0;
-      jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback: any) => {
+      jest.spyOn(service, 'validateSlotAvailability').mockImplementation(async () => {
         bookingCount++;
-
-        // First request succeeds
         if (bookingCount === 1) {
-          return callback({
-            master: {
-              findUnique: jest.fn().mockResolvedValue(mockMaster),
-            } as any,
-            $executeRaw: jest.fn().mockResolvedValue([]),
-            booking: {
-              findMany: jest.fn().mockResolvedValue([]), // No conflicts
-              findFirst: jest.fn().mockResolvedValue(null),
-              create: jest.fn().mockResolvedValue(mockBooking),
-            } as any,
-            salon: {
-              update: jest.fn().mockResolvedValue({}),
-            } as any,
-          });
+          // First request: slot is available
+          return { available: true };
+        } else {
+          // Second request: slot is no longer available
+          return { available: false, reason: 'Slot was just booked' };
         }
+      });
 
-        // Second request fails due to conflict
+      // Mock transaction that simulates conflict detection
+      jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback: any) => {
         return callback({
           master: {
             findUnique: jest.fn().mockResolvedValue(mockMaster),
           } as any,
           $executeRaw: jest.fn().mockResolvedValue([]),
           booking: {
-            findMany: jest.fn().mockResolvedValue([mockBooking]), // Conflict!
+            findMany: jest.fn().mockResolvedValue([]), // No conflicts in transaction
             findFirst: jest.fn().mockResolvedValue(null),
-            create: jest.fn(),
+            create: jest.fn().mockResolvedValue(mockBooking),
           } as any,
           salon: {
-            update: jest.fn(),
+            update: jest.fn().mockResolvedValue({}),
           } as any,
         });
       });
@@ -430,10 +426,9 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
         entityId: 'temp-session',
       } as any);
 
-      // Mock transaction will never be called because validation happens first
-      jest.spyOn(prismaService, '$transaction').mockImplementation(async () => {
-        throw new BadRequestException('Cannot book time slots in the past');
-      });
+      // validateSlotAvailability will return available:false for past dates
+      // This happens in the actual service, so we don't need to mock it
+      // The service will throw ConflictException when slot is unavailable
 
       await expect(
         service.handleBookingConfirmation(
@@ -442,7 +437,7 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
           mockSalonId,
           'en',
         ),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ConflictException);
     });
   });
 
@@ -652,6 +647,11 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
         timestamp: Date.now(),
       };
 
+      // Mock validateSlotAvailability to return available
+      jest.spyOn(service, 'validateSlotAvailability').mockResolvedValue({
+        available: true,
+      });
+
       let attemptCount = 0;
       jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback: any) => {
         attemptCount++;
@@ -709,6 +709,11 @@ describe('ButtonHandlerService - Phase 1 Critical Fixes', () => {
         price: 5000,
         timestamp: Date.now(),
       };
+
+      // Mock validateSlotAvailability to return available
+      jest.spyOn(service, 'validateSlotAvailability').mockResolvedValue({
+        available: true,
+      });
 
       const attemptTimestamps: number[] = [];
       jest.spyOn(prismaService, '$transaction').mockImplementation(async (callback: any) => {

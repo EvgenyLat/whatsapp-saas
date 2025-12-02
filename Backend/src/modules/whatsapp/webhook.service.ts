@@ -235,21 +235,30 @@ export class WebhookService {
       return `INTERACTIVE: ${interactive.type} - ${message.id}`;
     }
 
+    // Detect language from button title
+    let language = 'en';
+    try {
+      const languageDetection = await this.languageDetector.detect(buttonTitle);
+      language = languageDetection.language;
+      this.logger.log(`Language detected from button title: ${language}`);
+    } catch (error) {
+      this.logger.warn(`Failed to detect language from button title, using default: en`);
+    }
+
     // Parse button ID to determine type and context
     try {
       const parsed = this.buttonParserService.parse(buttonId);
 
       this.logger.log(`Parsed button: type="${parsed.type}", data=${JSON.stringify(parsed.data)}`);
 
-      // Route to appropriate handler based on button type
-      // Note: Language should be passed from parent context, using 'en' as default for now
+      // Route to appropriate handler based on button type with detected language
       await this.routeButtonAction(
         salonId,
         message.from,
         parsed.type,
         parsed.data,
         message.id,
-        'en',
+        language,
       );
 
       // Return content string for message storage

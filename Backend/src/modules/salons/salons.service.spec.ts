@@ -118,7 +118,10 @@ describe('SalonsService', () => {
       const result = await service.findAll(mockUserId, 'SUPER_ADMIN');
 
       expect(result).toHaveLength(2);
-      expect(mockSalonsRepository.findAll).toHaveBeenCalledWith({}, { orderBy: { created_at: 'desc' } });
+      expect(mockSalonsRepository.findAll).toHaveBeenCalledWith(
+        {},
+        { orderBy: { created_at: 'desc' } },
+      );
     });
 
     it('should return only user-owned salons for non-admin users', async () => {

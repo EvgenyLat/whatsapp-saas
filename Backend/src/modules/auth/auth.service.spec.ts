@@ -222,7 +222,10 @@ describe('AuthService', () => {
       mockJwtService.verify.mockReturnValue({ sub: mockUser.id, tokenId: 'token-id' });
       mockPrismaService.refreshToken.findUnique.mockResolvedValue(mockRefreshToken);
       // Service now uses update to mark token as used instead of deleting
-      mockPrismaService.refreshToken.update.mockResolvedValue({ ...mockRefreshToken, is_used: true });
+      mockPrismaService.refreshToken.update.mockResolvedValue({
+        ...mockRefreshToken,
+        is_used: true,
+      });
       // findMany returns empty array (no old tokens to cleanup)
       mockPrismaService.refreshToken.findMany.mockResolvedValue([]);
       mockPrismaService.refreshToken.create.mockResolvedValue({
