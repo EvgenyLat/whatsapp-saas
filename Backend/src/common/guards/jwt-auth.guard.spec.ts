@@ -83,41 +83,43 @@ describe('JwtAuthGuard', () => {
   });
 
   describe('handleRequest', () => {
+    const mockContext = createMockExecutionContext();
+
     it('should return user when authentication succeeds', () => {
       const user = { id: 'user-123', email: 'test@example.com', role: 'SALON_OWNER' };
 
-      const result = guard.handleRequest(null, user, null);
+      const result = guard.handleRequest(null, user, null, mockContext);
 
       expect(result).toEqual(user);
     });
 
     it('should throw UnauthorizedException when user is null', () => {
-      expect(() => guard.handleRequest(null, null, null)).toThrow(UnauthorizedException);
-      expect(() => guard.handleRequest(null, null, null)).toThrow('Invalid or expired token');
+      expect(() => guard.handleRequest(null, null, null, mockContext)).toThrow(UnauthorizedException);
+      expect(() => guard.handleRequest(null, null, null, mockContext)).toThrow('Invalid or expired token');
     });
 
     it('should throw UnauthorizedException when user is undefined', () => {
-      expect(() => guard.handleRequest(null, undefined, null)).toThrow(UnauthorizedException);
-      expect(() => guard.handleRequest(null, undefined, null)).toThrow('Invalid or expired token');
+      expect(() => guard.handleRequest(null, undefined, null, mockContext)).toThrow(UnauthorizedException);
+      expect(() => guard.handleRequest(null, undefined, null, mockContext)).toThrow('Invalid or expired token');
     });
 
     it('should throw existing error when error is provided', () => {
       const error = new Error('JWT malformed');
 
-      expect(() => guard.handleRequest(error, null, null)).toThrow(error);
+      expect(() => guard.handleRequest(error, null, null, mockContext)).toThrow(error);
     });
 
     it('should throw error even when user exists if error is provided', () => {
       const error = new Error('Token blacklisted');
       const user = { id: 'user-123' };
 
-      expect(() => guard.handleRequest(error, user, null)).toThrow(error);
+      expect(() => guard.handleRequest(error, user, null, mockContext)).toThrow(error);
     });
 
     it('should handle expired JWT tokens', () => {
       const error = new Error('TokenExpiredError');
 
-      expect(() => guard.handleRequest(error, null, { name: 'TokenExpiredError' })).toThrow(error);
+      expect(() => guard.handleRequest(error, null, { name: 'TokenExpiredError' }, mockContext)).toThrow(error);
     });
 
     it('should handle invalid JWT tokens', () => {
@@ -125,7 +127,7 @@ describe('JwtAuthGuard', () => {
         guard.handleRequest(null, null, {
           name: 'JsonWebTokenError',
           message: 'invalid signature',
-        }),
+        }, mockContext),
       ).toThrow(UnauthorizedException);
     });
 
@@ -138,7 +140,7 @@ describe('JwtAuthGuard', () => {
         last_name: 'Doe',
       };
 
-      const result = guard.handleRequest(null, user, null);
+      const result = guard.handleRequest(null, user, null, mockContext);
 
       expect(result).toEqual(user);
       expect(result.id).toBe('user-456');

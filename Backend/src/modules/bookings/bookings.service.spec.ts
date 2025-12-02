@@ -46,7 +46,7 @@ describe('BookingsService', () => {
 
   const mockUsageTrackingService = {
     checkBookingLimit: jest.fn().mockResolvedValue({ allowed: true }),
-    incrementBookingCount: jest.fn(),
+    incrementBookingUsage: jest.fn(),
   };
 
   const mockRemindersService = {

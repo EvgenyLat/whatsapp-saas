@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SalonsController } from './salons.controller';
 import { SalonsService } from './salons.service';
+import { UsageTrackingService } from './services/usage-tracking.service';
 import { CreateSalonDto, UpdateSalonDto, SalonResponseDto } from './dto';
 
 describe('SalonsController', () => {
@@ -30,10 +31,19 @@ describe('SalonsController', () => {
     remove: jest.fn(),
   };
 
+  const mockUsageTrackingService = {
+    getUsageStats: jest.fn(),
+    checkBookingLimit: jest.fn(),
+    incrementBookingCount: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SalonsController],
-      providers: [{ provide: SalonsService, useValue: mockSalonsService }],
+      providers: [
+        { provide: SalonsService, useValue: mockSalonsService },
+        { provide: UsageTrackingService, useValue: mockUsageTrackingService },
+      ],
     }).compile();
 
     controller = module.get<SalonsController>(SalonsController);
