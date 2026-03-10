@@ -1,5 +1,8 @@
+[phases.install]
+cmds = ["npm install --ignore-scripts"]
+
 [phases.build]
-cmds = ["npm ci", "npx prisma generate", "npm run build"]
+cmds = ["npx prisma generate", "npm run build"]
 
 [start]
 cmd = "node dist/main.js"
